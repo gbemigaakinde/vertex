@@ -1457,7 +1457,7 @@ function _closeFullClock() {
     return ownKey;
   }
 
-  function _crossClassHtml(ownKey, activeKey) {
+  function _crossClassHtml(ownKey, activeKey, hasExams) {
     const QL = window.QuestionLoader;
     const others = (QL && QL.openClassesFor) ? QL.openClassesFor(ownKey) : [];
     if (!others.length) return '';
@@ -1466,12 +1466,15 @@ function _closeFullClock() {
       return '<button type="button" class="vtx-xc-chip' + (on ? ' is-on' : '') + '" aria-pressed="' + on + '" ' +
         'onclick="Exam._chooseExamClass(\'' + _escAttr(key) + '\')">' +
         '<span class="vtx-xc-chip-name">' + _escHtml(label) + '</span>' +
-        '<span class="vtx-xc-chip-sub">' + _escHtml(sub) + '</span></button>';
+        (sub ? '<i class="vtx-xc-dot" aria-hidden="true"></i><span class="vtx-xc-sr">' + _escHtml(sub) + '</span>' : '') + '</button>';
     };
-    const own = chip(ownKey, _classLabel(ownKey), 'Your class');
-    const rest = others.map(k => chip(k, _classLabel(k), 'Open to you')).join('');
+    const own = chip(ownKey, _classLabel(ownKey), 'Yours');
+    const rest = others.map(k => chip(k, _classLabel(k), '')).join('');
     const away = activeKey !== ownKey;
-    const note = away
+    // The "you are taking…" note only makes sense when that class actually has an exam to take;
+    // otherwise the unavailable warning below is the only message, and no hint is needed either.
+    const note = away && !hasExams ? ''
+      : away
       ? '<div class="vtx-xc-note" role="status"><span style="flex-shrink:0;display:inline-flex;">' + _icon('Info', 18) + '</span>' +
         '<p>You are taking <strong>' + _escHtml(_classLabel(activeKey)) + '</strong> exams, not your own class (' + _escHtml(_classLabel(ownKey)) + '). ' +
         'Your score is saved normally under your own name and is marked as a <strong>' + _escHtml(_classLabel(activeKey)) + '</strong> exam.</p></div>'
@@ -1487,20 +1490,24 @@ function _closeFullClock() {
     st.id = 'vtx-xc-css';
     st.textContent =
       '.vtx-xc{margin:0 0 1.25rem;text-align:left;}' +
-      '.vtx-xc-title{font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);margin:0 0 .5rem;}' +
-      '.vtx-xc-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem;}' +
-      '.vtx-xc-chip{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:.15rem;padding:.65rem .85rem;border-radius:var(--r-lg);border:1.5px solid var(--border);background:var(--bg-subtle);color:var(--text-1);cursor:pointer;font:inherit;text-align:left;min-height:48px;min-width:0;transition:border-color .15s,background .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;}' +
-      '.vtx-xc-chip:hover{border-color:var(--text-4);}' +
-      '.vtx-xc-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}' +
-      '.vtx-xc-chip.is-on{border-color:var(--accent);background:var(--accent-subtle);box-shadow:0 0 0 3px var(--accent-subtle);}' +
-      '.vtx-xc-chip-name{font-size:.9375rem;font-weight:700;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
-      '.vtx-xc-chip-sub{font-size:.6875rem;color:var(--text-3);line-height:1.2;}' +
-      '.vtx-xc-chip.is-on .vtx-xc-chip-sub{color:var(--accent-text);}' +
+      '.vtx-xc-title{font-size:.6875rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);margin:0 0 .4rem;}' +
+      '.vtx-xc-row{display:flex;gap:1.35rem;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;border-bottom:1px solid var(--border);margin:0 -.125rem;padding:0 .125rem;}' +
+      '.vtx-xc-row::-webkit-scrollbar{display:none;}' +
+      '.vtx-xc-chip{position:relative;flex:0 0 auto;display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 0 .7rem;border:0;background:none;color:var(--text-3);cursor:pointer;font:inherit;white-space:nowrap;-webkit-tap-highlight-color:transparent;transition:color .15s;}' +
+      '.vtx-xc-chip::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .2s ease;}' +
+      '.vtx-xc-chip:hover{color:var(--text-2);}' +
+      '.vtx-xc-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}' +
+      '.vtx-xc-chip.is-on{color:var(--text-1);}' +
+      '.vtx-xc-chip.is-on::after{transform:scaleX(1);}' +
+      '.vtx-xc-chip-name{font-size:.875rem;font-weight:650;letter-spacing:.01em;line-height:1.2;font-variant-numeric:tabular-nums;}' +
+      '.vtx-xc-dot{width:5px;height:5px;border-radius:50%;background:var(--text-4);flex:none;}' +
+      '.vtx-xc-chip.is-on .vtx-xc-dot{background:var(--accent);}' +
+      '.vtx-xc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}' +
       '.vtx-xc-note{display:flex;gap:.625rem;align-items:flex-start;margin-top:.625rem;padding:.75rem 1rem;border-radius:var(--r-lg);background:var(--warning-subtle);border:1px solid var(--warning-border);color:var(--warning-text);}' +
       '.vtx-xc-note p{font-size:.78125rem;line-height:1.55;color:var(--text-2);margin:0;min-width:0;overflow-wrap:anywhere;}' +
-      '.vtx-xc-hint{font-size:.75rem;color:var(--text-3);margin:.5rem 0 0;line-height:1.5;}' +
+      '.vtx-xc-hint{font-size:.75rem;color:var(--text-3);margin:.6rem 0 0;line-height:1.5;}' +
       '.vtx-xc-badge{display:inline-block;margin-left:.5rem;padding:.1rem .55rem;border-radius:99px;font-size:.6875rem;font-weight:700;line-height:1.4;vertical-align:middle;white-space:nowrap;background:var(--warning-subtle);border:1px solid var(--warning-border);color:var(--warning-text);}' +
-      '@media (max-width:380px){.vtx-xc-row{grid-template-columns:1fr 1fr;}.vtx-xc-badge{display:block;margin:.3rem 0 0;width:max-content;}}';
+      '@media (max-width:380px){.vtx-xc-badge{display:block;margin:.3rem 0 0;width:max-content;}}';
     document.head.appendChild(st);
   }
 
@@ -1786,7 +1793,7 @@ async function renderSubjectSelection() {
       subjectsHtml = `<p style="color:var(--danger);font-size:.8125rem;text-align:center;padding:1rem 0;">
         ${restrictedSubjs
           ? 'Assigned subjects unavailable for your class. Contact Master Timothy.'
-          : 'No subjects available for your class.'}
+          : (examKey !== classKey ? 'No subjects available for ' + _escHtml(_classLabel(examKey)) + ' yet.' : 'No subjects available for your class.')}
       </p>`;
 
     } else if (restrictedSubjs) {
@@ -1844,7 +1851,7 @@ async function renderSubjectSelection() {
     }
 
     // Cross-class picker: only on free-practice days, so task-day rules always use the student's own class.
-    if (!restrictedSubjs && !todayTaskDone) { _crossClassStyles(); subjectsHtml = _crossClassHtml(classKey, examKey) + subjectsHtml; }
+    if (!restrictedSubjs && !todayTaskDone) { _crossClassStyles(); subjectsHtml = _crossClassHtml(classKey, examKey, !bankState.problem && usableAvailable.length > 0) + subjectsHtml; }
 
     const weeklyTimetableHtml = await weeklyTimetableHtmlPromise;
 
