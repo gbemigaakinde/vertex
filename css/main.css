@@ -499,6 +499,25 @@ body {
   .md\:text-5xl { font-size: var(--text-2xl) !important; }
 }
 
+/* ── Native dropdown popups ──
+   The popup list of a <select> is drawn by the browser and takes its
+   background from the <option>, NOT from the <select>. Selects styled with
+   `background: transparent` (e.g. .vtx-period) therefore opened as a pure
+   white list while the text kept the light dark-mode colour, which made every
+   unselected option invisible. Give options an explicit surface + text colour
+   so the list always matches the active theme. */
+select option,
+select optgroup {
+  background-color: var(--bg-base);
+  color: var(--text-1);
+}
+select option:disabled { color: var(--text-4); }
+select option:checked,
+select option:hover {
+  background-color: var(--accent);
+  color: #fff;
+}
+
 /* ── Form elements ── */
 .cbt-input,
 input[type="text"],
