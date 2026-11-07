@@ -9854,6 +9854,7 @@ async function renderTeacherGameRestrictions(containerId) {
     };
 
     function gameIcon(type)  { return _li(GAME_ICONS[type] || 'gameController', 16); }
+    function gameLabel(type) { return GAME_LABELS[type] || type || 'Game'; }
 
     function _esc2(str) {
       return String(str == null ? '' : str)
