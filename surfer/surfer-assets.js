@@ -299,6 +299,9 @@ function normalise(src, cfg) {
   if (cfg.roll) inner.rotation.z = THREE.MathUtils.degToRad(cfg.roll);
   const yawHolder = new THREE.Group();
   yawHolder.rotation.y = THREE.MathUtils.degToRad(cfg.yaw || 0);
+  /* mirror: flips the model left-to-right, so a stride with the LEFT leg trailing becomes the RIGHT leg trailing.
+     run_a (original) + run_b (mirrored) = both legs take turns. */
+  if (cfg.mirror) yawHolder.scale.x = -1;
   yawHolder.add(inner);
   const holder = new THREE.Group(); holder.add(yawHolder);
   holder.updateMatrixWorld(true);

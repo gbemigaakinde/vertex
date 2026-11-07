@@ -49,16 +49,18 @@ export const MODELS = {
   /* ── PLAYER: ONE model (characters/runner.glb) used for all 5 poses.
        The game bends/tilts it for each pose, so you only download one file.
        yaw 180 = the model was made facing the camera, the game wants its back to us.
-       roll   = small side-to-side lean so run_a / run_b look like alternating steps. ── */
+       roll   = small side-to-side lean so run_a / run_b look like alternating steps.
+       mirror = flips the model left-to-right. run_b is a mirrored copy of run_a, so the OTHER leg
+       is the one that trails and both legs take turns. ── */
   player_run_a:   { file: 'characters/runner.glb', height: 1.75, yaw: 180, roll:  5 },
-  player_run_b:   { file: 'characters/runner.glb', height: 1.75, yaw: 180, roll: -5 },
+  player_run_b:   { file: 'characters/runner.glb', height: 1.75, yaw: 180, roll: -5, mirror: true },
   player_jump:    { file: 'characters/runner.glb', height: 1.70, yaw: 180, pitch: -8 },
   player_slide:   { file: 'characters/runner.glb', height: 0.75, yaw: 180, pitch: -78 },
   player_stumble: { file: 'characters/runner.glb', height: 1.65, yaw: 180, pitch: 22 },
 
   /* ── INSPECTOR (police): ONE model (characters/police.glb) for both steps ── */
   inspector_run_a: { file: 'characters/police.glb', height: 1.85, yaw: 180, roll:  5 },
-  inspector_run_b: { file: 'characters/police.glb', height: 1.85, yaw: 180, roll: -5 },
+  inspector_run_b: { file: 'characters/police.glb', height: 1.85, yaw: 180, roll: -5, mirror: true },
 
   /* ── DOG: not ready yet, the game draws its simple stand-in dog until you add these ── */
   dog_run_a:       { file: 'characters/dog_run_a.glb',       height: 0.70, yaw: 0 },
