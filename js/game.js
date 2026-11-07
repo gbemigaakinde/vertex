@@ -4565,16 +4565,17 @@ function _dismissScrabblePopup(gameId) {
               <div class="lb-profile__name">${_esc(_student().name || '')}</div>
               <div class="lb-profile__meta">${_esc(_student().class || '')}${_student().school ? ' · ' + _esc(_student().school) : ''}</div>
             </div>
-            <div class="lb-level">
+            <button type="button" class="lb-level" onclick="Game._showAllLevelsModal(${_profile.xp || 0})" aria-label="View all ranks">
               ${_li(level.icon, 16, level.color)}
               <span>${_esc(level.name)}</span>
               <em>Rank ${level.rank}</em>
-            </div>
+              ${_li('chevronRight', 14, 'var(--text-3)')}
+            </button>
           </div>
           <div class="lb-xp">
             <div class="lb-xp__labels">
               <span><strong>${xpCurrent}</strong> XP</span>
-              <span>${!maxed ? `${_esc(nextLevel.name)} at ${xpNext} XP` : 'Max level reached'}</span>
+              <button type="button" class="lb-xp__more" onclick="Game._showAllLevelsModal(${_profile.xp || 0})">${!maxed ? `${_esc(nextLevel.name)} at ${xpNext} XP` : 'Max level reached'}${_li('chevronRight', 13)}</button>
             </div>
             <div class="lb-xp__track"><div class="lb-xp__fill" style="width:${xpPct}%;"></div></div>
           </div>
@@ -4669,42 +4670,54 @@ function _dismissScrabblePopup(gameId) {
 }
 
 function _showAllLevelsModal(currentXP) {
-  const rows = LEVELS.map((l, idx) => {
-    const nextL      = LEVELS[idx + 1];
-    const isUnlocked = currentXP >= l.minXP;
-    const isCurrent  = isUnlocked && (!nextL || currentXP < nextL.minXP);
-    const xpNeeded   = isUnlocked ? 0 : l.minXP - currentXP;
-    const pct        = isCurrent && nextL ? Math.min(100, Math.round(((currentXP - l.minXP) / (nextL.minXP - l.minXP)) * 100)) : 0;
+  currentXP = Number(currentXP) || 0;
+  const BLURBS = ["Everyone starts here. Play your first game to get going.","Getting the hang of the clock and the questions.","Exploring more subjects and game modes.","Steady play is starting to pay off.","A solid foundation. Streaks begin to matter.","A regular winner. Classmates start to notice.","Ready to take on classmates head to head.","Fast, accurate and dependable under pressure.","Deep knowledge across several subjects.","Top-tier speed. Few players reach this rank.","Among the strongest players in your school.","Hundreds of questions answered with confidence.","Consistently clean, near-flawless runs.","Command of every game mode.","A name the leaderboard knows well.","Your streaks are the stuff of stories.","Rarely seen, rarely beaten.","Unshakeable. A pillar of the leaderboard.","Beyond ranking: a permanent fixture at the top.","The highest rank. Nothing left to climb."];
+  const curIdx  = LEVELS.reduce((acc, l, i) => (currentXP >= l.minXP ? i : acc), 0);
+  const cur     = LEVELS[curIdx];
+  const next    = LEVELS[curIdx + 1];
+  const pct     = next ? Math.min(100, Math.round(((currentXP - cur.minXP) / (next.minXP - cur.minXP)) * 100)) : 100;
 
+  const items = LEVELS.map((l, i) => {
+    const state = i < curIdx ? 'is-done' : i === curIdx ? 'is-current' : 'is-locked';
+    const toGo  = Math.max(0, l.minXP - currentXP);
+    const tag   = state === 'is-current' ? 'You are here' : state === 'is-done' ? 'Unlocked' : '';
+    const node  = state === 'is-done' ? _li('checkCircle', 18) : state === 'is-locked' ? _li('lock', 16) : _li(l.icon, 18);
     return `
-      <div class="gm-rank${isCurrent ? ' is-current' : ''}${isUnlocked ? '' : ' is-locked'}" style="--c:${l.color};">
-        <span class="gm-rank__ico">${_icon(l.icon, 18, { color: isUnlocked ? '#fff' : 'var(--text-4)' })}</span>
-        <div class="gm-rank__txt">
-          <div class="gm-rank__top">
-            <b>${_esc(l.name)}</b><em>Rank ${l.rank}</em>
-            ${isCurrent ? '<span class="gm-rank__you">You</span>' : ''}
-          </div>
-          <div class="gm-rank__sub">
-            ${isUnlocked
-              ? `${_icon('checkCircle', 12, { color: 'var(--success)' })} Unlocked at ${l.minXP.toLocaleString()} XP`
-              : `${_icon('lock', 12)} ${xpNeeded.toLocaleString()} XP to unlock`}
-          </div>
-          ${isCurrent && nextL ? `
-            <div class="gm-rank__bar"><i style="width:${pct}%;"></i></div>
-            <div class="gm-rank__cap">${currentXP.toLocaleString()} / ${nextL.minXP.toLocaleString()} XP to ${_esc(nextL.name)}</div>` : ''}
+      <li class="gm-lv__item ${state}" style="--c:${l.color};">
+        <span class="gm-lv__node">${node}</span>
+        <div class="gm-lv__body">
+          <div class="gm-lv__row"><b>${_esc(l.name)}</b>${tag ? `<span class="gm-lv__tag">${tag}</span>` : ''}</div>
+          <div class="gm-lv__meta">Rank ${l.rank} &middot; ${l.minXP.toLocaleString()} XP${state === 'is-locked' ? ` &middot; ${toGo.toLocaleString()} to go` : ''}</div>
+          <p class="gm-lv__desc">${_esc(BLURBS[i] || '')}</p>
         </div>
-      </div>`;
+      </li>`;
   }).join('');
 
   _showModal(`
-    <div style="text-align:center;">
-      <div>${_icon('chartBar', 26)}</div>
-      <h2>All Ranks</h2>
-      <p style="margin-top:.375rem;">${LEVELS.length} ranks in total. Keep earning XP to climb higher.</p>
+    <div class="gm-lv" style="--c:${cur.color};">
+      <div class="gm-lv__hero">
+        <span class="gm-lv__medal">${_li(cur.icon, 28, '#fff')}</span>
+        <div>
+          <div class="gm-lv__eyebrow">Your rank</div>
+          <h2 class="gm-lv__name">${_esc(cur.name)}</h2>
+          <div class="gm-lv__sub">Rank ${cur.rank} of ${LEVELS.length} &middot; ${currentXP.toLocaleString()} XP</div>
+        </div>
+      </div>
+      <div class="gm-lv__prog">
+        <div class="gm-lv__bar"><i style="width:${pct}%;"></i></div>
+        <div class="gm-lv__cap">
+          <span>${next ? `${(next.minXP - currentXP).toLocaleString()} XP to ${_esc(next.name)}` : 'Highest rank reached'}</span>
+          <span>${pct}%</span>
+        </div>
+      </div>
+      <ol class="gm-lv__list">${items}</ol>
+      <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:1rem;">Close</button>
     </div>
-    <div class="gm-ranks">${rows}</div>
-    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:1rem;">Close</button>
   `);
+
+  const list = document.querySelector('.gm-lv__list');
+  const here = list && list.querySelector('.is-current');
+  if (list && here) list.scrollTop = Math.max(0, here.offsetTop - list.clientHeight / 2 + here.offsetHeight / 2);
 }
 
   /* ══════════════════════════════════════════════════════════════
@@ -9003,7 +9016,7 @@ function _krLoop(timestamp) {
       .gm-ico { width:56px;height:56px;margin:0 auto 1rem !important;border-radius:18px;display:flex !important;align-items:center;justify-content:center;
         background:var(--accent-subtle);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-border);font-size:0 !important; }
       .gm-ico svg { width:26px !important;height:26px !important; }
-      .gm-modal label { display:block !important;font-size:.6875rem !important;font-weight:600 !important;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3) !important;margin-bottom:.4375rem !important; }
+      .gm-modal label:not(.game-diff-option) { display:block !important;font-size:.6875rem !important;font-weight:600 !important;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3) !important;margin-bottom:.4375rem !important; }
       .gm-modal select,.gm-modal input[type="text"],.gm-modal input[type="number"],.gm-modal input[type="email"],.gm-modal input:not([type]) {
         height:46px !important;border-radius:14px !important;border:1px solid var(--border-strong) !important;background-color:var(--bg-subtle) !important;
         padding-top:0 !important;padding-bottom:0 !important;font-size:.9375rem !important;color:var(--text-1) !important;box-shadow:none !important;
@@ -9016,6 +9029,15 @@ function _krLoop(timestamp) {
       .gm-modal .btn.bg-gray-500,.gm-modal .btn[class*="bg-gray"] { background:transparent !important;border:1px solid var(--border-strong) !important;color:var(--text-2) !important; }
       .gm-modal .btn.bg-gray-500:hover:not(:disabled),.gm-modal .btn[class*="bg-gray"]:hover:not(:disabled) { background:var(--bg-subtle) !important;filter:none; }
       .gm-modal .btn:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+      .gm-modal .btn:not(.bg-gray-500):not([class*="bg-gray"]) { color:#fff !important; }
+      .gm-modal .game-diff-option { display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.3125rem;min-height:6.5rem;padding:.875rem .375rem !important;border:1.5px solid var(--border) !important;border-radius:16px !important;
+        background:var(--bg-subtle);text-transform:none;letter-spacing:0;margin:0 !important;cursor:pointer;transition:border-color .15s,background .15s,transform .15s; }
+      .gm-modal .game-diff-option:hover { border-color:var(--border-strong) !important; }
+      .gm-modal .game-diff-option:active { transform:scale(.97); }
+      .gm-modal .game-diff-option.selected { border-color:var(--accent) !important;background:var(--accent-subtle); }
+      .gm-modal .game-diff-option__icon { margin-bottom:.125rem; }
+      .gm-modal .game-diff-option__name { display:block;font-size:.875rem;font-weight:700;letter-spacing:-.005em;color:var(--text-1); }
+      .gm-modal .game-diff-option__desc { display:block;max-width:11ch;font-size:.6875rem;line-height:1.35;text-align:center;color:var(--text-3); }
 
       /* ═══ BADGE MEDAL — one look, everywhere ═══ */
       .gb-medal { --s:40px;position:relative;flex:none;width:var(--s);height:var(--s);display:inline-flex;align-items:center;justify-content:center;
@@ -9052,23 +9074,36 @@ function _krLoop(timestamp) {
       .game-badge-pop__t strong { font-size:.875rem;font-weight:600;color:var(--text-1); }
       .game-badge-pop__t small  { font-size:.75rem;color:var(--text-3);line-height:1.35; }
 
-      /* ═══ ALL RANKS SHEET ═══ */
-      .gm-ranks { display:flex;flex-direction:column;gap:.5rem;max-height:56vh;overflow-y:auto;margin:1.25rem -.25rem 0;padding:0 .25rem; }
-      .gm-rank { display:flex;align-items:center;gap:.875rem;padding:.75rem .875rem;border-radius:16px;border:1px solid var(--border);background:var(--bg-base); }
-      .gm-rank.is-current { border-color:color-mix(in srgb,var(--c) 55%,var(--border));background:color-mix(in srgb,var(--c) 7%,var(--bg-base)); }
-      .gm-rank.is-locked { opacity:.55; }
-      .gm-rank__ico { width:38px;height:38px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--c); }
-      .gm-rank.is-locked .gm-rank__ico { background:var(--bg-muted); }
-      .gm-rank__txt { flex:1;min-width:0; }
-      .gm-rank__top { display:flex;align-items:center;gap:.5rem;flex-wrap:wrap; }
-      .gm-rank__top b { font-size:.9375rem;font-weight:600;letter-spacing:-.01em;color:var(--text-1); }
-      .gm-rank.is-current .gm-rank__top b { color:var(--c); }
-      .gm-rank__top em { font-style:normal;font-size:.6875rem;color:var(--text-3); }
-      .gm-rank__you { margin-left:auto;font-size:.625rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--c);padding:2px 8px;border-radius:99px; }
-      .gm-rank__sub { display:flex;align-items:center;gap:.3125rem;margin-top:2px;font-size:.75rem;color:var(--text-3); }
-      .gm-rank__bar { height:4px;margin-top:.5rem;border-radius:99px;background:var(--bg-muted);overflow:hidden; }
-      .gm-rank__bar i { display:block;height:100%;border-radius:99px;background:var(--c); }
-      .gm-rank__cap { margin-top:.3125rem;font-size:.6875rem;color:var(--text-3);font-variant-numeric:tabular-nums; }
+      /* ═══ ALL RANKS ═══ */
+      .gm-lv__hero { display:flex;align-items:center;gap:1rem;padding-right:2.5rem; }
+      .gm-lv__medal { width:56px;height:56px;flex:none;border-radius:18px;display:flex;align-items:center;justify-content:center;color:#fff;
+        background:linear-gradient(150deg,color-mix(in srgb,var(--c) 66%,#fff),var(--c));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 10px 20px -10px var(--c); }
+      .gm-lv__eyebrow { font-size:.625rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3); }
+      .gm-modal .gm-lv__name { margin-top:2px !important;font-size:1.375rem !important;letter-spacing:-.025em !important; }
+      .gm-lv__sub { margin-top:2px;font-size:.8125rem;color:var(--text-3);font-variant-numeric:tabular-nums; }
+      .gm-lv__prog { margin-top:1.25rem; }
+      .gm-lv__bar { height:6px;border-radius:99px;background:var(--bg-muted);overflow:hidden; }
+      .gm-lv__bar i { display:block;height:100%;border-radius:99px;background:var(--c); }
+      .gm-lv__cap { display:flex;justify-content:space-between;gap:.75rem;margin-top:.5rem;font-size:.75rem;color:var(--text-3);font-variant-numeric:tabular-nums; }
+      .gm-lv__list { position:relative;list-style:none;margin:1.25rem -.5rem 0;padding:1.125rem .5rem 0;max-height:44vh;overflow-y:auto;border-top:1px solid var(--border);-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 22px,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(to bottom,transparent 0,#000 22px,#000 calc(100% - 22px),transparent); }
+      .gm-lv__item { position:relative;display:flex;gap:.875rem;padding-bottom:1.25rem; }
+      .gm-lv__item:last-child { padding-bottom:.25rem; }
+      .gm-lv__item:not(:last-child)::before { content:'';position:absolute;left:19px;top:44px;bottom:4px;width:2px;border-radius:2px;background:var(--border); }
+      .gm-lv__item.is-done:not(:last-child)::before { background:color-mix(in srgb,var(--c) 45%,transparent); }
+      .gm-lv__node { position:relative;z-index:1;width:40px;height:40px;flex:none;border-radius:13px;display:flex;align-items:center;justify-content:center;background:var(--bg-muted);color:var(--text-4); }
+      .is-done .gm-lv__node { background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c); }
+      .is-current .gm-lv__node { background:var(--c);color:#fff;box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 18%,transparent); }
+      .gm-lv__body { flex:1;min-width:0;padding-top:1px; }
+      .gm-lv__row { display:flex;align-items:center;gap:.5rem; }
+      .gm-lv__row b { font-size:.9375rem;font-weight:600;letter-spacing:-.01em;color:var(--text-1); }
+      .is-locked .gm-lv__row b { color:var(--text-3); }
+      .gm-lv__tag { margin-left:auto;padding:2px 8px;border-radius:99px;font-size:.625rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap; }
+      .is-current .gm-lv__tag { background:var(--c);color:#fff; }
+      .is-done .gm-lv__tag { background:var(--success-subtle);color:var(--success-text); }
+      .gm-lv__meta { margin-top:2px;font-size:.75rem;color:var(--text-3);font-variant-numeric:tabular-nums; }
+      .gm-lv__desc { margin:.25rem 0 0;font-size:.8125rem;line-height:1.45;color:var(--text-2); }
+      .is-locked .gm-lv__desc { color:var(--text-3); }
 
       /* ═══ CHESS PROMOTION ═══ */
       .gm-pieces { display:grid;grid-template-columns:repeat(4,1fr);gap:.625rem;margin-top:1.375rem; }
@@ -9221,6 +9256,12 @@ function _krLoop(timestamp) {
       .lb-profile__name { font-size:1rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
       .lb-profile__meta { font-size:.8125rem;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
       .lb-level { display:inline-flex;align-items:center;gap:.4375rem;padding:.375rem .75rem;border-radius:99px;background:color-mix(in srgb,var(--lvl) 10%,transparent);font-size:.8125rem;font-weight:600;color:var(--text-1);white-space:nowrap; }
+      button.lb-level { border:0;cursor:pointer;font-family:inherit;transition:background .15s,transform .15s; }
+      button.lb-level:hover { background:color-mix(in srgb,var(--lvl) 18%,transparent); }
+      button.lb-level:active { transform:scale(.97); }
+      button.lb-level:focus-visible,.lb-xp__more:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+      .lb-xp__more { display:inline-flex;align-items:center;gap:.125rem;padding:0;border:0;background:none;font:inherit;color:var(--text-3);cursor:pointer;transition:color .15s; }
+      .lb-xp__more:hover { color:var(--text-1); }
       .lb-level em { font-style:normal;font-weight:500;color:var(--text-3);font-size:.75rem; }
       .lb-xp { margin-top:1.375rem; }
       .lb-xp__labels { display:flex;justify-content:space-between;gap:.75rem;font-size:.75rem;color:var(--text-3);margin-bottom:.5rem; }
