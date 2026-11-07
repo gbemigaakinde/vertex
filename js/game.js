@@ -56,6 +56,7 @@
   };
 
   function _icon(name, size = 20, opts = {}) {
+    if (_LI[name] || _LI_ALIAS[name]) return _li(name, size, opts.color, opts.class);
     const pathData    = _ICONS[name] || _ICONS.sparkle;
     const color       = opts.color || 'currentColor';
     const cls         = opts.class ? ` class="${opts.class}"` : '';
@@ -944,7 +945,7 @@ async function _showChessSetup() {
 
   _showModal(`
     <div style="text-align:center;margin-bottom:1.25rem;">
-      <div style="margin-bottom:.5rem;font-size:2.5rem;color:var(--accent);"><i class="ph ph-castle-turret"></i></div>
+      <div style="margin-bottom:.5rem;font-size:2.5rem;color:var(--accent);"><svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg></div>
       <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Chess</h2>
       <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
         Full rules: castling, en passant, promotion, check &amp; checkmate detection.
@@ -964,7 +965,7 @@ async function _showChessSetup() {
       </select>
     </div>
     <button onclick="Game._sendChessChallenge()" class="btn btn-lg w-full" style="background:#1e293b;color:#fff;">
-      <i class="ph ph-castle-turret"></i> Send Chess Challenge
+      <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg> Send Chess Challenge
     </button>
     <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
   `);
@@ -999,13 +1000,13 @@ async function _sendChessChallenge() {
     const total = asWhite.size + asBlack.size;
     if (total >= 2) {
       window.UI.toast(`You already have ${total} ongoing Chess game${total > 1 ? 's' : ''} with ${targetName}. Finish them before starting another.`, 'warning', 5000);
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-castle-turret"></i> Send Chess Challenge'; }
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg> Send Chess Challenge'; }
       return;
     }
   } catch (e) {
     console.error('[chess] _sendChessChallenge limit check error:', e);
     window.UI.toast('Could not verify existing games. Please try again.', 'error');
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-castle-turret"></i> Send Chess Challenge'; }
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg> Send Chess Challenge'; }
     return;
   }
 
@@ -1044,7 +1045,7 @@ async function _sendChessChallenge() {
   } catch (e) {
     console.error('[chess] _sendChessChallenge error:', e);
     window.UI.toast('Could not send challenge. Please try again.', 'error');
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-castle-turret"></i> Send Chess Challenge'; }
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg> Send Chess Challenge'; }
   }
 }
 
@@ -1100,7 +1101,7 @@ async function _showChessPending() {
     <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:8px;
                 padding:.75rem 1rem;margin-bottom:.5rem;">
       <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">
-        <i class="ph ph-castle-turret"></i> ${_esc(fromName)} challenged you to Chess! <span style="color:var(--text-3);font-weight:500;">(you play ${myColor})</span>
+        <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg> ${_esc(fromName)} challenged you to Chess! <span style="color:var(--text-3);font-weight:500;">(you play ${myColor})</span>
       </p>
       <div style="display:flex;gap:.375rem;margin-top:.5rem;">
         <button onclick="Game._acceptChess('${_esc(g.id)}')" class="btn" style="flex:1;font-size:.8125rem;">Accept &amp; Play</button>
@@ -1118,7 +1119,7 @@ async function _showChessPending() {
                 border:1.5px solid ${isMyTurn ? 'var(--accent-border)' : 'var(--border)'};
                 border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem;">
       <p style="font-size:.9375rem;font-weight:700;color:${isMyTurn ? 'var(--accent-text)' : 'var(--text-2)'};">
-        ${isMyTurn ? '<i class="ph ph-lightning"></i> Your turn' : '<i class="ph ph-hourglass-medium"></i> Their turn'} vs ${_esc(oppName)}
+        ${isMyTurn ? '<svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Your turn' : '<svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><path d="M5 22h14M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.41L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.41L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg> Their turn'} vs ${_esc(oppName)}
         <span style="font-weight:500;color:var(--text-3);">(you: ${iAmWhite?'White':'Black'})</span>
       </p>
       <button onclick="Game._openChessGame('${_esc(g.id)}')" class="btn w-full"
@@ -1130,7 +1131,7 @@ async function _showChessPending() {
 
   _showModal(`
     <div style="margin-bottom:1rem;">
-      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);"><i class="ph ph-castle-turret"></i> Chess Games</h2>
+      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);"><svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg> Chess Games</h2>
     </div>
     ${pendingHtml}
     ${activeHtml}
@@ -1253,13 +1254,13 @@ async function _chessRenderGame(gameId, data) {
     ? `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
                    background:var(--accent-subtle);border:1px solid var(--accent-border);">
          <span style="font-size:.875rem;font-weight:700;color:var(--accent-text);">
-           <i class="ph ph-lightning"></i> Your turn${status === 'check' ? ' — you are in CHECK!' : ''}
+           <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Your turn${status === 'check' ? ' — you are in CHECK!' : ''}
          </span>
        </div>`
     : `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
                    background:var(--bg-subtle);border:1px solid var(--border);">
          <span style="font-size:.875rem;color:var(--text-3);">
-           <i class="ph ph-hourglass-medium"></i> Waiting for ${_esc(oppName)}${status === 'check' ? ' (they are in check)' : ''}…
+           <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><path d="M5 22h14M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.41L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.41L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg> Waiting for ${_esc(oppName)}${status === 'check' ? ' (they are in check)' : ''}…
          </span>
        </div>`;
 
@@ -1676,7 +1677,7 @@ async function _loadChessHistory() {
                         padding:.75rem 1rem;border-bottom:1px solid var(--border);">
               <div>
                 <div style="font-size:.875rem;font-weight:700;color:var(--text-1);">
-                  <i class="ph ph-castle-turret"></i> vs ${_esc(oppName)} <span style="font-weight:500;color:var(--text-3);">(you: ${iAmWhite?'White':'Black'})</span>
+                  <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg> vs ${_esc(oppName)} <span style="font-weight:500;color:var(--text-3);">(you: ${iAmWhite?'White':'Black'})</span>
                 </div>
                 <div style="font-size:.75rem;color:var(--text-3);">
                   ${_esc(when)} &middot; ${moveCount} move${moveCount !== 1 ? 's' : ''}${reasonText ? ' &middot; ' + _esc(reasonText) : ''}
@@ -1823,7 +1824,7 @@ function _chessRenderReview() {
   window.UI.mount(`
     <div class="max-w-lg mx-auto animate-fadeIn" style="padding-bottom:2rem;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem;">
-        <h2 style="font-size:1.0625rem;font-weight:700;color:var(--text-1);"><i class="ph ph-castle-turret"></i> Game Review</h2>
+        <h2 style="font-size:1.0625rem;font-weight:700;color:var(--text-1);"><svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg> Game Review</h2>
         <button onclick="Game._chessCloseReview()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">
           ${_icon('arrowLeft', 14)} Back to History
         </button>
@@ -1901,7 +1902,7 @@ function _showChessChallengePopup(gameId, data) {
     <div style="display:flex;align-items:flex-start;gap:.625rem;">
       <div style="width:38px;height:38px;border-radius:50%;background:#e2e8f0;
                   border:2px solid #94a3b8;display:flex;align-items:center;
-                  justify-content:center;flex-shrink:0;font-size:1.25rem;"><i class="ph ph-castle-turret"></i></div>
+                  justify-content:center;flex-shrink:0;font-size:1.25rem;"><svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg></div>
       <div style="flex:1;min-width:0;">
         <p style="font-size:.8125rem;font-weight:800;color:var(--text-1);margin:0 0 2px;">Chess Challenge!</p>
         <p style="font-size:.75rem;color:var(--text-2);margin:0 0 3px;line-height:1.4;">
@@ -2386,7 +2387,7 @@ async function _showScrabbleSetup() {
 
   _showModal(`
     <div style="text-align:center;margin-bottom:1.25rem;">
-      <div style="margin-bottom:.5rem;font-size:2.5rem;color:var(--accent);"><i class="ph ph-text-aa"></i></div>
+      <div style="margin-bottom:.5rem;font-size:2.5rem;color:var(--accent);"><svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg></div>
       <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Word Scrabble</h2>
       <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
         Classic Scrabble against a classmate. Place words on the 15×15 board,
@@ -2415,7 +2416,7 @@ async function _showScrabbleSetup() {
 
     <button onclick="Game._sendScrabbleChallenge()" class="btn btn-lg w-full"
             style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;">
-      <i class="ph ph-text-aa"></i> Send Scrabble Challenge
+      <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg> Send Scrabble Challenge
     </button>
     <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
   `);
@@ -2449,13 +2450,13 @@ async function _sendScrabbleChallenge() {
     const total = as1.size + as2.size;
     if (total >= 2) {
       window.UI.toast(`You already have ${total} ongoing Scrabble game${total > 1 ? 's' : ''} with ${targetName}. Finish them before starting another.`, 'warning', 5000);
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-text-aa"></i> Send Scrabble Challenge'; }
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg> Send Scrabble Challenge'; }
       return;
     }
   } catch (e) {
     console.error('[scrabble] _sendScrabbleChallenge limit check error:', e);
     window.UI.toast('Could not verify existing games. Please try again.', 'error');
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-text-aa"></i> Send Scrabble Challenge'; }
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg> Send Scrabble Challenge'; }
     return;
   }
 
@@ -2495,7 +2496,7 @@ async function _sendScrabbleChallenge() {
   } catch (e) {
     console.error('[scrabble] _sendScrabbleChallenge error:', e.code, e.message, e);
     window.UI.toast('Could not send challenge. Please try again.', 'error');
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-text-aa"></i> Send Scrabble Challenge'; }
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg> Send Scrabble Challenge'; }
   }
 }
 
@@ -2541,7 +2542,7 @@ async function _showScrabblePending() {
     <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:8px;
                 padding:.75rem 1rem;margin-bottom:.5rem;">
       <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">
-        <i class="ph ph-text-aa"></i> ${_esc(g.player1Name)} challenged you to Scrabble!
+        <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg> ${_esc(g.player1Name)} challenged you to Scrabble!
       </p>
       <div style="display:flex;gap:.375rem;margin-top:.5rem;">
         <button onclick="Game._acceptScrabble('${_esc(g.id)}')"
@@ -2564,7 +2565,7 @@ async function _showScrabblePending() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.375rem;">
         <p style="font-size:.9375rem;font-weight:700;
                   color:${isMyTurn ? 'var(--accent-text)' : 'var(--text-2)'};">
-          ${isMyTurn ? '<i class="ph ph-lightning"></i> Your turn' : '<i class="ph ph-hourglass-medium"></i> Their turn'} vs ${_esc(oppName)}
+          ${isMyTurn ? '<svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Your turn' : '<svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><path d="M5 22h14M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.41L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.41L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg> Their turn'} vs ${_esc(oppName)}
         </p>
         <span style="font-size:.8125rem;font-weight:700;color:var(--text-3);">
           ${myScore} – ${oppScore}
@@ -2586,7 +2587,7 @@ async function _showScrabblePending() {
   _showModal(`
     <div style="margin-bottom:1rem;">
       <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">
-        <i class="ph ph-text-aa"></i> Scrabble Games
+        <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg> Scrabble Games
       </h2>
     </div>
     ${pendingHtml}
@@ -2772,11 +2773,11 @@ function _wsRenderGame(gameId, data) {
     ? `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
                    background:var(--accent-subtle);border:1px solid var(--accent-border);
                    animation:gameChallengePopIn .3s ease both;">
-         <span style="font-size:.875rem;font-weight:700;color:var(--accent-text);"><i class="ph ph-lightning"></i> Your turn — place a word!</span>
+         <span style="font-size:.875rem;font-weight:700;color:var(--accent-text);"><svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Your turn — place a word!</span>
        </div>`
     : `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
                    background:var(--bg-subtle);border:1px solid var(--border);">
-         <span style="font-size:.875rem;color:var(--text-3);"><i class="ph ph-hourglass-medium"></i> Waiting for ${_esc(oppName)}…</span>
+         <span style="font-size:.875rem;color:var(--text-3);"><svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><path d="M5 22h14M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.41L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.41L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg> Waiting for ${_esc(oppName)}…</span>
        </div>`;
       
       // Cache for lightweight re-renders
@@ -3070,7 +3071,7 @@ function _wsUpdatePreview(board) {
   const result = _wsValidateMove(board, _wsState.placed, _wsIsFirstMove(board));
   if (result.valid) {
     const wordList = result.words.map(w => w.word).join(', ');
-    const bingo    = _wsState.placed.length === 7 ? ' <i class="ph ph-lightning"></i> BINGO +50!' : '';
+    const bingo    = _wsState.placed.length === 7 ? ' <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> BINGO +50!' : '';
     el.innerHTML   = `<span style="color:var(--success);">✓ ${wordList}</span> <span style="color:var(--accent);font-weight:800;">+${result.totalScore} pts${bingo}</span>`;
   } else {
     el.innerHTML = `<span style="color:var(--danger);font-size:.8125rem;">${_esc(result.error)}</span>`;
@@ -4309,7 +4310,7 @@ function _showScrabbleChallengePopup(gameId, data) {
       <div style="width:38px;height:38px;border-radius:50%;background:#ede9fe;
                   border:2px solid #c4b5fd;display:flex;align-items:center;
                   justify-content:center;flex-shrink:0;font-size:1.25rem;">
-        <i class="ph ph-text-aa"></i>
+        <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg>
       </div>
       <div style="flex:1;min-width:0;">
         <p style="font-size:.8125rem;font-weight:800;color:var(--text-1);margin:0 0 2px;">
@@ -4484,26 +4485,24 @@ function _dismissScrabblePopup(gameId) {
     const alertRows = [];
     if (pendingChallenges.length)
       alertRows.push({ fn: 'Game._showPendingChallenges()', color: '#ef4444', icon: 'swords', hot: true,
-        text: `${_plural(pendingChallenges.length, 'quiz challenge')} waiting`, cta: 'View' });
+        title: 'Quiz challenges', sub: `${pendingChallenges.length} waiting for your reply` });
     if (awaitingPlay.length)
       alertRows.push({ fn: 'Game._showAwaitingChallenges()', color: '#3b82f6', icon: 'hourglass', hot: true,
-        text: `${_plural(awaitingPlay.length, 'challenge')} accepted — your turn to play`, cta: 'Play' });
+        title: 'Accepted challenges', sub: `${awaitingPlay.length} ready, your turn to play` });
     if (pendingScrabble.length)
       alertRows.push({ fn: 'Game._showScrabblePending()', color: '#7c3aed', icon: 'scrabble', hot: true,
-        text: `${_plural(pendingScrabble.length, 'Scrabble challenge')} waiting`, cta: 'View' });
+        title: 'Scrabble challenges', sub: `${pendingScrabble.length} waiting for your reply` });
     if (activeScrabble.length)
       alertRows.push({ fn: 'Game._showScrabblePending()', color: '#7c3aed', icon: 'scrabble', hot: myTurnScrabble.length > 0,
-        text: myTurnScrabble.length
-          ? `${_plural(myTurnScrabble.length, 'Scrabble game')} waiting for your move`
-          : `${_plural(activeScrabble.length, 'Scrabble game')} — opponent's turn`, cta: 'Open' });
+        title: 'Scrabble games',
+        sub: myTurnScrabble.length ? `${myTurnScrabble.length} waiting for your move` : `${activeScrabble.length} in progress, opponent's turn` });
     if (pendingChess.length)
       alertRows.push({ fn: 'Game._showChessPending()', color: '#64748b', icon: 'chess', hot: true,
-        text: `${_plural(pendingChess.length, 'Chess challenge')} waiting`, cta: 'View' });
+        title: 'Chess challenges', sub: `${pendingChess.length} waiting for your reply` });
     if (activeChess.length)
       alertRows.push({ fn: 'Game._showChessPending()', color: '#64748b', icon: 'chess', hot: myTurnChess.length > 0,
-        text: myTurnChess.length
-          ? `${_plural(myTurnChess.length, 'Chess game')} waiting for your move`
-          : `${_plural(activeChess.length, 'Chess game')} — opponent's turn`, cta: 'Open' });
+        title: 'Chess games',
+        sub: myTurnChess.length ? `${myTurnChess.length} waiting for your move` : `${activeChess.length} in progress, opponent's turn` });
 
     const alertsHtml = alertRows.length ? `
       <section class="lb-section">
@@ -4512,8 +4511,11 @@ function _dismissScrabblePopup(gameId) {
           ${alertRows.map(a => `
             <button class="lb-alert${a.hot ? ' lb-alert--hot' : ''}" style="--c:${a.color};" onclick="${a.fn}">
               <span class="lb-alert__ico">${_li(a.icon, 18)}</span>
-              <span class="lb-alert__txt">${a.text}</span>
-              <span class="lb-alert__cta">${a.cta} ${_li('arrowRight', 14)}</span>
+              <span class="lb-alert__txt">
+                <span class="lb-alert__title">${a.title}</span>
+                <span class="lb-alert__sub">${a.sub}</span>
+              </span>
+              <span class="lb-alert__go">${_li('chevronRight', 16)}</span>
             </button>`).join('')}
         </div>
       </section>` : '';
@@ -4523,7 +4525,7 @@ function _dismissScrabblePopup(gameId) {
           const bid = _badgeId(entry);
           const b   = BADGES.find(x => x.id === bid);
           return b ? `<button class="lb-badge" onclick="Game._showBadgeDetails('${_esc(bid)}')" title="View badge details">
-                        ${_li('medal', 14)} ${_esc(b.name)}
+                        ${_li(b.icon, 14)} ${_esc(b.name)}
                       </button>` : '';
         }).join('')
       : `<span class="lb-empty">No badges yet. Play games to earn them.</span>`;
@@ -4537,19 +4539,19 @@ function _dismissScrabblePopup(gameId) {
     // ── Game catalogue ──
     
     const cardDefs = [
-      { id: 'quizBlitz', c: '#4f6ef7', icon: _li('zap', 22), title: 'Quiz Blitz',
+      { id: 'quizBlitz', c: '#4f6ef7', icon: _li('quiz', 22), title: 'Quiz Blitz',
         desc: 'Answer MCQ questions against the clock. Fast answers earn bonus XP.',
         tags: ['MCQ', '20s per question'], xp: `+${XP_PER_CORRECT * QUIZ_BLITZ_QUESTIONS} XP max` },
-      { id: 'trueOrFalse', c: '#10b981', icon: _li('check', 22), title: 'True or False Blitz',
+      { id: 'trueOrFalse', c: '#10b981', icon: _li('trueFalse', 22), title: 'True or False Blitz',
         desc: 'Rapid-fire statements from your subjects. Build streaks for bonus XP.',
         tags: ['T/F', '18s per question'], xp: 'Streak bonus' },
       { id: 'speedMath', c: '#f59e0b', icon: _li('calculator', 22), title: 'Speed Math',
         desc: 'Solve arithmetic as fast as you can. Choose Easy, Medium or Hard.',
         tags: ['Arithmetic', '90s total'], xp: 'XP per correct' },
-      { id: 'wordScramble', c: '#8b5cf6', icon: _li('shuffle', 22), title: 'Word Scramble',
+      { id: 'wordScramble', c: '#8b5cf6', icon: _li('scramble', 22), title: 'Word Scramble',
         desc: 'Unscramble subject vocabulary before time runs out.',
         tags: ['Vocabulary', '20s per word'], xp: `+${XP_PER_CORRECT} XP per word` },
-      { id: 'suddenDeath', c: '#e11d48', icon: _li('target', 22), title: 'Perfect Run',
+      { id: 'suddenDeath', c: '#e11d48', icon: _li('skull', 22), title: 'Perfect Run',
         desc: 'One wrong answer and it is over. Survive for compounding XP.',
         tags: ['High risk', '20s per question'], xp: 'XP compounds' },
       { id: 'challenge', c: '#ef4444', icon: _li('swords', 22), title: 'Challenge a Classmate',
@@ -4559,7 +4561,7 @@ function _dismissScrabblePopup(gameId) {
         desc: 'Classic Scrabble on a 15×15 board. Hit premium squares and outscore your opponent.',
         tags: ['1v1', 'Turn-based'], xp: 'Up to +200 XP' },
       { id: 'knowledgeRunner', c: '#06b6d4', locked: _krLimited,
-        icon: _krLimited ? _li('lock', 22) : _li('waves', 22), title: 'Knowledge Surfer',
+        icon: _krLimited ? _li('lock', 22) : _li('runner', 22), title: 'Knowledge Surfer',
         desc: _krLimited
           ? `On a break. Back in <strong id="${_krCardId}" class="lb-mono">${_krCountdown}</strong>. Try Quiz Blitz or Word Scramble meanwhile.`
           : 'Swipe across 3 lanes, collect coins and dodge trains while the inspector chases you.',
@@ -4611,7 +4613,7 @@ function _dismissScrabblePopup(gameId) {
               <div class="lb-profile__meta">${_esc(_student().class || '')}${_student().school ? ' · ' + _esc(_student().school) : ''}</div>
             </div>
             <div class="lb-level">
-              ${_li('award', 16)}
+              ${_li(level.icon, 16, level.color)}
               <span>${_esc(level.name)}</span>
               <em>Rank ${level.rank}</em>
             </div>
@@ -4814,7 +4816,7 @@ function _showAllLevelsModal(currentXP) {
     const subjectOptions = subjects.map(s => `<option value="${_esc(s)}">${_esc(s)}</option>`).join('');
     _showModal(`
       <div style="text-align:center;margin-bottom:1.25rem;">
-        <div style="margin-bottom:.5rem;">${_icon('lightning', 40, { color: 'var(--accent)' })}</div>
+        <div style="margin-bottom:.5rem;">${_icon('quiz', 40, { color: 'var(--accent)' })}</div>
         <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Quiz Blitz Setup</h2>
         <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
           ${QUIZ_BLITZ_QUESTIONS} questions &middot; ${QUIZ_BLITZ_TIME}s each &middot; Speed bonus XP
@@ -4971,7 +4973,7 @@ async function _endGameSession(sessionId, resultData) {
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
             <div>
               <span style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">
-                ${_icon('lightning', 13)} Quiz Blitz
+                ${_icon('quiz', 13)} Quiz Blitz
               </span>
               <div style="font-size:.875rem;color:var(--text-2);margin-top:1px;">${_esc(q.subject || '')} &middot; Q${progress} of ${total}</div>
             </div>
@@ -5434,7 +5436,7 @@ function _buildWordPoolForStudent() {
   function _showWordScrambleSetup() {
     _showModal(`
       <div style="text-align:center;margin-bottom:1.25rem;">
-        <div style="margin-bottom:.5rem;">${_icon('textT', 40, { color: '#7c3aed' })}</div>
+        <div style="margin-bottom:.5rem;">${_icon('scramble', 40, { color: '#7c3aed' })}</div>
         <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Word Scramble Setup</h2>
         <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">Unscramble vocabulary words before time runs out. Up to ${MAX_SHUFFLES} reshuffles per word.</p>
       </div>
@@ -5544,7 +5546,7 @@ function _buildWordPoolForStudent() {
         <div class="glass game-quiz-header">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
             <div>
-              <span style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">${_icon('textT', 13)} Word Scramble</span>
+              <span style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">${_icon('scramble', 13)} Word Scramble</span>
               <div style="font-size:.875rem;color:var(--text-2);margin-top:1px;">Word ${progress} of ${total}</div>
             </div>
             <div style="text-align:right;">
@@ -5933,7 +5935,7 @@ function _buildWordPoolForStudent() {
 
     _showModal(`
       <div style="text-align:center;margin-bottom:1.25rem;">
-        <div style="margin-bottom:.5rem;">${_icon('checkSquare', 40, { color: '#10b981' })}</div>
+        <div style="margin-bottom:.5rem;">${_icon('trueFalse', 40, { color: '#10b981' })}</div>
         <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">True or False Blitz</h2>
         <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
           ${TF_TIME_PER_QUESTION}s per statement &middot; build streaks for bonus XP &middot; +${TF_XP_STREAK_BONUS} XP per answer on a streak of ${TF_STREAK_THRESHOLD}+
@@ -6017,7 +6019,7 @@ function _buildWordPoolForStudent() {
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
             <div>
               <span style="font-size:.75rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:.05em;">
-                ${_icon('checkSquare', 13, { color: '#10b981' })} True or False
+                ${_icon('trueFalse', 13, { color: '#10b981' })} True or False
               </span>
               <div style="font-size:.875rem;color:var(--text-2);margin-top:1px;">${_esc(item.subject)} &middot; ${progress} of ${total}</div>
             </div>
@@ -7307,7 +7309,7 @@ function _closeWatchModal(challengeId) {
             <button ${playAgainAttrib} class="btn" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('play', 15)} Play Again</button>
             <button onclick="Game.openLeaderboard()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('trophy', 15)} Leaderboard</button>
             <button onclick="Game._showScrabblePending()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
-            <i class="ph ph-text-aa"></i> Scrabble Games
+            <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg> Scrabble Games
           </button>
           </div>
         </div>
@@ -8831,18 +8833,19 @@ function _krLoop(timestamp) {
   ══════════════════════════════════════════════════════════════ */
 
   async function openLeaderboard() {
+    _injectLobbyStyles();
     window.UI.mount(`
-      <div class="max-w-2xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-          <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-1);display:flex;align-items:center;gap:.375rem;">${_icon('trophy', 20)} Leaderboard</h2>
-          <button onclick="Game.openGameLobby()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('arrowLeft', 14)} Back</button>
+      <div class="lb animate-fadeIn" style="max-width:44rem;">
+        <header class="lbd-head">
+          <h1 class="lb-title">Leaderboard</h1>
+          <button class="lb-iconbtn" onclick="Game.openGameLobby()">${_li('arrowLeft', 16)}<span>Back</span></button>
+        </header>
+        <div class="lbd-tabs" role="tablist">
+          <button id="lbTabClass"  class="lbd-tab" onclick="Game._showLeaderboardTab('class')">My Class</button>
+          <button id="lbTabSchool" class="lbd-tab" onclick="Game._showLeaderboardTab('school')">My School</button>
+          <button id="lbTabAll"    class="lbd-tab" onclick="Game._showLeaderboardTab('all')">All Students</button>
         </div>
-        <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;">
-          <button id="lbTabClass"  onclick="Game._showLeaderboardTab('class')"  class="btn"           style="font-size:.8125rem;">My Class</button>
-          <button id="lbTabSchool" onclick="Game._showLeaderboardTab('school')" class="btn bg-gray-500" style="font-size:.8125rem;">My School</button>
-          <button id="lbTabAll"    onclick="Game._showLeaderboardTab('all')"    class="btn bg-gray-500" style="font-size:.8125rem;">All Students</button>
-        </div>
-        <div id="lbContent"><div style="text-align:center;padding:2rem;color:var(--text-3);">Loading leaderboard&hellip;</div></div>
+        <div id="lbContent"><div class="lbd-state">Loading leaderboard&hellip;</div></div>
       </div>`);
     _showLeaderboardTab('class');
   }
@@ -8852,8 +8855,7 @@ function _krLoop(timestamp) {
       const id  = `lbTab${t.charAt(0).toUpperCase() + t.slice(1)}`;
       const btn = document.getElementById(id);
       if (!btn) return;
-      btn.className = t === tab ? 'btn' : 'btn bg-gray-500';
-      btn.style.fontSize = '.8125rem';
+      btn.className = 'lbd-tab' + (t === tab ? ' is-active' : '');
     });
     const container = document.getElementById('lbContent');
     if (!container) return;
@@ -8889,34 +8891,26 @@ function _krLoop(timestamp) {
       entries.sort((a, b) => (b.xp || 0) - (a.xp || 0));
       const topEntries = entries.slice(0, 50);
 
-      if (topEntries.length === 0) { container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);">No players yet. Be the first!</div>`; return; }
+      if (topEntries.length === 0) { container.innerHTML = `<div class="lbd-state">No players yet. Be the first!</div>`; return; }
       const myUid = _uid();
       container.innerHTML = `
-        <div class="glass-dark" style="border-radius:10px;overflow:hidden;">
-          <div style="display:grid;grid-template-columns:2.5rem 1fr auto auto;gap:.5rem;padding:.5rem 1rem;border-bottom:1px solid var(--border);background:var(--bg-subtle);font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;">
-            <span>#</span><span>Player</span><span>Level</span><span>XP</span>
+        <div class="lbd-card">
+          <div class="lbd-row lbd-row--head">
+            <span style="text-align:center;">#</span><span>Player</span><span class="lbd-col-lvl">Level</span><span style="text-align:right;">XP</span>
           </div>
           ${topEntries.map((e, i) => {
-            const isMe  = e.id === myUid || e.uid === myUid;
-            const medal = i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? '3rd' : `${i + 1}`;
-            const lv    = _getLevelForXP(e.xp || 0);
+            const isMe = e.id === myUid || e.uid === myUid;
+            const lv   = _getLevelForXP(e.xp || 0);
+            const lvl  = `${_li(lv.icon, 14, lv.color)}<span>${_esc(lv.name)}</span>`;
             return `
-              <div style="display:grid;grid-template-columns:2.5rem 1fr auto auto;gap:.5rem;align-items:center;padding:.625rem 1rem;
-                          ${isMe ? 'background:var(--accent-subtle);' : ''}
-                          ${i < topEntries.length - 1 ? 'border-bottom:1px solid var(--border);' : ''}">
-                <span style="font-size:${i < 3 ? '.875rem' : '.8125rem'};font-weight:800;text-align:center;color:${i === 0 ? '#f59e0b' : i === 1 ? '#9ca3af' : i === 2 ? '#b45309' : 'var(--text-3)'};">${medal}</span>
-                <div>
-                  <div style="font-size:.9rem;font-weight:${isMe ? '800' : '600'};color:var(--text-1);display:flex;align-items:center;gap:.375rem;">
-                    ${_esc(e.name || '—')}
-                    ${isMe ? '<span style="font-size:.6rem;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;font-weight:700;">YOU</span>' : ''}
-                  </div>
-                  <div style="font-size:.7rem;color:var(--text-3);">${_esc(e.class || '')}</div>
+              <div class="lbd-row${isMe ? ' lbd-row--me' : ''}">
+                <span class="lbd-rank${i < 3 ? ' lbd-rank--' + (i + 1) : ''}">${i + 1}</span>
+                <div class="lbd-name">
+                  <b><span class="n">${_esc(e.name || '—')}</span>${isMe ? '<span class="lbd-you">YOU</span>' : ''}</b>
+                  <div class="lbd-sub"><span>${_esc(e.class || '')}</span><span class="lbd-lvl lbd-lvl--inline">· ${lvl}</span></div>
                 </div>
-                <span style="font-size:.875rem;display:flex;align-items:center;gap:.25rem;">
-                  ${_icon(lv.icon, 14, { color: lv.color })}
-                  <span style="font-size:.75rem;color:var(--text-3);">${_esc(lv.name)}</span>
-                </span>
-                <span style="font-size:.9rem;font-weight:700;color:var(--accent);font-family:var(--font-mono);">${(e.xp || 0).toLocaleString()}</span>
+                <span class="lbd-lvl lbd-lvl--col">${lvl}</span>
+                <span class="lbd-xp">${(e.xp || 0).toLocaleString()}</span>
               </div>`;
           }).join('')}
         </div>`;
@@ -9007,30 +9001,58 @@ function _krLoop(timestamp) {
      CSS INJECTION
   ══════════════════════════════════════════════════════════════ */
 
-  /* Clean 24px line icons used by the games lobby (inline, no icon font needed) */
+  /* One clean 24px line-icon set used for EVERY game / badge / level icon in the app */
   const _LI = {
-    zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
-    check: '<path d="M21.8 10A10 10 0 1 1 17 3.3"/><path d="m9 11 3 3L22 4"/>',
-    calculator: '<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>',
-    shuffle: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>',
-    target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
-    swords: '<polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" x2="19" y1="19" y2="13"/><line x1="16" x2="20" y1="16" y2="20"/><line x1="19" x2="21" y1="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" x2="9" y1="14" y2="18"/><line x1="7" x2="4" y1="17" y2="20"/><line x1="3" x2="5" y1="19" y2="21"/>',
-    scrabble: '<rect width="18" height="18" x="3" y="3" rx="3"/><path d="M8 8h8M12 8v8"/>',
-    waves: '<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>',
-    chess: '<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 20h14"/>',
-    lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
-    trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
-    clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-    arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    // ── games (one icon per game, used everywhere) ──
+    quiz:       '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+    trueFalse:  '<path d="m3 7 2.5 2.5L10 4.5"/><path d="m4 15 5 5M9 15l-5 5"/><path d="M14 7h7M14 17.5h7"/>',
+    calculator: '<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M8 6h8"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>',
+    scramble:   '<path d="M2 18 6 7l4 11M3.5 14h5"/><path d="M14 8h7m-2.5-2.5L21 8l-2.5 2.5"/><path d="M21 17h-7m2.5-2.5L14 17l2.5 2.5"/>',
+    skull:      '<circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/>',
+    swords:     '<polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" x2="19" y1="19" y2="13"/><line x1="16" x2="20" y1="16" y2="20"/><line x1="19" x2="21" y1="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" x2="9" y1="14" y2="18"/><line x1="7" x2="4" y1="17" y2="20"/><line x1="3" x2="5" y1="19" y2="21"/>',
+    scrabble:   '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/>',
+    runner:     '<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/>',
+    chess:      '<circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/>',
+    // ── general ──
+    zap:        '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    lock:       '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    trophy:     '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+    clock:      '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    arrowLeft:  '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
     arrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
-    hourglass: '<path d="M5 22h14M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.41L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.41L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/>',
-    warning: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
-    award: '<circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/>',
-    medal: '<circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/>',
+    chevronRight:'<path d="m9 18 6-6-6-6"/>',
+    hourglass:  '<path d="M5 22h14M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.41L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.41L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/>',
+    warning:    '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
+    award:      '<circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/>',
+    medal:      '<path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/>',
+    gameController:'<line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258A4 4 0 0 0 17.32 5z"/>',
+    checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+    xCircle:    '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/>',
+    flame:      '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+    crown:      '<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 20h14"/>',
+    play:       '<polygon points="6 3 20 12 6 21 6 3"/>',
+    star:       '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+    shield:     '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+    diamond:    '<path d="M6 3h12l4 6-10 13L2 9z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/>',
+    sparkle:    '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M21 5h-4"/>',
+    chartBar:   '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+    infinity:   '<path d="M6 16c5 0 7-8 12-8a4 4 0 0 1 0 8c-5 0-7-8-12-8a4 4 0 1 0 0 8"/>',
+    person:     '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    textT:      '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>',
+    target:     '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+    x:          '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    house:      '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    skipForward:'<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/>',
+    users:      '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    info:       '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+    gift:       '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
+    heartPulse: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
+    shuffle:    '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>',
   };
-  function _li(name, size) {
-    const d = _LI[name] || _LI.award;
-    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;flex-shrink:0;">${d}</svg>`;
+  const _LI_ALIAS = { lightning:'zap', bolt:'zap', close:'x', alertTriangle:'warning', checkSquare:'trueFalse', waves:'runner' };
+  function _li(name, size, color, cls) {
+    const d = _LI[name] || _LI[_LI_ALIAS[name]] || _LI.award;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color || 'currentColor'}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"${cls ? ` class="${cls}"` : ''} aria-hidden="true" style="display:inline-block;vertical-align:middle;flex-shrink:0;">${d}</svg>`;
   }
 
   function _injectLobbyStyles() {
@@ -9071,13 +9093,17 @@ function _krLoop(timestamp) {
       .lb-label { font-size:.6875rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin-bottom:.875rem; }
 
       .lb-alerts { display:flex;flex-direction:column;gap:.5rem; }
-      .lb-alert { display:flex;align-items:center;gap:.75rem;width:100%;text-align:left;padding:.75rem .875rem;border-radius:14px;border:1px solid var(--border);background:var(--bg-base);color:var(--text-1);cursor:pointer;transition:border-color .15s,transform .15s,background .15s; }
+      .lb-alert { display:flex;align-items:center;gap:.875rem;width:100%;text-align:left;padding:.75rem .875rem;border-radius:14px;border:1px solid var(--border);background:var(--bg-base);color:var(--text-1);cursor:pointer;transition:border-color .15s,transform .15s,background .15s; }
       .lb-alert:hover { border-color:var(--c);transform:translateY(-1px); }
       .lb-alert__ico { width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--c);font-size:18px; }
       .lb-alert--hot .lb-alert__ico { position:relative; }
       .lb-alert--hot .lb-alert__ico::after { content:'';position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--c);border:2px solid var(--bg-base); }
-      .lb-alert__txt { flex:1;font-size:.875rem;font-weight:500;min-width:0; }
-      .lb-alert__cta { display:inline-flex;align-items:center;gap:.25rem;font-size:.8125rem;font-weight:600;color:var(--c);flex-shrink:0; }
+      .lb-alert__txt { flex:1;min-width:0;display:flex;flex-direction:column;gap:2px; }
+      .lb-alert__title { font-size:.875rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+      .lb-alert__sub { font-size:.75rem;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+      .lb-alert--hot .lb-alert__sub { color:var(--c);font-weight:500; }
+      .lb-alert__go { width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-3);background:var(--bg-subtle);transition:all .15s; }
+      .lb-alert:hover .lb-alert__go { background:var(--c);color:#fff; }
 
       .lb-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:.875rem; }
       @media (max-width:860px) { .lb-grid { grid-template-columns:repeat(2,1fr); } }
@@ -9105,6 +9131,34 @@ function _krLoop(timestamp) {
       .lb-badge { display:inline-flex;align-items:center;gap:.375rem;padding:.4375rem .875rem;border-radius:99px;border:1px solid var(--border);background:var(--bg-base);color:var(--text-2);font-size:.75rem;font-weight:500;cursor:pointer;transition:all .15s; }
       .lb-badge:hover { border-color:var(--accent);color:var(--accent-text);background:var(--accent-subtle); }
       .lb-empty { font-size:.8125rem;color:var(--text-4); }
+
+      /* Leaderboard */
+      .lbd-head { display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.5rem 0 1.25rem; }
+      .lbd-tabs { display:inline-flex;gap:2px;padding:3px;border-radius:99px;background:var(--bg-muted);margin-bottom:1rem;max-width:100%;overflow-x:auto; }
+      .lbd-tab { border:0;background:transparent;color:var(--text-3);font-size:.8125rem;font-weight:500;padding:.4375rem .875rem;border-radius:99px;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .15s; }
+      .lbd-tab:hover { color:var(--text-1); }
+      .lbd-tab.is-active { background:var(--bg-base);color:var(--text-1);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1); }
+      .lbd-card { background:var(--bg-base);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.03),0 8px 24px -12px rgba(0,0,0,.08); }
+      .lbd-row { display:grid;grid-template-columns:2rem minmax(0,1fr) 6.5rem 5rem;column-gap:.875rem;align-items:center;padding:.75rem 1.125rem; }
+      .lbd-row + .lbd-row { border-top:1px solid var(--border); }
+      .lbd-row--head { padding-top:.625rem;padding-bottom:.625rem;background:var(--bg-subtle);font-size:.6875rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3); }
+      .lbd-row--me { background:var(--accent-subtle); }
+      .lbd-rank { display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:.75rem;font-weight:700;color:var(--text-3);font-variant-numeric:tabular-nums; }
+      .lbd-rank--1 { background:#fef3c7;color:#b45309; } .lbd-rank--2 { background:#e5e7eb;color:#4b5563; } .lbd-rank--3 { background:#fde4cf;color:#9a3412; }
+      .lbd-name { min-width:0; }
+      .lbd-name b { display:flex;align-items:center;gap:.375rem;font-size:.9rem;font-weight:600;color:var(--text-1);letter-spacing:-.01em; }
+      .lbd-name b span.n { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0; }
+      .lbd-you { font-size:.5625rem;font-weight:700;letter-spacing:.05em;background:var(--accent);color:#fff;padding:2px 6px;border-radius:99px;flex-shrink:0; }
+      .lbd-sub { display:flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--text-3);margin-top:2px; }
+      .lbd-lvl { display:inline-flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--text-2);white-space:nowrap; }
+      .lbd-lvl--inline { display:none; }
+      .lbd-xp { text-align:right;font-size:.9rem;font-weight:700;color:var(--text-1);font-variant-numeric:tabular-nums;letter-spacing:-.01em; }
+      .lbd-state { text-align:center;padding:2.5rem 1rem;color:var(--text-3);font-size:.875rem; }
+      @media (max-width:560px) {
+        .lbd-row { grid-template-columns:1.75rem minmax(0,1fr) auto;column-gap:.75rem;padding:.75rem .875rem; }
+        .lbd-lvl--col,.lbd-col-lvl { display:none; }
+        .lbd-lvl--inline { display:inline-flex; }
+      }
       @media (prefers-reduced-motion:reduce) { .lb *,.lb *::before { transition:none !important; } }
     `;
     document.head.appendChild(s);
@@ -9511,18 +9565,11 @@ async function renderTeacherGameRestrictions(containerId) {
     };
 
     const GAME_ICONS = {
-      quizBlitz:       '<i class="ph ph-lightning"></i>',
-      speedMath:       '<i class="ph ph-calculator"></i>',
-      wordScramble:    '<i class="ph ph-shuffle"></i>',
-      trueOrFalse:     '<i class="ph ph-check-circle"></i>',
-      suddenDeath:     '<i class="ph ph-skull"></i>',
-      challenge:       '<i class="ph ph-sword"></i>',
-      knowledgeRunner: '<i class="ph ph-person-simple-run"></i>',
-      wordScrabble:    '<i class="ph ph-text-aa"></i>',
-      chess:           '<i class="ph ph-castle-turret"></i>',
+      quizBlitz: 'quiz', speedMath: 'calculator', wordScramble: 'scramble', trueOrFalse: 'trueFalse',
+      suddenDeath: 'skull', challenge: 'swords', knowledgeRunner: 'runner', wordScrabble: 'scrabble', chess: 'chess',
     };
 
-    function gameIcon(type)  { return GAME_ICONS[type]  || '<i class="ph ph-game-controller"></i>'; }
+    function gameIcon(type)  { return _li(GAME_ICONS[type] || 'gameController', 16); }
 
     function _esc2(str) {
       return String(str == null ? '' : str)
@@ -9636,7 +9683,7 @@ async function renderTeacherGameRestrictions(containerId) {
 
       return `
         <div style="display:flex;align-items:center;gap:.625rem;padding:.5625rem .875rem;border-bottom:1px solid var(--border);">
-          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;"><i class="ph ph-castle-turret"></i></span>
+          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;"><svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg></span>
           <div style="flex:1;min-width:0;">
             <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">
               ${_esc2(d.whiteName || '—')} <span style="color:var(--text-3);font-weight:500;">vs</span> ${_esc2(d.blackName || '—')}
@@ -9674,7 +9721,7 @@ async function renderTeacherGameRestrictions(containerId) {
 
       return `
         <div style="display:flex;align-items:center;gap:.625rem;padding:.5625rem .875rem;border-bottom:1px solid var(--border);">
-          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;"><i class="ph ph-text-aa"></i></span>
+          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;"><svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg></span>
           <div style="flex:1;min-width:0;">
             <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">
               ${_esc2(d.player1Name || '—')} <span style="color:var(--text-3);font-weight:500;">vs</span> ${_esc2(d.player2Name || '—')}
