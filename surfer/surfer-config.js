@@ -64,11 +64,25 @@ export const MODELS = {
   dog_run_a:       { file: 'characters/dog_run_a.glb',       height: 0.70, yaw: 0 },
   dog_run_b:       { file: 'characters/dog_run_b.glb',       height: 0.70, yaw: 0 },
 
-  /* ── OBSTACLES (each has 2 looks; the game picks randomly. Add _c, _d… freely) ── */
-  obstacle_trolley_a: { file: 'obstacles/obstacle_trolley_a.glb', width: 1.7, height: 0.80, depth: 1.5, yaw: 0, mode: 'box' },
-  obstacle_trolley_b: { file: 'obstacles/obstacle_trolley_b.glb', width: 1.7, height: 0.80, depth: 1.5, yaw: 0, mode: 'box' },
-  obstacle_beam_a:    { file: 'obstacles/obstacle_beam_a.glb',    width: 2.1, height: 1.30, depth: 0.7, yaw: 0, mode: 'box' },
-  obstacle_beam_b:    { file: 'obstacles/obstacle_beam_b.glb',    width: 2.1, height: 1.30, depth: 0.7, yaw: 0, mode: 'box' },
+  /* ── OBSTACLES (3 kinds x 2 looks, plus river versions used in the boat zone) ──
+       train  : tall, moves TOWARD you, switch lane to dodge
+       hurdle : low,  JUMP over it
+       gate   : low-clearance gantry, SLIDE under it ── */
+  obstacle_train_a:  { file: 'obstacles/obstacle_train_a.glb',  width: 1.9, height: 3.4, depth: 9,   yaw: 0, mode: 'box' },
+  obstacle_train_b:  { file: 'obstacles/obstacle_train_b.glb',  width: 1.9, height: 3.4, depth: 9,   yaw: 0, mode: 'box' },
+  obstacle_hurdle_a: { file: 'obstacles/obstacle_hurdle_a.glb', width: 1.9, height: 0.85, depth: 0.9, yaw: 0, mode: 'box' },
+  obstacle_hurdle_b: { file: 'obstacles/obstacle_hurdle_b.glb', width: 1.9, height: 0.85, depth: 0.9, yaw: 0, mode: 'box' },
+  obstacle_gate_a:   { file: 'obstacles/obstacle_gate_a.glb',   width: 2.1, height: 1.7,  depth: 0.5, yaw: 0, mode: 'box' },
+  obstacle_gate_b:   { file: 'obstacles/obstacle_gate_b.glb',   width: 2.1, height: 1.7,  depth: 0.5, yaw: 0, mode: 'box' },
+  obstacle_barge_a:  { file: 'obstacles/obstacle_barge_a.glb',  width: 2.0, height: 2.3,  depth: 9,   yaw: 0, mode: 'box' },
+  obstacle_barge_b:  { file: 'obstacles/obstacle_barge_b.glb',  width: 2.0, height: 2.3,  depth: 9,   yaw: 0, mode: 'box' },
+  obstacle_log_a:    { file: 'obstacles/obstacle_log_a.glb',    width: 2.0, height: 0.85, depth: 0.9, yaw: 0, mode: 'box' },
+  obstacle_log_b:    { file: 'obstacles/obstacle_log_b.glb',    width: 2.0, height: 0.85, depth: 0.9, yaw: 0, mode: 'box' },
+  obstacle_bridge_a: { file: 'obstacles/obstacle_bridge_a.glb', width: 2.2, height: 1.7,  depth: 0.7, yaw: 0, mode: 'box' },
+  obstacle_bridge_b: { file: 'obstacles/obstacle_bridge_b.glb', width: 2.2, height: 1.7,  depth: 0.7, yaw: 0, mode: 'box' },
+
+  /* ── PLAYER BOAT (river zone) ── */
+  player_boat: { file: 'props/boat.glb', width: 1.25, height: 0.62, depth: 2.9, yaw: 0, mode: 'box' },
 
   /* ── PICKUP ── */
   coin: { file: 'props/coin.glb', max: 0.62, yaw: 0, pitch: 0, center: true },
@@ -81,11 +95,30 @@ export const MODELS = {
   signal_light:      { file: 'environment/signal_light.glb',      height: 2.8, yaw: 0 },
 };
 
-/* Which model names make up the random choices for each obstacle type */
+/* Which model names make up the random choices for each obstacle type.
+   'water' looks are used while the runner is in the river (boat) zone. */
 export const OBSTACLE_LOOKS = {
-  jump:  ['obstacle_trolley_a', 'obstacle_trolley_b'],   // low  → JUMP over it
-  slide: ['obstacle_beam_a',    'obstacle_beam_b'],      // high → SLIDE under it
+  train: { land: ['obstacle_train_a',  'obstacle_train_b'],  water: ['obstacle_barge_a',  'obstacle_barge_b']  },  // dodge (lane change)
+  jump:  { land: ['obstacle_hurdle_a', 'obstacle_hurdle_b'], water: ['obstacle_log_a',    'obstacle_log_b']    },  // JUMP over it
+  slide: { land: ['obstacle_gate_a',   'obstacle_gate_b'],   water: ['obstacle_bridge_a', 'obstacle_bridge_b'] },  // SLIDE under it
 };
+
+/* ── ENVIRONMENT ZONES ("biomes") ──
+   The world changes every  zoneLength  metres of scrolling. Order repeats forever.
+   fog = sky/haze colour, hemi = [sky, ground] light colours, sun = sun glow colour (or null) */
+export const ZONE_LENGTH = 264;   // 22 tiles
+export const BIOMES = [
+  { id: 'station', name: 'Rail Tunnel',    water: false, fog: 0x0b1220, fogNear: 28, fogFar: 92,  hemi: [0xcfe0ff, 0x1b2230], hemiI: 0.75, key: 0xfff0dd, keyI: 1.7, sun: null,     exposure: 1.05 },
+  { id: 'desert',  name: 'Desert Line',    water: false, fog: 0xf0cf98, fogNear: 38, fogFar: 105, hemi: [0xffe6c0, 0x9a7646], hemiI: 0.95, key: 0xffe2b0, keyI: 2.3, sun: 0xffd890, exposure: 1.05 },
+  { id: 'forest',  name: 'Pine Forest',    water: false, fog: 0xa6c4b0, fogNear: 30, fogFar: 88,  hemi: [0xd8f2d8, 0x2f4a2c], hemiI: 0.85, key: 0xf4ffdc, keyI: 1.6, sun: 0xeaffc0, exposure: 1.0  },
+  { id: 'river',   name: 'River Crossing', water: true,  fog: 0xa9d6ee, fogNear: 38, fogFar: 105, hemi: [0xd4ecff, 0x2a5a78], hemiI: 0.95, key: 0xfff6e0, keyI: 2.0, sun: 0xfff0b8, exposure: 1.05 },
+  { id: 'snow',    name: 'Snow Pass',      water: false, fog: 0xe4eef8, fogNear: 28, fogFar: 78,  hemi: [0xf0f7ff, 0x9fb0c4], hemiI: 1.0,  key: 0xeaf2ff, keyI: 1.8, sun: 0xffffff, exposure: 1.0  },
+];
+export function biomeIndexAt(scroll) {
+  const n = Math.floor(Math.max(0, scroll) / ZONE_LENGTH);
+  return n % BIOMES.length;
+}
+export function biomeAt(scroll) { return BIOMES[biomeIndexAt(scroll)]; }
 
 /* ── GAMEPLAY (same rules & XP as the original 2D game) ── */
 export const GAME = {
@@ -116,8 +149,12 @@ export const GAME = {
   playerHalfDepth: 0.25,
 
   /* Obstacle collision sizes (the model is only for looks) */
-  trolley: { halfWidth: 0.82, halfDepth: 0.60, height: 0.80 },    // must be jumped
-  beam:    { halfWidth: 0.95, halfDepth: 0.30, clearance: 0.78, top: 1.6 }, // must be slid under (opening height; 'top' stops people hopping over)
+  train:   { halfWidth: 0.95, halfDepth: 4.5,  height: 3.4 },     // tall: cannot be jumped, switch lane
+  hurdle:  { halfWidth: 0.95, halfDepth: 0.45, height: 0.85 },    // must be jumped
+  beam:    { halfWidth: 0.98, halfDepth: 0.25, clearance: 0.78, top: 1.6 }, // gate: slide under (opening height; 'top' = hanging sign stops hopping over)
+  trainSpeed: 6.5,            // extra m/s the train/barge rushes toward you on top of the world speed
+  trainChance: 0.30, jumpChance: 0.35,   // remaining 35% = slide gates
+  trainMaxSpawn: 118,         // never spawn farther than this (stays hidden in the fog)
 
   spawnAhead: 95,             // metres in front where new waves appear
   despawnBehind: 12,
@@ -125,7 +162,6 @@ export const GAME = {
   waveStagger: 2.2,           // metres of z-offset between lanes in a wave
   coinSpacing: 1.7,
   coinHeight: 0.95,
-  trolleyChance: 0.55,
 
   /* Inspector (same idea as original: gap in "px" → metres on screen) */
   inspectorStartGap: 220,

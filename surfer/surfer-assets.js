@@ -12,10 +12,10 @@ import { mergeGeometries } from '../vector/lib/BufferGeometryUtils.js';
 import { MeshoptDecoder } from '../vector/lib/meshopt_decoder.module.js';
 import { MODELS, ASSET_BASE, ASSET_VERSION } from './surfer-config.js';
 
-const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.05, ...o });
-const box = (w, h, d, m, x = 0, y = 0, z = 0) => { const k = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); k.position.set(x, y, z); return k; };
-const cyl = (rt, rb, h, m, x = 0, y = 0, z = 0, seg = 14) => { const k = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m); k.position.set(x, y, z); return k; };
-const ball = (r, m, x = 0, y = 0, z = 0) => { const k = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), m); k.position.set(x, y, z); return k; };
+export const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.05, ...o });
+export const box = (w, h, d, m, x = 0, y = 0, z = 0) => { const k = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); k.position.set(x, y, z); return k; };
+export const cyl = (rt, rb, h, m, x = 0, y = 0, z = 0, seg = 14) => { const k = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m); k.position.set(x, y, z); return k; };
+export const ball = (r, m, x = 0, y = 0, z = 0) => { const k = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), m); k.position.set(x, y, z); return k; };
 
 /* ───────────── stand-ins (used only when a .glb file is missing) ───────────── */
 function person(body, pack, legShift, pose) {
@@ -50,7 +50,7 @@ function dog(shift) {
   return g;
 }
 /* glue all little boxes that share a material into one mesh (keeps draw calls tiny) */
-function bake(group) {
+export function bake(group) {
   group.updateMatrixWorld(true);
   const byMat = new Map();
   group.traverse(o => {
@@ -67,6 +67,7 @@ function bake(group) {
 function standIn(name) { return bake(standInRaw(name)); }
 function standInRaw(name) {
   const g = new THREE.Group();
+  if (name === 'player_boat') return boatModel();
   if (name.startsWith('player_')) {
     const pose = name.split('_')[1];
     return person(0x4f46e5, 0x7c3aed, pose === 'run' ? (name.endsWith('_a') ? 0.22 : -0.22) : 0, pose);
@@ -77,19 +78,12 @@ function standInRaw(name) {
     return p;
   }
   if (name.startsWith('dog_')) return dog(name.endsWith('_a') ? 0.12 : -0.12);
-  if (name.startsWith('obstacle_trolley')) {
-    g.add(box(1.7, 0.5, 1.5, mat(name.endsWith('_a') ? 0xb91c1c : 0x9a3412), 0, 0.4, 0));
-    g.add(box(1.7, 0.1, 1.5, mat(0x7f1d1d), 0, 0.7, 0));
-    g.add(box(0.2, 0.2, 0.2, mat(0x222222), -0.7, 0.1, 0.5)); g.add(box(0.2, 0.2, 0.2, mat(0x222222), 0.7, 0.1, 0.5));
-    return g;
-  }
-  if (name.startsWith('obstacle_beam')) {
-    const y = mat(0xfbbf24), k = mat(0x1f2937);
-    g.add(box(0.18, 1.3, 0.5, k, -0.95, 0.65, 0)); g.add(box(0.18, 1.3, 0.5, k, 0.95, 0.65, 0));
-    g.add(box(2.1, 0.45, 0.6, y, 0, 1.08, 0));
-    for (let i = 0; i < 6; i++) g.add(box(0.14, 0.46, 0.62, k, -0.85 + i * 0.34, 1.08, 0));
-    return g;
-  }
+  if (name.startsWith('obstacle_train')) return trainModel(name.endsWith('_a') ? { body: 0x1f4f94, stripe: 0xf3f4f6, nose: 0xf5b800 } : { body: 0xa8232c, stripe: 0xf1e6cf, nose: 0x2b2f36 });
+  if (name.startsWith('obstacle_hurdle')) return hurdleModel(name.endsWith('_a') ? [0xd9232b, 0xf5f5f5] : [0xf08a12, 0xf5f5f5]);
+  if (name.startsWith('obstacle_gate')) return gateModel(name.endsWith('_a') ? [0xf5c400, 0x15181d] : [0xd9232b, 0xf5f5f5]);
+  if (name.startsWith('obstacle_barge')) return bargeModel(name.endsWith('_a'));
+  if (name.startsWith('obstacle_log')) return logModel(name.endsWith('_a'));
+  if (name.startsWith('obstacle_bridge')) return bridgeModel(name.endsWith('_a'));
   if (name === 'coin') {
     const c = cyl(0.3, 0.3, 0.07, mat(0xfbbf24, { metalness: 0.9, roughness: 0.25 }), 0, 0, 0, 28);
     c.rotation.x = Math.PI / 2; g.add(c); return g;
@@ -125,6 +119,175 @@ function standInRaw(name) {
     return g;
   }
   g.add(box(1, 1, 1, mat(0xff00ff), 0, 0.5, 0));       // unknown name → magenta cube
+  return g;
+}
+
+
+/* ───────────── realistic obstacle stand-ins ─────────────
+   All are drawn FACING +z (toward the camera), because everything comes at the runner. */
+const glowMat = (c, i = 2) => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: i, roughness: 0.4 });
+const rot = (m, x = 0, y = 0, z = 0) => { m.rotation.set(x, y, z); return m; };
+
+function trainModel({ body, stripe, nose }) {
+  const g = new THREE.Group();
+  const paint = mat(body, { roughness: 0.38, metalness: 0.35 }), white = mat(stripe, { roughness: 0.5 });
+  const noseM = mat(nose, { roughness: 0.45, metalness: 0.2 }), dark = mat(0x14171c, { roughness: 0.55, metalness: 0.4 });
+  const glass = mat(0x0a1824, { roughness: 0.08, metalness: 0.85 }), steel = mat(0x8b95a3, { roughness: 0.35, metalness: 0.85 });
+  const L = 9, W = 1.9, F = L / 2;
+  /* undercarriage + bogies */
+  g.add(box(W - 0.2, 0.34, L - 0.3, dark, 0, 0.5, 0));
+  for (const bz of [-2.9, 2.9]) {
+    g.add(box(1.5, 0.22, 1.9, dark, 0, 0.36, bz));
+    for (const ax of [-0.7, 0.7]) for (const sx of [-1, 1]) {
+      const w = cyl(0.3, 0.3, 0.12, steel, sx * 0.72, 0.3, bz + ax, 20); w.rotation.z = Math.PI / 2; g.add(w);
+      const hub = cyl(0.13, 0.13, 0.14, dark, sx * 0.72, 0.3, bz + ax, 10); hub.rotation.z = Math.PI / 2; g.add(hub);
+    }
+  }
+  /* lower skirt, main shell, roof dome */
+  g.add(box(W, 0.62, L, paint, 0, 0.98, 0));
+  g.add(box(W, 1.75, L, paint, 0, 2.17, 0));
+  g.add(box(W + 0.02, 0.1, L, white, 0, 1.33, 0));                       // belt line
+  g.add(box(W - 0.2, 0.2, L, paint, 0, 3.12, 0));
+  /* simpler roof: a flattened cylinder lying along z */
+  const roof = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, L, 24), white); roof.rotation.x = Math.PI / 2; roof.scale.set(1, 1, 0.22); roof.position.set(0, 3.2, 0); g.add(roof);
+  /* side window band with pillars, doors */
+  for (const sx of [-1, 1]) {
+    g.add(box(0.03, 0.78, L - 0.8, glass, sx * (W / 2 + 0.005), 2.35, 0));
+    for (let z = -F + 0.9; z < F - 0.6; z += 1.5) g.add(box(0.05, 0.84, 0.1, white, sx * (W / 2 + 0.01), 2.35, z));
+    g.add(box(0.05, 1.5, 0.9, white, sx * (W / 2 + 0.01), 1.85, 0.0));
+    g.add(box(0.06, 0.9, 0.84, glass, sx * (W / 2 + 0.02), 2.2, 0.0));
+    g.add(box(0.04, 0.12, L - 0.2, white, sx * (W / 2 + 0.008), 1.62, 0));
+  }
+  /* FRONT FACE (what the player sees): cab, windscreen, lights, coupler */
+  g.add(box(W, 1.75, 0.18, noseM, 0, 2.17, F));                           // front mask
+  g.add(box(W, 0.62, 0.22, noseM, 0, 0.98, F + 0.02));
+  g.add(box(W - 0.3, 0.72, 0.1, glass, 0, 2.55, F + 0.1));                // windscreen
+  g.add(box(0.1, 0.78, 0.14, dark, 0, 2.55, F + 0.12));                   // centre pillar
+  g.add(box(W - 0.2, 0.06, 0.14, dark, 0, 2.93, F + 0.1));
+  g.add(box(W - 0.2, 0.06, 0.14, dark, 0, 2.18, F + 0.1));
+  for (const sx of [-1, 1]) {
+    g.add(rot(box(0.42, 0.04, 0.05, dark, sx * 0.4, 2.35, F + 0.19), 0, 0, sx * -0.55));   // wipers
+    g.add(box(0.3, 0.22, 0.1, glowMat(0xfff4cc, 3), sx * 0.66, 1.18, F + 0.14));           // headlights
+    g.add(box(0.14, 0.12, 0.08, glowMat(0xff2a1a, 2), sx * 0.34, 1.18, F + 0.14));         // marker lights
+    g.add(box(0.2, 0.28, 0.5, steel, sx * 0.55, 0.62, F + 0.36)); g.add(rot(cyl(0.12, 0.12, 0.06, steel, sx * 0.55, 0.62, F + 0.64, 14), Math.PI / 2));   // buffers
+  }
+  g.add(box(0.44, 0.22, 0.04, mat(0xf2f2f2), 0, 1.5, F + 0.13));          // number plate
+  g.add(box(0.36, 0.14, 0.05, dark, 0, 1.5, F + 0.15));
+  g.add(box(1.5, 0.12, 0.34, dark, 0, 0.42, F + 0.3));                    // cow-catcher
+  g.add(rot(cyl(0.07, 0.07, 0.45, steel, 0, 0.55, F + 0.45, 10), Math.PI / 2));   // coupler
+  for (let i = 0; i < 7; i++) g.add(box(0.2, 0.05, 0.05, i % 2 ? white : glowMat(0xffd400, 0.6), -0.6 + i * 0.2, 0.78, F + 0.16));   // hazard stripe
+  /* roof gear */
+  for (const z of [-2.4, 0.6, 3.0]) g.add(box(0.9, 0.22, 1.1, mat(0xaeb6c2, { metalness: 0.5 }), 0, 3.4, z));
+  g.add(box(0.06, 0.06, 1.6, dark, 0, 3.35, -0.9));
+  g.add(rot(box(0.05, 0.6, 0.05, dark, 0, 3.55, -1.1), 0.5, 0, 0)); g.add(rot(box(0.05, 0.6, 0.05, dark, 0, 3.55, -1.7), -0.5, 0, 0));
+  g.add(box(1.1, 0.05, 0.12, dark, 0, 3.82, -1.4));
+  return g;
+}
+
+function stripedBoard(w, h, d, colors, bands, x, y, z, vertical = false) {
+  const g = new THREE.Group(); const n = bands;
+  for (let i = 0; i < n; i++) {
+    const m = mat(colors[i % 2], { roughness: 0.55 });
+    g.add(vertical ? box(w / n, h, d, m, x - w / 2 + (i + 0.5) * w / n, y, z) : box(w, h / n, d, m, x, y - h / 2 + (i + 0.5) * h / n, z));
+  }
+  return g;
+}
+function hurdleModel([c1, c2]) {
+  const g = new THREE.Group(), leg = mat(0x2a2f38, { metalness: 0.5, roughness: 0.5 });
+  for (const sx of [-1, 1]) {
+    g.add(rot(box(0.07, 0.86, 0.07, leg, sx * 0.78, 0.4, 0.28), -0.32, 0, 0));
+    g.add(rot(box(0.07, 0.86, 0.07, leg, sx * 0.78, 0.4, -0.28), 0.32, 0, 0));
+    g.add(box(0.12, 0.05, 0.9, leg, sx * 0.78, 0.03, 0));
+    g.add(ball(0.09, glowMat(0xffa200, 2.4), sx * 0.78, 0.86, 0));                     // amber warning lamp
+  }
+  for (const y of [0.3, 0.52, 0.74]) g.add(stripedBoard(1.8, 0.16, 0.05, [c1, c2], 8, 0, y, 0, true));
+  g.add(box(1.82, 0.03, 0.07, mat(0xffffff), 0, 0.22, 0)); 
+  return g;
+}
+function gateModel([c1, c2]) {
+  const g = new THREE.Group(), steel = mat(0x4d5662, { metalness: 0.7, roughness: 0.4 }), dark = mat(0x1a1d22, { metalness: 0.4 });
+  for (const sx of [-1, 1]) {
+    g.add(box(0.14, 1.7, 0.2, steel, sx * 1.0, 0.85, 0));
+    g.add(box(0.3, 0.06, 0.4, dark, sx * 1.0, 0.03, 0));
+    g.add(box(0.18, 0.18, 0.22, glowMat(0xff2a1a, 2.4), sx * 1.0, 1.78 - 0.09, 0.0));   // red beacons
+    g.add(rot(box(0.05, 0.35, 0.05, steel, sx * 0.9, 0.3, 0), 0, 0, sx * 0.7));         // braces
+  }
+  g.add(box(2.1, 0.14, 0.24, steel, 0, 1.6, 0));                                         // top girder
+  g.add(box(1.84, 0.74, 0.07, mat(0x101216), 0, 1.17, 0));                               // sign backing
+  g.add(stripedBoard(1.76, 0.66, 0.08, [c1, c2], 8, 0, 1.17, 0.02));                     // hazard bands
+  g.add(box(1.86, 0.06, 0.1, mat(0xe8eaee, { metalness: 0.3 }), 0, 0.82, 0.02));         // reflective lower edge
+  for (const sx of [-1, 1]) { g.add(cyl(0.012, 0.012, 0.3, steel, sx * 0.9, 1.42, 0.0, 6)); }
+  return g;
+}
+function bargeModel(containers) {
+  const g = new THREE.Group(), hull = mat(containers ? 0x2b3a4a : 0x9c2a22, { roughness: 0.5, metalness: 0.4 }), dark = mat(0x15181d), deck = mat(0x59626e, { roughness: 0.7 });
+  const L = 9, F = L / 2;
+  g.add(box(2.0, 0.9, L - 1.2, hull, 0, 0.45, -0.6));
+  const bow = box(2.0, 0.9, 1.7, hull, 0, 0.45, F - 0.85); g.add(bow);                    // blunt, raked bow
+  g.add(rot(box(1.9, 0.9, 1.5, hull, 0, 0.5, F - 0.15), -0.55, 0, 0));
+  g.add(box(2.02, 0.12, L, mat(0xf4f4f4), 0, 0.95, 0));                                   // gunwale
+  g.add(box(2.02, 0.16, L, mat(0x101216), 0, 0.12, 0));                                   // waterline
+  g.add(box(1.8, 0.04, L - 0.3, deck, 0, 1.02, 0));
+  if (containers) {
+    const cols = [0xc2410c, 0x1d6fb8, 0xfacc15, 0x15803d, 0xb91c1c, 0x7c3aed];
+    let k = 0;
+    for (const z of [2.2, -0.2, -2.6]) { for (const y of [0, 1]) {
+      const m = mat(cols[(k++) % cols.length], { roughness: 0.6 });
+      g.add(box(1.7, 0.62, 2.1, m, 0, 1.36 + y * 0.64, z));
+      for (let i = 0; i < 6; i++) g.add(box(0.03, 0.6, 2.1, mat(0x000000, { roughness: 0.9 }), -0.8 + i * 0.32, 1.36 + y * 0.64, z));
+    } }
+  } else {
+    g.add(box(1.5, 1.0, 2.2, mat(0xf3f4f6), 0, 1.55, -3.0));                              // wheelhouse
+    g.add(box(1.52, 0.34, 1.6, mat(0x0a1824, { metalness: 0.8, roughness: 0.1 }), 0, 1.72, -2.9));
+    g.add(box(1.7, 0.1, 2.4, mat(0xd9232b), 0, 2.1, -3.0));
+    g.add(cyl(0.2, 0.24, 0.8, mat(0xd9232b), 0, 2.2, -3.8, 14));
+    g.add(cyl(0.25, 0.25, 0.1, dark, 0, 2.62, -3.8, 14));
+    for (let i = 0; i < 5; i++) g.add(box(1.3, 0.5, 0.5, mat(0x8a5a2b), -0.0, 1.3 + (i % 2) * 0.5, 2.6 - i * 0.7));    // timber crates
+  }
+  g.add(ball(0.12, glowMat(0xffffff, 3), 0, 1.6, F - 0.4));    // bow lamp
+  g.add(ball(0.1, glowMat(0xff3b30, 2.4), -0.8, 1.15, F - 0.2)); g.add(ball(0.1, glowMat(0x38e060, 2.4), 0.8, 1.15, F - 0.2));
+  for (const z of [3.4, 1.0, -1.4]) for (const sx of [-1, 1]) g.add(cyl(0.07, 0.09, 0.22, dark, sx * 0.9, 1.1, z, 8));
+  return g;
+}
+function logModel(logs) {
+  const g = new THREE.Group(), bark = mat(0x6b4423, { roughness: 0.95 }), cut = mat(0xc9a06a, { roughness: 0.8 }), rope = mat(0xd8c9a3, { roughness: 0.9 });
+  if (logs) {
+    for (const [y, z] of [[0.24, 0.22], [0.24, -0.22], [0.64, 0]]) {
+      const l = cyl(0.23, 0.23, 2.0, bark, 0, y, z, 12); l.rotation.z = Math.PI / 2; g.add(l);
+      for (const sx of [-1, 1]) { const e = cyl(0.2, 0.2, 0.02, cut, sx * 1.01, y, z, 12); e.rotation.z = Math.PI / 2; g.add(e); }
+    }
+    for (const x of [-0.6, 0.6]) g.add(box(0.07, 0.95, 0.74, rope, x, 0.45, 0));
+  } else {
+    g.add(box(1.9, 0.1, 0.9, mat(0x8a5a2b, { roughness: 0.9 }), 0, 0.12, 0));
+    for (let i = 0; i < 6; i++) g.add(box(0.3, 0.04, 0.9, mat(0x6e4520), -0.8 + i * 0.32, 0.18, 0));
+    for (const [x, z] of [[-0.55, 0], [0.0, 0.0], [0.55, 0]]) {
+      g.add(cyl(0.26, 0.26, 0.72, mat(x === 0 ? 0xd9232b : 0x1d6fb8, { metalness: 0.4, roughness: 0.5 }), x, 0.56, z, 16));
+      g.add(cyl(0.27, 0.27, 0.05, mat(0xe5e7eb, { metalness: 0.7 }), x, 0.94, z, 16));
+    }
+    g.add(ball(0.09, glowMat(0xffa200, 2.4), 0.8, 1.02, 0.3));
+  }
+  return g;
+}
+function bridgeModel(wood) {
+  const g = new THREE.Group(), post = mat(wood ? 0x6b4423 : 0x58606c, { roughness: 0.9 }), plank = mat(wood ? 0x9a6b3a : 0x7b8594, { roughness: 0.85 }), rail = mat(wood ? 0x7a5128 : 0x4b5563, { roughness: 0.8 });
+  for (const sx of [-1, 1]) for (const sz of [-0.25, 0.25]) g.add(box(0.16, 1.7, 0.16, post, sx * 1.02, 0.85, sz));
+  g.add(box(2.2, 0.12, 0.7, plank, 0, 0.84, 0));                                          // underside of the deck (what you slide under)
+  g.add(box(2.2, 0.06, 0.7, rail, 0, 0.93, 0));
+  for (const sz of [-0.3, 0.3]) { g.add(box(2.2, 0.08, 0.07, rail, 0, 1.62, sz)); g.add(box(2.2, 0.06, 0.06, rail, 0, 1.2, sz)); }
+  for (let x = -0.85; x <= 0.86; x += 0.34) for (const sz of [-0.3, 0.3]) g.add(box(0.06, 0.7, 0.06, rail, x, 1.28, sz));
+  for (const sx of [-1, 1]) g.add(ball(0.1, glowMat(wood ? 0xffa200 : 0xff2a1a, 2.4), sx * 1.02, 1.74, 0.0));
+  return g;
+}
+function boatModel() {
+  const g = new THREE.Group();
+  const hullM = mat(0x8a4b22, { roughness: 0.7, side: THREE.DoubleSide }), inner = mat(0xc79a62, { roughness: 0.8 }), rim = mat(0xe8c48a, { roughness: 0.6 }), stripe = mat(0x1d6fb8, { roughness: 0.5 });
+  const hull = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), hullM); hull.scale.set(0.62, 0.5, 1.4); hull.position.y = 0.5; g.add(hull);
+  const r = new THREE.Mesh(new THREE.TorusGeometry(1, 0.04, 8, 44), rim); r.rotation.x = Math.PI / 2; r.scale.set(0.62, 1.4, 1); r.position.y = 0.5; g.add(r);
+  const st = new THREE.Mesh(new THREE.TorusGeometry(1, 0.03, 6, 44), stripe); st.rotation.x = Math.PI / 2; st.scale.set(0.595, 1.34, 1); st.position.y = 0.4; g.add(st);
+  g.add(box(0.8, 0.04, 1.6, inner, 0, 0.18, 0));
+  g.add(box(1.0, 0.05, 0.22, rim, 0, 0.42, 0.45)); g.add(box(1.0, 0.05, 0.22, rim, 0, 0.42, -0.5));
+  g.add(rot(box(0.05, 0.05, 1.5, rim, 0.5, 0.62, -0.1), 0.0, 0.18, 0));      // paddle shaft
+  g.add(rot(box(0.18, 0.02, 0.34, rim, 0.54, 0.62, -0.85), 0, 0.18, 0));
   return g;
 }
 

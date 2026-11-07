@@ -9,13 +9,13 @@
                   The world slides toward the camera (+z).
                   Lane 0/1/2 = left/centre/right.  y = height above ground.
    ============================================================ */
-import { GAME } from './surfer-config.js';
+import { GAME, biomeIndexAt } from './surfer-config.js';
 
 export function laneX(lane) { return (lane - (GAME.laneCount - 1) / 2) * GAME.laneWidth; }
 
 export function createSim(rng = Math.random) {
   const s = {
-    time: 0, distance: 0, speedLevel: 0, origSpeed: GAME.baseSpeed, worldSpeed: GAME.baseSpeed * GAME.speedScale,
+    time: 0, scroll: 0, distance: 0, speedLevel: 0, origSpeed: GAME.baseSpeed, worldSpeed: GAME.baseSpeed * GAME.speedScale,
     lives: GAME.lives, score: 0, xp: 0, combo: 0, bestCombo: 0,
     gameOver: false, spawnTimer: 0.6, nextId: 1,
     inspectorGap: GAME.inspectorStartGap,
@@ -56,16 +56,25 @@ export function createSim(rng = Math.random) {
 
   /* ── spawning (one "wave" = a coin lane + obstacles in the other lanes) ── */
   function spawnWave() {
-    const coinLane = Math.floor(rng() * GAME.laneCount);
+    const coinLane = Math.floor(rng() * GAME.laneCount);     // this lane is ALWAYS left free, so every wave can be survived
+    const ws = s.worldSpeed;
     for (let lane = 0; lane < GAME.laneCount; lane++) {
       const baseZ = -GAME.spawnAhead - lane * GAME.waveStagger;
+      const zone = biomeIndexAt(s.scroll - baseZ);            // which zone this will be in when it reaches the runner
       if (lane === coinLane) {
         for (let c = 0; c < GAME.coinsPerRow; c++) {
-          s.objects.push({ id: s.nextId++, type: 'coin', lane, x: laneX(lane), z: baseZ - c * GAME.coinSpacing, hit: false, phase: rng() * 6.28 });
+          s.objects.push({ id: s.nextId++, type: 'coin', lane, x: laneX(lane), z: baseZ - c * GAME.coinSpacing, pz: baseZ - c * GAME.coinSpacing, vz: 0, hit: false, phase: rng() * 6.28, zone });
         }
       } else {
-        const kind = rng() < GAME.trolleyChance ? 'jump' : 'slide';
-        s.objects.push({ id: s.nextId++, type: 'obstacle', kind, lane, x: laneX(lane), z: baseZ, hit: false, look: Math.floor(rng() * 8) });
+        const r = rng();
+        const kind = r < GAME.trainChance ? 'train' : (r < GAME.trainChance + GAME.jumpChance ? 'jump' : 'slide');
+        let z = baseZ, vz = 0;
+        if (kind === 'train') {
+          /* the train rushes toward you: start it farther away so it still arrives at the same moment as the rest of the wave */
+          vz = GAME.trainSpeed;
+          z = -Math.min(Math.abs(baseZ) * (ws + vz) / ws, GAME.trainMaxSpawn + lane * GAME.waveStagger);
+        }
+        s.objects.push({ id: s.nextId++, type: 'obstacle', kind, lane, x: laneX(lane), z, pz: z, vz, hit: false, look: Math.floor(rng() * 8), zone });
       }
     }
     const [a, b] = GAME.waveGapSeconds;
@@ -110,19 +119,21 @@ export function createSim(rng = Math.random) {
 
     /* move world */
     const dz = s.worldSpeed * dt;
-    for (const o of s.objects) o.z += dz;
+    s.scroll += dz;
+    for (const o of s.objects) { o.pz = o.z; o.z += dz + o.vz * dt; }
     s.objects = s.objects.filter(o => !o.hit && o.z < GAME.despawnBehind);
 
     s.spawnTimer -= dt;
     if (s.spawnTimer <= 0) spawnWave();
 
-    /* collisions */
+    /* collisions  (swept: we test the whole stretch an object travelled this frame, so fast trains / low fps can never skip through the runner) */
     const h = p.sliding ? GAME.slideHeight : GAME.standHeight;
     const pTop = p.y + h;
+    const crosses = (o, lim) => Math.min(o.pz, o.z) < lim && Math.max(o.pz, o.z) > -lim;
     for (const o of s.objects) {
       if (o.hit) continue;
       if (o.type === 'coin') {
-        if (Math.abs(o.z) > 0.75 || Math.abs(o.x - p.x) > 0.7) continue;
+        if (!crosses(o, 0.75) || Math.abs(o.x - p.x) > 0.7) continue;
         if (GAME.coinHeight < p.y - 0.4 || GAME.coinHeight > Math.max(pTop, 1.2) + 0.4) continue;
         o.hit = true;
         s.score++; s.combo++;
@@ -131,18 +142,19 @@ export function createSim(rng = Math.random) {
         emit('coin', { x: o.x, y: GAME.coinHeight, combo: s.combo });
         if (!s.objects.some(c => c !== o && c.type === 'coin' && !c.hit)) s.spawnTimer = Math.min(s.spawnTimer, 1.5);
       } else if (p.invincible <= 0) {
-        const hd = o.kind === 'jump' ? GAME.trolley : GAME.beam;
-        if (Math.abs(o.z) > hd.halfDepth + GAME.playerHalfDepth) continue;
+        const hd = o.kind === 'train' ? GAME.train : o.kind === 'jump' ? GAME.hurdle : GAME.beam;
+        if (!crosses(o, hd.halfDepth + GAME.playerHalfDepth)) continue;
         if (Math.abs(o.x - p.x) > hd.halfWidth + GAME.playerHalfWidth) continue;
         let blocked;
-        if (o.kind === 'jump') blocked = p.y < hd.height - 0.08;                 // feet must clear the top
-        else                   blocked = pTop > hd.clearance && p.y < hd.top;    // must be low enough to fit under
+        if (o.kind === 'train')     blocked = p.y < hd.height;                   // can't hop a train
+        else if (o.kind === 'jump') blocked = p.y < hd.height - 0.08;            // feet must clear the top
+        else                        blocked = pTop > hd.clearance && p.y < hd.top; // must be low enough to fit under
         if (!blocked) continue;
         o.hit = true;
         s.combo = 0; s.lives--;
         p.invincible = GAME.graceSeconds; p.stumble = GAME.stumbleSeconds;
         s.inspectorGap = Math.max(GAME.inspectorMinGap, s.inspectorGap - 45);
-        emit('hit', { kind: o.kind });
+        emit('hit', { kind: o.kind, z: o.z, x: o.x, zone: o.zone });
         if (s.lives <= 0) { s.gameOver = true; emit('gameover'); return; }
       }
     }

@@ -16,7 +16,8 @@
    ============================================================ */
 import * as THREE from '../vector/lib/three.module.js';
 import { loadAssets } from './surfer-assets.js';
-import { GAME, CAMERA, LOOK, OBSTACLE_LOOKS } from './surfer-config.js';
+import { GAME, CAMERA, LOOK, OBSTACLE_LOOKS, BIOMES, biomeAt, biomeIndexAt } from './surfer-config.js';
+import { createBiomeKit } from './surfer-biomes.js';
 import { createSim, laneX } from './surfer-sim.js';
 
 /* ───────────── styles (injected once) ───────────── */
@@ -36,6 +37,9 @@ const CSS = `
 .sf-combo{top:8px;right:10px;font-size:1.05rem;color:#fbbf24}
 .sf-warn{top:8px;left:10px;font-size:.62rem;color:#ef4444;animation:sfBlink .35s infinite alternate}
 .sf-speed{top:30px;left:0;right:0;text-align:center;font-size:1rem;color:#38bdf8;opacity:0;transition:opacity .25s}
+.sf-zone{top:54px;left:50%;transform:translateX(-50%) translateY(-8px);padding:.3rem .8rem;border-radius:999px;background:#0b1220cc;border:1px solid #38bdf8;color:#e0f2fe;font-size:.78rem;text-align:center;white-space:nowrap;opacity:0;transition:opacity .4s,transform .4s}
+.sf-zone.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.sf-zone small{display:block;font-weight:600;font-size:.6rem;color:#7dd3fc;text-shadow:none}
 .sf-flash{inset:0;background:radial-gradient(ellipse at center,#ef444400 40%,#ef4444aa);opacity:0;transition:opacity .35s}
 .sf-center{inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;background:#000b;color:#38bdf8;text-align:center;pointer-events:auto}
 .sf-center small{color:#94a3b8;font-weight:500;font-size:.8rem;text-shadow:none}
@@ -114,6 +118,7 @@ async function init(container, host, api) {
     <div class="sf-stage" data-sf="stage">
       <canvas class="sf-canvas" data-sf="canvas"></canvas>
       <div class="sf-ov sf-flash" data-sf="flash"></div>
+      <div class="sf-ov sf-zone" data-sf="zone"></div>
       <div class="sf-ov sf-combo" data-sf="combo"></div>
       <div class="sf-ov sf-warn" data-sf="warn" style="display:none"><i class="ph ph-warning"></i> INSPECTOR CLOSE!</div>
       <div class="sf-ov sf-speed" data-sf="speed"><i class="ph ph-lightning"></i> SPEED UP!</div>
@@ -128,7 +133,7 @@ async function init(container, host, api) {
   </div>`;
   const $ = k => container.querySelector(`[data-sf="${k}"]`);
   const ui = { lives: $('lives'), score: $('score'), xp: $('xp'), dist: $('dist'), stage: $('stage'), canvas: $('canvas'),
-    flash: $('flash'), combo: $('combo'), warn: $('warn'), speed: $('speed'), debug: $('debug'), center: $('center'),
+    flash: $('flash'), zone: $('zone'), combo: $('combo'), warn: $('warn'), speed: $('speed'), debug: $('debug'), center: $('center'),
     bar: $('bar'), loadtxt: $('loadtxt'), pauseBtn: $('pauseBtn'), quitBtn: $('quitBtn') };
 
   let destroyed = false, rafId = 0, assets = null, renderer = null, ro = null, envTex = null;
@@ -175,7 +180,7 @@ async function init(container, host, api) {
   scene.background = new THREE.Color(LOOK.fogColor);
   scene.fog = new THREE.Fog(LOOK.fogColor, LOOK.fogNear, LOOK.fogFar);
   if (!lowEnd) { envTex = buildEnvironment(renderer); scene.environment = envTex; }   // shiny reflections; auto-dropped below if the device is slow
-  scene.add(new THREE.HemisphereLight(0xcfe0ff, 0x1b2230, 0.75));
+  const hemi = new THREE.HemisphereLight(0xcfe0ff, 0x1b2230, 0.75); scene.add(hemi);
   const key = new THREE.DirectionalLight(0xfff0dd, 1.7); key.position.set(-4, 9, 6); scene.add(key);
   const rim = new THREE.DirectionalLight(0x7aa7ff, 0.5); rim.position.set(5, 4, -8); scene.add(rim);
 
@@ -200,6 +205,15 @@ async function init(container, host, api) {
   const dotTex  = radialTexture([[0, 'rgba(255,255,255,1)'], [1, 'rgba(255,255,255,0)']], 32);
   const jumpLabel = labelTexture('▲ JUMP', '#f87171'), slideLabel = labelTexture('▼ SLIDE', '#fbbf24');
   disposables.push(blobTex, glowTex, dotTex, jumpLabel, slideLabel);
+  const sunTex = radialTexture([[0, 'rgba(255,255,255,1)'], [0.16, 'rgba(255,255,235,0.95)'], [0.21, 'rgba(255,235,170,0.5)'], [0.5, 'rgba(255,215,130,0.18)'], [1, 'rgba(255,200,100,0)']], 128);
+  const trainLabel = labelTexture('◀ DODGE ▶', '#60a5fa');
+  disposables.push(sunTex, trainLabel);
+  const sunMat = new THREE.SpriteMaterial({ map: sunTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: 0 });
+  const sun = new THREE.Sprite(sunMat); sun.scale.set(46, 46, 1); sun.position.set(20, 36, -128); scene.add(sun);
+  const lampMat = new THREE.SpriteMaterial({ map: dotTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, color: 0xfff1c0, opacity: 0.8 });
+  const trainLabelMat = new THREE.SpriteMaterial({ map: trainLabel, depthWrite: false, transparent: true });
+  disposables.push(sunMat, lampMat, trainLabelMat);
+  const kit = createBiomeKit(); disposables.push(kit);
   const blobMat = new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false });
   const glowMat = new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
   const jumpLabelMat = new THREE.SpriteMaterial({ map: jumpLabel, depthWrite: false, transparent: true });
@@ -215,38 +229,46 @@ async function init(container, host, api) {
   const tiles = [];
   let serial = 0;
   const wallX = 3.9 + 1.1;
+  const sim = createSim();
+  const S = sim.state, P = S.player;
   for (let i = 0; i < tileCount; i++) {
     const g = new THREE.Group();
-    g.add(assets.make('track_segment'));
+    const core = assets.make('track_segment'); g.add(core);
     const wl = assets.make('tunnel_wall'); wl.position.x = -wallX; g.add(wl);
     const wr = assets.make('tunnel_wall'); wr.position.x = wallX; wr.scale.x = -1; g.add(wr);   // mirrored
     const arch = assets.make('tunnel_arch'); arch.position.z = -tileLen / 2; g.add(arch);
     const lamp = assets.make('ceiling_lamp'); lamp.position.set(0, LOOK.lampHeight, 0); g.add(lamp);
     const sig = assets.make('signal_light'); g.add(sig);
-    g.userData = { arch, lamp, sig };
+    g.userData = { arch, lamp, sig, core, walls: [wl, wr], deco: null };
     scene.add(g); tiles.push(g);
   }
+  /* a tile takes the look of the zone it sits in (zone = metres scrolled / zone length) */
   function placeTile(g, z) {
     g.position.z = z; const n = serial++, u = g.userData;
-    u.arch.visible = n % LOOK.archEveryTiles === 0;
-    u.lamp.visible = n % LOOK.lampEveryTiles === 0;
-    u.sig.visible  = n % LOOK.signalEveryTiles === 0;
+    const zone = BIOMES[biomeIndexAt(S.scroll - z)];
+    const tunnel = zone.id === 'station';
+    u.walls.forEach(w => { w.visible = tunnel; });
+    u.arch.visible = tunnel && n % LOOK.archEveryTiles === 0;
+    u.lamp.visible = tunnel && n % LOOK.lampEveryTiles === 0;
+    u.sig.visible  = tunnel && n % LOOK.signalEveryTiles === 0;
     u.sig.position.set(((n / LOOK.signalEveryTiles) % 2 < 1 ? -1 : 1) * 3.55, 0, 2);
+    u.core.visible = !zone.water;                                  // no rails on the river
+    if (u.deco) { g.remove(u.deco); u.deco = null; }
+    if (!tunnel) { u.deco = kit.make(zone.id, n); g.add(u.deco); }
   }
   tiles.forEach((g, i) => placeTile(g, tileLen * (1 - i)));          // one tile behind the runner, the rest ahead
 
   /* ============================================================
      CHARACTERS
      ============================================================ */
-  const sim = createSim();
-  const S = sim.state, P = S.player;
-
   /* runner: all 5 poses live in the group; we show exactly one */
   const runner = new THREE.Group();
   const poses = {};
   for (const k of ['run_a', 'run_b', 'jump', 'slide', 'stumble']) { poses[k] = assets.make('player_' + k); poses[k].visible = false; runner.add(poses[k]); }
   const runnerBlob = makeBlob(1.0, 1.0); runner.add(runnerBlob);
   scene.add(runner);
+  const boat = assets.make('player_boat'); boat.visible = false; scene.add(boat);
+  let boatT = 0, wakeT = 0;
 
   /* inspector + dog + leash */
   const insp = new THREE.Group(), inspPoses = { a: assets.make('inspector_run_a'), b: assets.make('inspector_run_b') };
@@ -274,11 +296,18 @@ async function init(container, host, api) {
       const m = take(name); root.add(m); root.userData.model = m;
       const glow = new THREE.Sprite(glowMat); glow.scale.set(1.5, 1.5, 1); root.add(glow);
     } else {
-      const looks = OBSTACLE_LOOKS[o.kind];
+      const looks = OBSTACLE_LOOKS[o.kind][BIOMES[o.zone].water ? 'water' : 'land'];
       name = looks[o.look % looks.length];
       root.add(take(name));
-      const lab = new THREE.Sprite(o.kind === 'jump' ? jumpLabelMat : slideLabelMat);
-      lab.scale.set(1.5, 0.56, 1); lab.position.y = o.kind === 'jump' ? 1.55 : 2.05; root.add(lab);
+      const mat = o.kind === 'jump' ? jumpLabelMat : o.kind === 'slide' ? slideLabelMat : trainLabelMat;
+      const lab = new THREE.Sprite(mat);
+      if (o.kind === 'train') {
+        lab.scale.set(1.45, 0.54, 1); lab.position.set(0, 4.0, 3.6);
+        const water = BIOMES[o.zone].water;
+        const lamps = water ? [[0, 1.6, 4.5]] : [[-0.66, 1.18, 4.7], [0.66, 1.18, 4.7]];      // headlights shine through haze
+        for (const [lx, ly, lz] of lamps) { const gl = new THREE.Sprite(lampMat); gl.scale.set(0.8, 0.8, 1); gl.position.set(lx, ly, lz); root.add(gl); }
+      } else { lab.scale.set(1.5, 0.56, 1); lab.position.y = o.kind === 'jump' ? 1.55 : 2.2; }
+      root.add(lab);
     }
     scene.add(root);
     live.set(o.id, { root, name, o });
@@ -387,7 +416,8 @@ async function init(container, host, api) {
         if (sound.coin) try { sound.coin(); } catch (x) {}
       } else if (e.type === 'hit') {
         burst(P.x, 0.9, 0, 22, 0xff4d4d, 7, 5, 0.7);
-        shake = CAMERA.shakeOnHit;
+        shake = e.kind === 'train' ? CAMERA.shakeOnHit * 1.5 : CAMERA.shakeOnHit;
+        if (e.kind === 'train') burst(P.x, 1.1, 0.4, 34, 0xffa83a, 9, 6, 0.8);
         ui.flash.style.opacity = '1'; setTimeout(() => { ui.flash.style.opacity = '0'; }, 120);
         if (sound.hit) try { sound.hit(); } catch (x) {}
       } else if (e.type === 'jump' || e.type === 'land') {
@@ -422,6 +452,45 @@ async function init(container, host, api) {
     for (const id of [...live.keys()]) if (!seen.has(id)) removeObject(id);
   }
 
+  /* ── zones: sky, fog and light blend smoothly as the next zone approaches ── */
+  const ZONE_ICON = { station: 'train', desert: 'sun', forest: 'tree-evergreen', river: 'waves', snow: 'snowflake' };
+  const ZONE_HINT = { station: 'Back in the rail tunnel', desert: 'Hot rails and fast trains', forest: 'Pine forest ahead', river: 'Hop in the boat!', snow: 'Icy mountain pass' };
+  const cur = { fog: new THREE.Color(LOOK.fogColor), hemiS: new THREE.Color(0xcfe0ff), hemiG: new THREE.Color(0x1b2230), key: new THREE.Color(0xfff0dd), sun: new THREE.Color(0xffffff), tmp: new THREE.Color() };
+  let announced = 'station', zoneToast = 0, zoneTimer = 0;
+  function applyZone(dt, snap) {
+    const b = biomeAt(S.scroll + 26), k = snap ? 1 : 1 - Math.exp(-1.7 * dt);
+    cur.fog.lerp(cur.tmp.set(b.fog), k); scene.fog.color.copy(cur.fog); scene.background.copy(cur.fog);
+    scene.fog.near += (b.fogNear - scene.fog.near) * k; scene.fog.far += (b.fogFar - scene.fog.far) * k;
+    cur.hemiS.lerp(cur.tmp.set(b.hemi[0]), k); cur.hemiG.lerp(cur.tmp.set(b.hemi[1]), k);
+    hemi.color.copy(cur.hemiS); hemi.groundColor.copy(cur.hemiG); hemi.intensity += (b.hemiI - hemi.intensity) * k;
+    cur.key.lerp(cur.tmp.set(b.key), k); key.color.copy(cur.key); key.intensity += (b.keyI - key.intensity) * k;
+    renderer.toneMappingExposure += (b.exposure - renderer.toneMappingExposure) * k;
+    if (b.sun) cur.sun.lerp(cur.tmp.set(b.sun), k);
+    sunMat.color.copy(cur.sun); sunMat.opacity += ((b.sun ? 0.95 : 0) - sunMat.opacity) * k;
+    if (b.id !== announced) {
+      announced = b.id;
+      ui.zone.innerHTML = `<i class="ph ph-${ZONE_ICON[b.id] || 'map-pin'}"></i> ${b.name}<small>${ZONE_HINT[b.id] || ''}</small>`;
+      ui.zone.classList.add('on'); zoneToast = 3.2;
+    }
+    if (zoneToast > 0) { zoneToast -= dt; if (zoneToast <= 0) ui.zone.classList.remove('on'); }
+  }
+  function updateBoat(dt, bobBase) {
+    const inRiver = biomeAt(S.scroll).water && !ending;
+    const prev = boatT;
+    boatT += ((inRiver ? 1 : 0) - boatT) * (1 - Math.exp(-6 * dt));
+    if (Math.abs(boatT - (inRiver ? 1 : 0)) < 0.01) boatT = inRiver ? 1 : 0;
+    if ((prev === 0) !== (boatT === 0) || (prev < 0.5) !== (boatT < 0.5)) burst(P.x, 0.2, 0.3, 18, 0xd8f1ff, 4, 3.5, 0.6);       // splash when you get in / out
+    boat.visible = boatT > 0.01;
+    if (boat.visible) {
+      const lat = laneX(P.lane) - P.x, t = S.time;
+      boat.position.set(P.x, -0.12 - (1 - boatT) * 0.75 + Math.sin(t * 3.1) * 0.025, 0.1);
+      boat.rotation.set(Math.sin(t * 1.9) * 0.02 + (P.jumping ? -0.04 : 0), -lat * 0.12, -lat * 0.12 + Math.sin(t * 2.4) * 0.025);
+      wakeT -= dt;
+      if (wakeT <= 0 && !ending) { wakeT = 0.07; burst(P.x + (Math.random() - 0.5) * 0.9, 0.1, 1.3, 2, 0xd8f1ff, 1.6, 1.4, 0.5); }
+    }
+    return boatT;
+  }
+
   function frame(now) {
     if (destroyed) return;
     rafId = requestAnimationFrame(frame);
@@ -447,6 +516,7 @@ async function init(container, host, api) {
     if (ending) { endT += dt; worldMul = Math.max(0, 1 - endT / 0.9); }
     else sim.step(dt);
     handleEvents();
+    applyZone(dt, false); kit.update(dt);
 
     const speed = S.worldSpeed * worldMul, dz = speed * dt;
 
@@ -461,15 +531,18 @@ async function init(container, host, api) {
     const stridePeriod = clamp(0.16 * (GAME.baseSpeed / S.origSpeed) ** 0.6, 0.08, 0.16);
     runClock += dt * worldMul; stride = Math.floor(runClock / stridePeriod) % 2;
     let pose = stride ? 'run_b' : 'run_a';
+    const inBoat = updateBoat(dt) > 0.5;
+    if (inBoat && pose !== 'run_b') pose = 'run_a'; else if (inBoat) pose = 'run_a';          // no leg swing while sitting in the boat
     if (P.stumble > 0 || ending) pose = 'stumble'; else if (P.sliding) pose = 'slide'; else if (P.jumping) pose = 'jump';
     for (const k in poses) poses[k].visible = (k === pose);
     const tx = laneX(P.lane), lateral = tx - P.x;
-    const bob = (pose === 'run_a' || pose === 'run_b') ? Math.abs(Math.sin(runClock * Math.PI / stridePeriod)) * 0.05 : 0;
-    runner.position.set(P.x, P.y + bob, 0);
+    const bob = !inBoat && (pose === 'run_a' || pose === 'run_b') ? Math.abs(Math.sin(runClock * Math.PI / stridePeriod)) * 0.05 : 0;
+    const lift = boatT * (0.14 + Math.sin(S.time * 3.1) * 0.025);
+    runner.position.set(P.x, P.y + bob + (P.jumping ? 0 : lift), 0);
     runner.rotation.z = -lateral * 0.10; runner.rotation.y = -lateral * 0.16;
     runner.visible = !(P.invincible > 0 && !ending && Math.floor(now / 70) % 2 === 0);
     const sh = 1 - clamp(P.y / 2.2, 0, 0.6);                              // blob shrinks while airborne
-    runnerBlob.position.y = 0.03 - (P.y + bob); runnerBlob.scale.set(sh * (pose === 'slide' ? 1.2 : 1), 1, sh * (pose === 'slide' ? 1.8 : 1));
+    runnerBlob.visible = boatT < 0.5; runnerBlob.position.y = 0.03 - (P.y + bob); runnerBlob.scale.set(sh * (pose === 'slide' ? 1.2 : 1), 1, sh * (pose === 'slide' ? 1.8 : 1));
     runnerBlob.rotation.set(-runner.rotation.x, 0, -runner.rotation.z);
 
     /* ── inspector + dog ── */
@@ -537,5 +610,12 @@ async function init(container, host, api) {
   /* go! */
   lastT = performance.now();
   rafId = requestAnimationFrame(frame);
-  api.debug = { sim, scene, camera, renderer, assets };       // handy for testing in the browser console
+  applyZone(0, true);
+  /* test helper: jump the world to a given scroll distance (metres) */
+  function debugScroll(m) {
+    S.scroll = m; S.objects.length = 0; for (const id of [...live.keys()]) removeObject(id);
+    tiles.forEach((g, i) => placeTile(g, tileLen * (1 - i)));
+    announced = biomeAt(m + 26).id; applyZone(0, true); boatT = biomeAt(m).water ? 1 : 0;
+  }
+  api.debug = { sim, scene, camera, renderer, assets, debugScroll };       // handy for testing in the browser console
 }
