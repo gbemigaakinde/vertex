@@ -1626,10 +1626,21 @@ async function _loadGenericHistory(type) {
       <div class="glass-dark" style="border-radius:10px;overflow:hidden;">
         ${snap.docs.map(doc => {
           const d = doc.data();
-          const when = d.playedAt && d.playedAt.toDate
-            ? d.playedAt.toDate().toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+          // playedAt is a Firestore Timestamp, or an ISO string for results saved while offline
+          const _pa = d.playedAt && d.playedAt.toDate ? d.playedAt.toDate()
+                    : (d.playedAt ? new Date(d.playedAt) : null);
+          const when = _pa && !isNaN(_pa.getTime())
+            ? _pa.toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
             : '—';
-          const scoreText = d.pct != null ? `${d.pct}%`
+          let rowLabel = label, scoreText0 = null, scoreColor = 'var(--accent)';
+          if (type === 'echoGrid') {
+            const modeTxt = d.mode === 'online' ? 'Online duel' : (d.mode === 'bot' ? 'vs Bot' : '');
+            rowLabel = label + (modeTxt ? ' · ' + modeTxt : '');
+            const resTxt = d.result === 'win' ? 'Won' : d.result === 'draw' ? 'Draw' : d.result === 'loss' ? 'Lost' : '';
+            scoreText0 = (resTxt ? resTxt + ' ' : '') + (d.myScore != null && d.oppScore != null ? `${d.myScore}-${d.oppScore}` : '');
+            if (d.result === 'loss') scoreColor = 'var(--danger)';
+          }
+          const scoreText = scoreText0 != null ? (scoreText0.trim() || '—') : d.pct != null ? `${d.pct}%`
                            : (d.correct != null && d.total != null) ? `${d.correct}/${d.total}`
                            : d.score != null ? String(d.score)
                            : '—';
@@ -1637,11 +1648,11 @@ async function _loadGenericHistory(type) {
             <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;
                         padding:.75rem 1rem;border-bottom:1px solid var(--border);">
               <div>
-                <div style="font-size:.875rem;font-weight:700;color:var(--text-1);">${_esc(label)}</div>
-                <div style="font-size:.75rem;color:var(--text-3);">${_esc(when)}</div>
+                <div style="font-size:.875rem;font-weight:700;color:var(--text-1);">${_esc(rowLabel)}</div>
+                <div style="font-size:.75rem;color:var(--text-3);">${_esc(when)}${type === 'echoGrid' && d.opponentName ? ' · ' + _esc(d.opponentName) : ''}</div>
               </div>
               <div style="text-align:right;">
-                <div style="font-size:.9375rem;font-weight:700;color:var(--accent);">${_esc(scoreText)}</div>
+                <div style="font-size:.9375rem;font-weight:700;color:${scoreColor};">${_esc(scoreText)}</div>
                 <div style="font-size:.75rem;color:var(--text-3);">+${d.xpEarned || 0} XP</div>
               </div>
             </div>`;
@@ -10530,6 +10541,7 @@ async function renderTeacherGameRestrictions(containerId) {
     _wsClearArranged,
     _showChessSetup,
     _awardXP,
+    _saveGameResult,
     _showEchoGrid: function () { if (window.EchoGrid) window.EchoGrid.open(); },
     _sendChessChallenge,
     _showChessPending,

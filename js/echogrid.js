@@ -121,6 +121,7 @@
   }
 
   function close() {
+    abandonOnline();
     if (unsub) { try { unsub(); } catch (e) {} unsub = null; }
     clearTimeout(botTimer);
     const el = document.getElementById('egRoot');
@@ -246,10 +247,13 @@
   function play(i, fromBot) {
     if (!S || S.over || S.board[i] !== EMPTY) return;
     const p = S.turn;
+    if (S.mode === 'online') S.prev = { board: S.board, turn: S.turn, last: S.last, lastVoid: S.lastVoid };
     S.board = applyMove(S.board, i, p);
     S.last = i; S.lastVoid = (mirror(i) !== i && S.board[mirror(i)] === VOID) ? mirror(i) : -1;
     S.turn = p === P1 ? P2 : P1;
-    if (!emptyCells(S.board).length) finish();
+    /* Online games are finished only after the server confirms the last move,
+       so BOTH players end the game from the same shared room state. */
+    if (S.mode !== 'online' && !emptyCells(S.board).length) finish();
     render();
     if (S.mode === 'online') pushOnline();
     else maybeBot();
@@ -261,25 +265,46 @@
     S.over = true;
     const sc = scores();
     S.winner = sc[1] > sc[2] ? P1 : sc[2] > sc[1] ? P2 : 0;
-    if (S.mode === 'bot' && !S.xpGiven) {
-      S.xpGiven = true;
-      const win = S.winner === S.mySide;
-      const base = { easy: 10, medium: 20, hard: 35 }[S.level];
-      const xp = win ? base : S.winner === 0 ? Math.round(base / 2) : 3;
-      S.xpEarned = xp;
-      award(xp, win);
-    }
-    if (S.mode === 'online' && !S.xpGiven) {
-      S.xpGiven = true;
-      const win = S.winner === S.mySide;
-      const xp = win ? 30 : S.winner === 0 ? 15 : 5;
-      S.xpEarned = xp;
-      award(xp, win);
+    settle(null);
+  }
+
+  /* Pays XP and writes the History entry exactly once per player per game.
+     Everything the async part needs is captured up front, because S may be
+     cleared (menu / close) before the writes complete. */
+  async function settle(reason) {
+    if (!S || S.xpGiven || S.mode === 'local') return;
+    S.xpGiven = true;
+    const mode = S.mode, level = S.level, ref = S.ref;
+    const side = S.mySide, oppSide = side === P1 ? P2 : P1;
+    const sc = scores();
+    const win = S.winner === side, draw = S.winner === 0;
+    let xp;
+    if (mode === 'bot') {
+      const base = { easy: 10, medium: 20, hard: 35 }[level];
+      xp = win ? base : draw ? Math.round(base / 2) : 3;
+    } else xp = win ? 30 : draw ? 15 : 5;
+    S.xpEarned = xp;
+    const rec = {
+      mode, result: win ? 'win' : draw ? 'draw' : 'loss',
+      myScore: sc[side], oppScore: sc[oppSide],
+      opponentName: String(S.names[oppSide] || ''), xpEarned: xp
+    };
+    if (level) rec.level = level;
+    if (reason) rec.reason = reason;
+    await award(xp, win);
+    await saveHistory(rec);
+    if (mode === 'online' && ref && uid()) {
+      try { await ref.update({ ['xpAwarded.' + uid()]: true }); } catch (e) { console.warn('Echo Grid xpAwarded', e); }
     }
   }
 
-  function award(xp, win) {
-    try { if (window.Game && window.Game._awardXP) window.Game._awardXP(xp, 'echoGrid', { win }); } catch (e) { console.warn('Echo Grid XP', e); }
+  async function saveHistory(rec) {
+    try { if (window.Game && window.Game._saveGameResult) await window.Game._saveGameResult('echoGrid', rec); }
+    catch (e) { console.warn('Echo Grid history', e); }
+  }
+
+  async function award(xp, win) {
+    try { if (window.Game && window.Game._awardXP) await window.Game._awardXP(xp, 'echoGrid', { win }); } catch (e) { console.warn('Echo Grid XP', e); }
   }
 
   /* ───────── render ───────── */
@@ -344,8 +369,19 @@
       </div>`;
   }
 
+  /* Leaving a live online game = forfeit. The leaver is credited a loss here;
+     the opponent is credited the win when they see status 'abandoned'. */
+  function abandonOnline() {
+    if (!S || S.mode !== 'online' || S.over || !S.ref) return;
+    if (S.status === 'playing') {
+      S.over = true;
+      S.winner = S.mySide === P1 ? P2 : P1;
+      settle('forfeit');
+    }
+    try { S.ref.update({ status: 'abandoned', leftBy: uid() }).catch(() => {}); } catch (e) {}
+  }
   function leave() {
-    if (S && S.mode === 'online' && !S.over && S.ref) { try { S.ref.update({ status: 'abandoned' }); } catch (e) {} }
+    abandonOnline();
     open();
   }
   function rematch() {
@@ -396,9 +432,10 @@
       const snap = await ref.get();
       if (!snap.exists) { err('Room not found.'); return; }
       const d = snap.data();
-      if (d.p1 === uid()) { attach(ref, P1, code); return; }
-      if (d.p2 && d.p2 !== uid()) { err('That room is already full.'); return; }
       if (d.status === 'abandoned') { err('That room was closed.'); return; }
+      if (d.p1 === uid()) { attach(ref, P1, code); return; }
+      if (d.p2 === uid()) { attach(ref, P2, code); return; }
+      if (d.p2) { err('That room is already full.'); return; }
       await ref.update({ p2: uid(), p2Name: myName(), status: 'playing' });
       attach(ref, P2, code);
     } catch (e) { console.warn(e); err('Could not join. Check the code and your connection.'); }
@@ -410,21 +447,40 @@
     unsub = ref.onSnapshot(snap => {
       if (!S || !snap.exists) return;
       const d = snap.data();
+      const pending = !!(snap.metadata && snap.metadata.hasPendingWrites);
       S.board = String(d.board).split('').map(Number);
-      S.turn = d.turn; S.last = d.last; S.lastVoid = d.lastVoid; S.status = d.status; S.pendingWrite = false;
+      S.turn = d.turn; S.last = d.last; S.lastVoid = d.lastVoid; S.status = d.status; S.pendingWrite = pending;
       S.names = { 1: d.p1Name || 'Player 1', 2: d.p2Name || 'Waiting...' };
-      if (d.status === 'abandoned' && !S.over) { toast('Your opponent left the room.', 'info'); S.over = true; S.winner = S.mySide; S.xpGiven = true; }
-      else if (d.status === 'playing' && !emptyCells(S.board).length && !S.over) finish();
+      if (d.xpAwarded && d.xpAwarded[uid()]) S.xpGiven = true;   // already paid (e.g. re-opened room)
+      if (!S.over) {
+        if (d.status === 'abandoned') {
+          S.over = true;
+          if (d.p2 && d.leftBy !== uid()) {
+            toast('Your opponent left the room. You win by forfeit.', 'info');
+            S.winner = S.mySide;
+            settle('forfeit');
+          } else S.winner = S.mySide;
+        } else if (!pending && !emptyCells(S.board).length && d.p2) finish();   // 'finished' or full board
+      }
       render();
     }, e => { console.warn(e); toast('Connection lost.', 'error'); });
   }
 
   async function pushOnline() {
     if (!S || !S.ref) return;
+    const mySide = S.mySide;
     S.pendingWrite = true;
     try {
       await S.ref.update({ board: S.board.join(''), turn: S.turn, last: S.last, lastVoid: S.lastVoid, status: emptyCells(S.board).length ? 'playing' : 'finished' });
-    } catch (e) { console.warn(e); toast('Move not saved. Try again.', 'error'); S.pendingWrite = false; }
+      if (S && S.mode === 'online' && !S.over && !emptyCells(S.board).length) { finish(); render(); }
+    } catch (e) {
+      console.warn(e); toast('Move not saved. Try again.', 'error');
+      if (S && S.mode === 'online' && S.mySide === mySide) {
+        S.pendingWrite = false;
+        if (S.prev && !S.over) { Object.assign(S, S.prev); }   // roll back the unsaved move
+        render();
+      }
+    }
   }
 
   function err(m) { const e = document.getElementById('egErr'); if (e) e.textContent = m; }
