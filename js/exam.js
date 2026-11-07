@@ -1981,18 +1981,28 @@ async function renderSubjectSelection() {
       },
       {
         id: 'gameOpenBtn',
-        onclick: `(function(){
+        onclick: `(function(btn){
           if(window.ActivityLog&&AppState.studentData){ActivityLog.track('game_lobby_open',(AppState.studentData.name||'A student')+' opened the Games lobby');}
           if (!window.Game || typeof Game.openGameLobby !== 'function') {
-            alert('Games not loaded yet. Please wait a moment.');
+            if (window.UI && UI.toast) UI.toast('Games are still loading. Try again in a moment.', 'info', 3500);
             return;
           }
+          if (btn.classList.contains('tile-busy')) return;
+          var lbl = btn.querySelector('.tile-lbl'), prev = lbl ? lbl.textContent : '';
+          btn.classList.add('tile-busy'); btn.setAttribute('aria-busy','true');
+          if (lbl) lbl.textContent = 'Opening\u2026';
+          var done = function(){
+            if (!btn.isConnected) return;
+            btn.classList.remove('tile-busy'); btn.removeAttribute('aria-busy');
+            if (lbl) lbl.textContent = prev;
+          };
           Promise.resolve().then(function(){ return Game.openGameLobby(); })
             .catch(function(err){
               console.error('[game] openGameLobby error:', err);
               if (window.UI && window.UI.toast) UI.toast('Could not open Games. Please try again.', 'error', 4000);
-            });
-        })()`,
+            })
+            .then(done);
+        })(this)`,
         icon: _icon('GameController', 22),
         label: 'Games',
         color: 'var(--accent)',
@@ -2015,13 +2025,13 @@ async function renderSubjectSelection() {
         onmouseenter="this.style.borderColor='${t.color}';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 14px rgba(0,0,0,.08)';"
         onmouseleave="this.style.borderColor='var(--border)';this.style.transform='';this.style.boxShadow='';"
       >
-        <span style="display:flex;align-items:center;justify-content:center;
+        <span class="tile-ico" style="display:flex;align-items:center;justify-content:center;
                      width:44px;height:44px;border-radius:var(--r-lg);
                      background:${t.gradient ? 'linear-gradient(135deg,#5ac8fa,#007aff)' : 'color-mix(in srgb, ' + t.color + ' 12%, transparent)'};
                      color:${t.gradient ? '#fff' : t.color};">
           ${t.icon}
         </span>
-        <span style="font-size:.6875rem;font-weight:600;color:var(--text-2);letter-spacing:.01em;line-height:1.3;text-align:center;">
+        <span class="tile-lbl" style="font-size:.6875rem;font-weight:600;color:var(--text-2);letter-spacing:.01em;line-height:1.3;text-align:center;">
           ${_escHtml(t.label)}
         </span>
         ${t.badge ? `<span class="${t.badgeClass}" style="position:absolute;top:-6px;right:-6px;"></span>` : ''}

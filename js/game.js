@@ -170,6 +170,38 @@
   { id: 'max_level',         name: 'Absolute Power',      desc: 'Reach the highest rank: Absolute',             icon: 'sparkle',        xp: 0 },
 ];
 
+  /* ── Badge tiers + ONE medal renderer used everywhere ───────── */
+  const BADGE_TIERS = {
+    common:    { label: 'Common',    pips: 1, c1: '#52c78f', c2: '#1f9363', ink: '#1a7d54' },
+    rare:      { label: 'Rare',      pips: 2, c1: '#56c4f2', c2: '#1679bd', ink: '#126aa6' },
+    epic:      { label: 'Epic',      pips: 3, c1: '#ab94ff', c2: '#6b44e3', ink: '#5b37cf' },
+    legendary: { label: 'Legendary', pips: 4, c1: '#ffbb45', c2: '#ee4568', ink: '#d32f55' },
+  };
+  const BADGE_TIER_BY_ID = {};
+  [
+    ['legendary', ['max_level', 'sudden_death_50', 'xp_100000', 'xp_50000', 'streak_20', 'wins_50']],
+    ['epic',      ['rank_15', 'rank_10', 'games_250', 'xp_25000', 'xp_10000', 'sudden_death_30', 'sudden_death_25', 'challenge_10', 'tf_streak_20', 'word_master', 'speed_demon_pro', 'math_perfect', 'wins_25']],
+    ['rare',      ['perfect_quiz', 'perfect_scramble', 'perfect_blitz', 'perfect_tf', 'streak_10', 'games_100', 'games_50', 'xp_5000', 'xp_2500', 'rank_5', 'sudden_death_15', 'sudden_death_10', 'tf_streak_10', 'math_master', 'word_wizard', 'daily_player_7', 'challenge_5']],
+  ].forEach(function (row) { row[1].forEach(function (id) { BADGE_TIER_BY_ID[id] = row[0]; }); });
+
+  function _badgeTierKey(id) { return BADGE_TIER_BY_ID[id] || 'common'; }
+
+  function _tierPips(tierKey) {
+    const n = BADGE_TIERS[tierKey].pips;
+    return '<span class="gb-pips" aria-hidden="true">' +
+      [1, 2, 3, 4].map(function (i) { return '<i' + (i <= n ? ' class="on"' : '') + '></i>'; }).join('') +
+      '</span>';
+  }
+
+  /* The single badge visual: same shape, depth, glyph weight and tier colour in the
+     leaderboard chips, the badge sheet and the "new badge" popup. Only `size` changes. */
+  function _badgeMedal(badge, size, cls) {
+    const s = size || 40;
+    const t = BADGE_TIERS[_badgeTierKey(badge.id)];
+    return '<span class="gb-medal' + (cls ? ' ' + cls : '') + '" style="--s:' + s + 'px;--t1:' + t.c1 + ';--t2:' + t.c2 + ';">' +
+      _li(badge.icon, Math.round(s * 0.52), '#fff') + '</span>';
+  }
+
   /* ══════════════════════════════════════════════════════════════
      CONSTANTS
   ══════════════════════════════════════════════════════════════ */
@@ -1372,16 +1404,17 @@ function _chessSquareClick(r, c) {
 
 function _chessShowPromotionModal(gameId, from, to, meta) {
   const myColor = _chessCachedData.whiteUid === _uid() ? 'w' : 'b';
-  const options = ['Q','R','B','N'];
+  const options = [['Q', 'Queen'], ['R', 'Rook'], ['B', 'Bishop'], ['N', 'Knight']];
   _showModal(`
-    <div style="text-align:center;margin-bottom:1rem;">
-      <h2 style="font-size:1rem;font-weight:700;">Promote pawn to:</h2>
+    <div style="text-align:center;">
+      <h2>Promote your pawn</h2>
+      <p style="margin-top:.375rem;">Choose the piece it becomes.</p>
     </div>
-    <div style="display:flex;gap:.75rem;justify-content:center;margin-bottom:1rem;">
+    <div class="gm-pieces">
       ${options.map(o => `
-        <button onclick="Game._chessPromote('${_esc(gameId)}',${from.r},${from.c},${to.r},${to.c},'${o}')"
-                class="game-option-btn" style="width:4rem;height:4rem;justify-content:center;font-size:2rem;padding:0;">
-          ${CHESS_PIECE_GLYPH[myColor+o]}
+        <button type="button" class="gm-piece" aria-label="${o[1]}"
+                onclick="Game._chessPromote('${_esc(gameId)}',${from.r},${from.c},${to.r},${to.c},'${o[0]}')">
+          <span>${CHESS_PIECE_GLYPH[myColor + o[0]]}</span><small>${o[1]}</small>
         </button>`).join('')}
     </div>
   `);
@@ -1952,114 +1985,34 @@ function _showBadgeDetails(badgeId) {
     const badge = BADGES.find(b => b.id === badgeId);
     if (!badge) return;
 
-    // Find the badge entry in the profile to get the earned date
-    const profileBadges  = (_profile && _profile.badges) || [];
-    const profileEntry   = profileBadges.find(b => _badgeId(b) === badgeId);
-    const earnedAtRaw    = profileEntry ? _badgeEarnedAt(profileEntry) : null;
-    let earnedAtStr      = 'Not recorded';
+    // Earned date comes from the player's profile entry
+    const profileEntry = ((_profile && _profile.badges) || []).find(b => _badgeId(b) === badgeId);
+    const earnedAtRaw  = profileEntry ? _badgeEarnedAt(profileEntry) : null;
+    let earnedAtStr    = 'Not recorded';
     if (earnedAtRaw) {
       try {
         const d = new Date(earnedAtRaw);
-        earnedAtStr = d.toLocaleDateString('en-GB', {
-          day:   'numeric',
-          month: 'long',
-          year:  'numeric',
-        });
-      } catch (e) {
-        earnedAtStr = 'Not recorded';
-      }
+        if (!isNaN(d.getTime())) {
+          earnedAtStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+      } catch (e) { /* keep fallback */ }
     }
 
-    const rarityMap = {
-      'max_level':       { label: '<i class="ph ph-star"></i> Legendary', color: '#f43f5e' },
-      'sudden_death_50': { label: '<i class="ph ph-star"></i> Legendary', color: '#f43f5e' },
-      'immortal':        { label: '<i class="ph ph-star"></i> Legendary', color: '#f43f5e' },
-      'titan':           { label: '<i class="ph ph-star"></i> Legendary', color: '#f43f5e' },
-      'absolute':        { label: '<i class="ph ph-star"></i> Legendary', color: '#f43f5e' },
-      'rank_15':         { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i> Epic',    color: '#8b5cf6' },
-      'rank_10':         { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i> Epic',    color: '#8b5cf6' },
-      'xp_100000':       { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i> Epic',    color: '#8b5cf6' },
-      'mythic_scholar':  { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i> Epic',    color: '#8b5cf6' },
-      'hall_of_fame':    { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i> Epic',    color: '#8b5cf6' },
-      'perfect_quiz':    { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
-      'perfect_scramble':{ label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
-      'perfect_blitz':   { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
-      'perfect_tf':      { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
-      'math_perfect':    { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
-      'streak_20':       { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
-      'streak_10':       { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
-      'challenge_10':    { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
-      'sudden_death_30': { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
-      'sudden_death_25': { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
-    };
-
-    const rarity = rarityMap[badgeId] || { label: 'Common', color: '#22c55e' };
+    const tierKey = _badgeTierKey(badgeId);
+    const tier    = BADGE_TIERS[tierKey];
 
     _showModal(`
-      <div style="text-align:center;margin-bottom:1.5rem;">
-        <div style="margin-bottom:1rem;padding:1rem;background:${rarity.color}22;border-radius:16px;display:inline-block;">
-          ${_icon(badge.icon, 64, { color: rarity.color })}
-        </div>
-        <h2 style="font-size:1.375rem;font-weight:800;color:var(--text-1);margin-bottom:.5rem;">
-          ${_esc(badge.name)}
-        </h2>
-        <p style="font-size:.875rem;color:var(--text-3);line-height:1.6;margin:0;">
-          ${_esc(badge.desc)}
-        </p>
+      <div class="gm-badge" style="--t1:${tier.c1};--t2:${tier.c2};--ink:${tier.ink};">
+        <div class="gm-badge__stage">${_badgeMedal(badge, 96, 'gb-medal--hero')}</div>
+        <span class="gm-badge__tier">${tier.label}${_tierPips(tierKey)}</span>
+        <h2 class="gm-badge__name">${_esc(badge.name)}</h2>
+        <p class="gm-badge__desc">${_esc(badge.desc)}</p>
+        <dl class="gm-badge__meta">
+          <div><dt>Earned</dt><dd>${_esc(earnedAtStr)}</dd></div>
+          <div><dt>Rarity</dt><dd style="color:var(--ink);">${tier.label}</dd></div>
+        </dl>
+        <button onclick="Game._closeModal()" class="btn w-full">Done</button>
       </div>
-
-      <div style="background:var(--bg-subtle);border:2px solid var(--border);border-radius:12px;
-                  padding:1.125rem;margin-bottom:1rem;">
-        <p style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
-                  color:var(--text-3);margin-bottom:.75rem;">How to Earn</p>
-        <p style="font-size:.9375rem;color:var(--text-2);line-height:1.7;margin:0;">
-          ${_esc(badge.desc)}
-        </p>
-      </div>
-
-      <div style="background:var(--success-subtle);border:2px solid var(--success-border);border-radius:12px;
-                  padding:1.125rem;margin-bottom:1rem;text-align:center;">
-        <p style="font-size:.6875rem;font-weight:700;color:var(--success);text-transform:uppercase;
-                  letter-spacing:.08em;margin-bottom:.625rem;">Badge Status</p>
-        <div style="display:flex;align-items:center;justify-content:center;gap:.625rem;">
-          <span style="font-size:1.5rem;color:var(--success);">✓</span>
-          <span style="font-size:.9375rem;font-weight:700;color:var(--text-1);">Earned & Unlocked</span>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;">
-        <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:10px;
-                    padding:.875rem;text-align:center;">
-          <div style="font-size:.6875rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
-                      letter-spacing:.06em;margin-bottom:.375rem;">Date Earned</div>
-          <div style="font-size:.875rem;color:var(--text-1);font-weight:600;">
-            ${_esc(earnedAtStr)}
-          </div>
-        </div>
-        <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:10px;
-                    padding:.875rem;text-align:center;">
-          <div style="font-size:.6875rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
-                      letter-spacing:.06em;margin-bottom:.375rem;">Rarity</div>
-          <div style="font-size:.9375rem;font-weight:800;color:${rarity.color};">
-            ${rarity.label}
-          </div>
-        </div>
-      </div>
-
-      <div style="padding:1rem;background:linear-gradient(135deg,${rarity.color}15,${rarity.color}08);
-                  border:1px solid ${rarity.color}40;border-radius:10px;margin-bottom:1.25rem;">
-        <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
-                  color:${rarity.color};margin-bottom:.5rem;display:flex;align-items:center;gap:.375rem;">
-          ${_icon('star', 13, { color: rarity.color })} Achievement Unlocked!
-        </p>
-        <p style="font-size:.8125rem;color:var(--text-2);line-height:1.6;margin:0;">
-          You've proven your dedication by earning this badge. Keep playing to unlock more badges and climb the ranks towards the top!
-        </p>
-      </div>
-
-      <button onclick="Game._closeModal()" class="btn w-full" style="background:var(--accent);color:#fff;font-weight:700;">
-        Close
-      </button>
     `);
   }
 
@@ -4525,7 +4478,7 @@ function _dismissScrabblePopup(gameId) {
           const bid = _badgeId(entry);
           const b   = BADGES.find(x => x.id === bid);
           return b ? `<button class="lb-badge" onclick="Game._showBadgeDetails('${_esc(bid)}')" title="View badge details">
-                        ${_li(b.icon, 14)} ${_esc(b.name)}
+                        ${_badgeMedal(b, 24)}<span>${_esc(b.name)}</span>
                       </button>` : '';
         }).join('')
       : `<span class="lb-empty">No badges yet. Play games to earn them.</span>`;
@@ -4716,70 +4669,41 @@ function _dismissScrabblePopup(gameId) {
 }
 
 function _showAllLevelsModal(currentXP) {
-  const rows = LEVELS.map(l => {
+  const rows = LEVELS.map((l, idx) => {
+    const nextL      = LEVELS[idx + 1];
     const isUnlocked = currentXP >= l.minXP;
-    const isCurrent  = currentXP >= l.minXP && (
-      LEVELS.indexOf(l) === LEVELS.length - 1 || currentXP < LEVELS[LEVELS.indexOf(l) + 1].minXP
-    );
-    const nextL      = LEVELS[LEVELS.indexOf(l) + 1];
+    const isCurrent  = isUnlocked && (!nextL || currentXP < nextL.minXP);
     const xpNeeded   = isUnlocked ? 0 : l.minXP - currentXP;
+    const pct        = isCurrent && nextL ? Math.min(100, Math.round(((currentXP - l.minXP) / (nextL.minXP - l.minXP)) * 100)) : 0;
 
     return `
-      <div style="display:flex;align-items:center;gap:.75rem;padding:.625rem .875rem;
-                  border-radius:8px;margin-bottom:.375rem;
-                  background:${isCurrent ? l.color + '18' : 'var(--bg-subtle)'};
-                  border:1.5px solid ${isCurrent ? l.color : 'var(--border)'};
-                  opacity:${isUnlocked ? '1' : '0.55'};">
-        <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
-                    background:${isUnlocked ? l.color : 'var(--bg-muted)'};
-                    border:2px solid ${isUnlocked ? l.color : 'var(--border)'};
-                    display:flex;align-items:center;justify-content:center;">
-          ${_icon(l.icon, 18, { color: isUnlocked ? '#fff' : 'var(--text-4)' })}
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;">
-            <span style="font-size:.9375rem;font-weight:700;color:${isCurrent ? l.color : 'var(--text-1)'};">
-              ${_esc(l.name)}
-            </span>
-            <span style="font-size:.625rem;background:var(--bg-muted);color:var(--text-3);
-                          border-radius:4px;padding:1px 5px;">Rank ${l.rank}</span>
-            ${isCurrent ? `<span style="font-size:.625rem;background:${l.color};color:#fff;
-                            border-radius:4px;padding:1px 6px;font-weight:700;">YOU ARE HERE</span>` : ''}
+      <div class="gm-rank${isCurrent ? ' is-current' : ''}${isUnlocked ? '' : ' is-locked'}" style="--c:${l.color};">
+        <span class="gm-rank__ico">${_icon(l.icon, 18, { color: isUnlocked ? '#fff' : 'var(--text-4)' })}</span>
+        <div class="gm-rank__txt">
+          <div class="gm-rank__top">
+            <b>${_esc(l.name)}</b><em>Rank ${l.rank}</em>
+            ${isCurrent ? '<span class="gm-rank__you">You</span>' : ''}
           </div>
-          <div style="font-size:.75rem;color:var(--text-3);margin-top:2px;">
+          <div class="gm-rank__sub">
             ${isUnlocked
-              ? `${_icon('checkCircle', 11, { color: 'var(--success)' })} Unlocked at ${l.minXP.toLocaleString()} XP`
-              : `${_icon('hourglass', 11)} Need ${xpNeeded.toLocaleString()} more XP`}
+              ? `${_icon('checkCircle', 12, { color: 'var(--success)' })} Unlocked at ${l.minXP.toLocaleString()} XP`
+              : `${_icon('lock', 12)} ${xpNeeded.toLocaleString()} XP to unlock`}
           </div>
-          ${isCurrent && nextL
-            ? `<div style="margin-top:.375rem;">
-                 <div style="width:100%;height:4px;background:var(--bg-muted);border-radius:99px;overflow:hidden;">
-                   <div style="height:100%;border-radius:99px;background:${l.color};
-                               width:${Math.min(100, Math.round(((currentXP - l.minXP) / (nextL.minXP - l.minXP)) * 100))}%;
-                               transition:width .6s ease;"></div>
-                 </div>
-                 <div style="font-size:.5625rem;color:var(--text-4);margin-top:2px;">
-                   ${currentXP.toLocaleString()} / ${nextL.minXP.toLocaleString()} XP to ${_esc(nextL.name)}
-                 </div>
-               </div>`
-            : ''}
+          ${isCurrent && nextL ? `
+            <div class="gm-rank__bar"><i style="width:${pct}%;"></i></div>
+            <div class="gm-rank__cap">${currentXP.toLocaleString()} / ${nextL.minXP.toLocaleString()} XP to ${_esc(nextL.name)}</div>` : ''}
         </div>
       </div>`;
   }).join('');
 
   _showModal(`
-    <div style="text-align:center;margin-bottom:1rem;">
-      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">
-        ${_icon('chartBar', 20)} All Ranks
-      </h2>
-      <p style="font-size:.8125rem;color:var(--text-3);margin-top:.25rem;">
-        ${LEVELS.length} ranks total. Keep earning XP to climb higher.
-      </p>
+    <div style="text-align:center;">
+      <div>${_icon('chartBar', 26)}</div>
+      <h2>All Ranks</h2>
+      <p style="margin-top:.375rem;">${LEVELS.length} ranks in total. Keep earning XP to climb higher.</p>
     </div>
-    <div style="max-height:65vh;overflow-y:auto;padding-right:.25rem;">
-      ${rows}
-    </div>
-    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.75rem;">Close</button>
+    <div class="gm-ranks">${rows}</div>
+    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:1rem;">Close</button>
   `);
 }
 
@@ -7249,7 +7173,7 @@ function _closeWatchModal(challengeId) {
     const badgeHtml = result && result.earnedBadges && result.earnedBadges.length > 0
       ? `<div class="game-badges-earned">
            <p style="font-size:.875rem;font-weight:700;color:var(--text-2);margin-bottom:.5rem;">New Badges Earned!</p>
-           ${result.earnedBadges.map(bid => { const b = BADGES.find(x => x.id === bid); return b ? `<div class="game-badge-pop">${_icon(b.icon, 16)} <strong>${_esc(b.name)}</strong> — ${_esc(b.desc)}</div>` : ''; }).join('')}
+           ${result.earnedBadges.map(bid => { const b = BADGES.find(x => x.id === bid); return b ? `<div class="game-badge-pop">${_badgeMedal(b, 36)}<span class="game-badge-pop__t"><strong>${_esc(b.name)}</strong><small>${_esc(b.desc)}</small></span></div>` : ''; }).join('')}
          </div>` : '';
 
     const extrasHtml = extras && extras.length > 0
@@ -8949,17 +8873,237 @@ function _krLoop(timestamp) {
 
   function _showModal(html) {
     _closeModal();
+    _injectUxStyles();
     const overlay = document.createElement('div');
     overlay.id        = 'gameModal';
-    overlay.className = 'cbt-overlay';
-    overlay.innerHTML = `<div class="cbt-modal modal-box" style="max-width:440px;">${html}</div>`;
-    overlay.addEventListener('click', e => { if (e.target === overlay) _closeModal(); });
+    overlay.className = 'gm-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.innerHTML =
+      '<div class="gm-modal" tabindex="-1">' +
+        '<button type="button" class="gm-x" aria-label="Close" onclick="Game._closeModal()">' + _li('x', 16) + '</button>' +
+        '<div class="gm-body">' + html + '</div>' +
+      '</div>';
+
+    // Only close when the press AND release both happen on the backdrop
+    let downOnBackdrop = false;
+    overlay.addEventListener('mousedown', e => { downOnBackdrop = (e.target === overlay); });
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay && downOnBackdrop) _closeModal();
+      downOnBackdrop = false;
+    });
     document.body.appendChild(overlay);
+
+    // Turn the plain icon at the top of a centred header into a proper icon tile
+    const head = overlay.querySelector('.gm-body > div[style*="text-align:center"]');
+    if (head) {
+      const f = head.firstElementChild;
+      if (f && f.tagName === 'DIV' && f.querySelector('svg') && !f.querySelector('h1,h2,h3,p,label,button')) {
+        f.classList.add('gm-ico');
+      }
+    }
+    const m = overlay.firstElementChild;
+    if (m) m.focus({ preventScroll: true });
   }
 
   function _closeModal() {
     const m = document.getElementById('gameModal');
     if (m) m.remove();
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     LOADING STATES  (each kind is used where it fits the action)
+       sweep   – a hairline travels along the button edge   → sending / saving
+       shimmer – a soft light passes over the button         → starting / committing
+       dots    – three dots rise in sequence after the label → opening / navigating
+  ══════════════════════════════════════════════════════════════ */
+
+  function _busyStart(btn, kind, label) {
+    if (!btn || btn.classList.contains('gx-busy')) return;
+    _injectUxStyles();
+    btn.classList.add('gx-busy', 'gx-busy--' + kind);
+    btn.setAttribute('aria-busy', 'true');
+    if (label && btn.classList.contains('btn')) {
+      btn.dataset.gxHtml = btn.innerHTML;
+      btn.style.minWidth = btn.offsetWidth + 'px';
+      btn.innerHTML =
+        '<span class="gx-lbl">' + label + (kind === 'dots' ? '' : '…') + '</span>' +
+        (kind === 'dots' ? '<span class="gx-dots" aria-hidden="true"><i></i><i></i><i></i></span>' : '');
+    }
+  }
+
+  function _busyEnd(btn) {
+    if (!btn) return;
+    btn.classList.remove('gx-busy', 'gx-busy--sweep', 'gx-busy--dots', 'gx-busy--shimmer');
+    btn.removeAttribute('aria-busy');
+    if (btn.dataset.gxHtml != null) {
+      btn.innerHTML = btn.dataset.gxHtml;
+      delete btn.dataset.gxHtml;
+      btn.style.minWidth = '';
+    }
+  }
+
+  function _withBusy(fn, kind, label) {
+    if (typeof fn !== 'function' || fn.constructor.name !== 'AsyncFunction') return fn;
+    return function () {
+      const ev = window.event;
+      let btn = null;
+      try { btn = ev && ev.target && ev.target.closest ? ev.target.closest('button') : null; } catch (_) { btn = null; }
+      if (btn && btn.classList.contains('gx-busy')) return undefined;   // ignore double taps
+      if (btn) _busyStart(btn, kind, label);
+      const done = () => { if (btn && btn.isConnected) _busyEnd(btn); };
+      let out;
+      try { out = fn.apply(this, arguments); } catch (e) { done(); throw e; }
+      return out && typeof out.then === 'function' ? out.finally(done) : (done(), out);
+    };
+  }
+
+  let _gmEscBound = false;
+  function _injectUxStyles() {
+    if (!_gmEscBound) {
+      _gmEscBound = true;
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && document.getElementById('gameModal')) _closeModal();
+      });
+    }
+    if (document.getElementById('_gameUxStyles')) return;
+    const s = document.createElement('style');
+    s.id = '_gameUxStyles';
+    s.textContent = `
+      /* ═══ MODAL SHELL ═══ */
+      .gm-overlay { position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;
+        background:rgba(12,14,22,.46);-webkit-backdrop-filter:blur(10px) saturate(1.15);backdrop-filter:blur(10px) saturate(1.15);
+        overflow-y:auto;overscroll-behavior:contain;animation:gm-fade .2s ease-out both; }
+      .gm-modal { position:relative;width:100%;max-width:440px;max-height:min(90vh,880px);display:flex;flex-direction:column;margin:auto;
+        background:var(--bg-base);color:var(--text-1);font-family:var(--font);outline:none;
+        border:1px solid var(--border);border-radius:28px;
+        box-shadow:0 1px 2px rgba(16,24,40,.06),0 8px 16px -6px rgba(16,24,40,.12),0 32px 64px -16px rgba(16,24,40,.34);
+        animation:gm-pop .34s cubic-bezier(.22,1,.36,1) both; }
+      .gm-body { padding:2rem 1.5rem 1.5rem;overflow-y:auto;overscroll-behavior:contain;border-radius:inherit; }
+      .gm-x { position:absolute;top:.875rem;right:.875rem;z-index:3;width:32px;height:32px;border-radius:50%;border:0;
+        background:var(--bg-subtle);color:var(--text-3);display:flex;align-items:center;justify-content:center;cursor:pointer;
+        transition:background .15s,color .15s,transform .15s; }
+      .gm-x:hover { background:var(--bg-muted);color:var(--text-1); }
+      .gm-x:active { transform:scale(.9); }
+      .gm-x:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+      @keyframes gm-fade  { from{opacity:0} to{opacity:1} }
+      @keyframes gm-pop   { from{opacity:0;transform:translateY(16px) scale(.965)} to{opacity:1;transform:none} }
+      @keyframes gm-sheet { from{transform:translateY(100%)} to{transform:none} }
+      @media (max-width:560px) {
+        .gm-overlay { align-items:flex-end;padding:0; }
+        .gm-modal { max-width:none;max-height:92vh;margin:0;border-radius:28px 28px 0 0;border-bottom:0;animation:gm-sheet .38s cubic-bezier(.22,1,.36,1) both; }
+        .gm-modal::before { content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:var(--border-strong);z-index:3; }
+        .gm-body { padding:1.75rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom)); }
+      }
+
+      /* ═══ MODAL CONTENT (restyles every game modal in one place) ═══ */
+      .gm-modal h2 { font-size:1.1875rem !important;font-weight:700 !important;letter-spacing:-.02em !important;line-height:1.25 !important;color:var(--text-1) !important;margin:0 !important; }
+      .gm-modal h3 { font-size:1rem !important;font-weight:700 !important;letter-spacing:-.01em !important;color:var(--text-1) !important;margin:0 !important; }
+      .gm-body > div[style*="text-align:center"] > p { font-size:.875rem !important;line-height:1.55 !important;color:var(--text-3) !important;max-width:36ch;margin-left:auto !important;margin-right:auto !important; }
+      .gm-ico { width:56px;height:56px;margin:0 auto 1rem !important;border-radius:18px;display:flex !important;align-items:center;justify-content:center;
+        background:var(--accent-subtle);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-border);font-size:0 !important; }
+      .gm-ico svg { width:26px !important;height:26px !important; }
+      .gm-modal label { display:block !important;font-size:.6875rem !important;font-weight:600 !important;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3) !important;margin-bottom:.4375rem !important; }
+      .gm-modal select,.gm-modal input[type="text"],.gm-modal input[type="number"],.gm-modal input[type="email"],.gm-modal input:not([type]) {
+        height:46px !important;border-radius:14px !important;border:1px solid var(--border-strong) !important;background-color:var(--bg-subtle) !important;
+        padding-top:0 !important;padding-bottom:0 !important;font-size:.9375rem !important;color:var(--text-1) !important;box-shadow:none !important;
+        transition:border-color .15s,box-shadow .15s,background-color .15s !important; }
+      .gm-modal select:focus,.gm-modal input:focus { border-color:var(--accent) !important;box-shadow:0 0 0 4px var(--accent-subtle) !important;background-color:var(--bg-base) !important;outline:none !important; }
+      .gm-modal .btn { height:46px !important;border-radius:14px !important;font-size:.9375rem !important;font-weight:600 !important;letter-spacing:-.005em !important;padding:0 1.125rem !important;box-shadow:none !important; }
+      .gm-modal .btn.btn-lg { height:50px !important; }
+      .gm-modal .btn:hover:not(:disabled) { transform:none !important;filter:brightness(1.07); }
+      .gm-modal .btn:active:not(:disabled) { transform:scale(.985) !important; }
+      .gm-modal .btn.bg-gray-500,.gm-modal .btn[class*="bg-gray"] { background:transparent !important;border:1px solid var(--border-strong) !important;color:var(--text-2) !important; }
+      .gm-modal .btn.bg-gray-500:hover:not(:disabled),.gm-modal .btn[class*="bg-gray"]:hover:not(:disabled) { background:var(--bg-subtle) !important;filter:none; }
+      .gm-modal .btn:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+
+      /* ═══ BADGE MEDAL — one look, everywhere ═══ */
+      .gb-medal { --s:40px;position:relative;flex:none;width:var(--s);height:var(--s);display:inline-flex;align-items:center;justify-content:center;
+        border-radius:calc(var(--s) * .32);color:#fff;
+        background:linear-gradient(150deg,var(--t1),var(--t2));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,0,0,.16),0 0 0 1px color-mix(in srgb,var(--t2) 82%,#000),
+                   0 calc(var(--s) * .14) calc(var(--s) * .32) calc(var(--s) * -.12) var(--t2); }
+      .gb-medal::before { content:'';position:absolute;inset:calc(var(--s) * .07);border-radius:calc(var(--s) * .26);border:1px solid rgba(255,255,255,.3);pointer-events:none; }
+      .gb-medal::after  { content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 80% at 18% 0%,rgba(255,255,255,.38),transparent 55%);pointer-events:none; }
+      .gb-medal svg { position:relative;z-index:1;stroke-width:2.05;filter:drop-shadow(0 1px 1px rgba(0,0,0,.2)); }
+      .gb-pips { display:inline-flex;gap:3px;margin-left:.5rem; }
+      .gb-pips i { width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.2; }
+      .gb-pips i.on { opacity:1; }
+
+      .gm-badge { text-align:center; }
+      .gm-badge__stage { position:relative;display:flex;justify-content:center;padding:.25rem 0 1.375rem; }
+      .gm-badge__stage::before { content:'';position:absolute;left:18%;right:18%;top:-6px;bottom:0;z-index:0;filter:blur(8px);
+        background:radial-gradient(closest-side,color-mix(in srgb,var(--t1) 34%,transparent),transparent); }
+      .gm-badge__stage .gb-medal { z-index:1; }
+      .gm-badge__tier { display:inline-flex;align-items:center;padding:.3125rem .75rem;border-radius:99px;background:color-mix(in srgb,var(--t2) 11%,transparent);
+        color:var(--ink);font-size:.6875rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase; }
+      .gm-modal .gm-badge__name { margin-top:1rem !important;font-size:1.5rem !important;letter-spacing:-.025em !important; }
+      .gm-badge__desc { margin:.5rem auto 0;max-width:30ch;font-size:.9375rem;line-height:1.55;color:var(--text-3); }
+      .gm-badge__meta { display:grid;grid-template-columns:1fr 1fr;margin:1.5rem 0 1.25rem;padding:1rem 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border); }
+      .gm-badge__meta > div { display:flex;flex-direction:column;gap:.3125rem;padding:0 .5rem; }
+      .gm-badge__meta > div + div { border-left:1px solid var(--border); }
+      .gm-badge__meta dt { font-size:.625rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3); }
+      .gm-badge__meta dd { margin:0;font-size:.9375rem;font-weight:600;color:var(--text-1); }
+
+      .lb-badge { padding:.25rem .875rem .25rem .25rem !important;gap:.5rem !important;font-weight:500 !important; }
+      .game-badges-earned { background:var(--bg-subtle) !important;border:1px solid var(--border) !important;border-radius:18px !important;padding:1rem !important; }
+      .game-badge-pop { gap:.75rem !important;background:var(--bg-base) !important;border:1px solid var(--border) !important;border-radius:14px !important;padding:.5rem .875rem .5rem .5rem !important; }
+      .game-badge-pop__t { display:flex;flex-direction:column;min-width:0;text-align:left;gap:1px; }
+      .game-badge-pop__t strong { font-size:.875rem;font-weight:600;color:var(--text-1); }
+      .game-badge-pop__t small  { font-size:.75rem;color:var(--text-3);line-height:1.35; }
+
+      /* ═══ ALL RANKS SHEET ═══ */
+      .gm-ranks { display:flex;flex-direction:column;gap:.5rem;max-height:56vh;overflow-y:auto;margin:1.25rem -.25rem 0;padding:0 .25rem; }
+      .gm-rank { display:flex;align-items:center;gap:.875rem;padding:.75rem .875rem;border-radius:16px;border:1px solid var(--border);background:var(--bg-base); }
+      .gm-rank.is-current { border-color:color-mix(in srgb,var(--c) 55%,var(--border));background:color-mix(in srgb,var(--c) 7%,var(--bg-base)); }
+      .gm-rank.is-locked { opacity:.55; }
+      .gm-rank__ico { width:38px;height:38px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--c); }
+      .gm-rank.is-locked .gm-rank__ico { background:var(--bg-muted); }
+      .gm-rank__txt { flex:1;min-width:0; }
+      .gm-rank__top { display:flex;align-items:center;gap:.5rem;flex-wrap:wrap; }
+      .gm-rank__top b { font-size:.9375rem;font-weight:600;letter-spacing:-.01em;color:var(--text-1); }
+      .gm-rank.is-current .gm-rank__top b { color:var(--c); }
+      .gm-rank__top em { font-style:normal;font-size:.6875rem;color:var(--text-3); }
+      .gm-rank__you { margin-left:auto;font-size:.625rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--c);padding:2px 8px;border-radius:99px; }
+      .gm-rank__sub { display:flex;align-items:center;gap:.3125rem;margin-top:2px;font-size:.75rem;color:var(--text-3); }
+      .gm-rank__bar { height:4px;margin-top:.5rem;border-radius:99px;background:var(--bg-muted);overflow:hidden; }
+      .gm-rank__bar i { display:block;height:100%;border-radius:99px;background:var(--c); }
+      .gm-rank__cap { margin-top:.3125rem;font-size:.6875rem;color:var(--text-3);font-variant-numeric:tabular-nums; }
+
+      /* ═══ CHESS PROMOTION ═══ */
+      .gm-pieces { display:grid;grid-template-columns:repeat(4,1fr);gap:.625rem;margin-top:1.375rem; }
+      .gm-piece { display:flex;flex-direction:column;align-items:center;gap:.375rem;padding:.875rem .25rem .75rem;border-radius:16px;border:1px solid var(--border);background:var(--bg-subtle);
+        color:var(--text-1);cursor:pointer;font-family:inherit;transition:transform .18s cubic-bezier(.2,.7,.3,1),border-color .15s,background .15s,box-shadow .15s; }
+      .gm-piece:hover { transform:translateY(-2px);border-color:var(--accent);background:var(--accent-subtle);box-shadow:0 10px 20px -12px var(--accent); }
+      .gm-piece:active { transform:scale(.97); }
+      .gm-piece:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+      .gm-piece span { font-size:2.125rem;line-height:1; }
+      .gm-piece small { font-size:.6875rem;font-weight:600;letter-spacing:.04em;color:var(--text-3); }
+
+      /* ═══ BUTTON LOADING STATES ═══ */
+      .gx-busy { pointer-events:none !important;cursor:progress !important; }
+      .gx-busy:not(.btn) { position:relative;overflow:hidden; }
+      .gx-busy:not(.btn) > * { opacity:.72;transition:opacity .2s; }
+      .gx-busy::after { content:'';position:absolute;pointer-events:none; }
+      .gx-busy--sweep::after   { left:0;bottom:0;height:2px;width:38%;border-radius:2px;background:currentColor;opacity:.8;animation:gx-sweep 1.1s cubic-bezier(.65,0,.35,1) infinite; }
+      .gx-busy--shimmer::after,.gx-busy--dots::after { inset:0;background:linear-gradient(100deg,transparent 22%,color-mix(in srgb,currentColor 24%,transparent) 50%,transparent 78%);transform:translateX(-100%);animation:gx-shim 1.25s ease-in-out infinite; }
+      .gx-busy--dots::after { animation-duration:1.6s; }
+      @keyframes gx-sweep { 0% { transform:translateX(-100%); } 100% { transform:translateX(265%); } }
+      @keyframes gx-shim  { to { transform:translateX(100%); } }
+      .gx-lbl { position:relative;z-index:1; }
+      .gx-dots { position:relative;z-index:1;display:inline-flex;align-items:flex-end;gap:3px;height:1em;margin-left:1px; }
+      .gx-dots i { width:4px;height:4px;border-radius:50%;background:currentColor;animation:gx-dot 1s ease-in-out infinite; }
+      .gx-dots i:nth-child(2) { animation-delay:.12s; }
+      .gx-dots i:nth-child(3) { animation-delay:.24s; }
+      @keyframes gx-dot { 0%,60%,100% { transform:translateY(0);opacity:.35; } 30% { transform:translateY(-4px);opacity:1; } }
+      @media (prefers-reduced-motion:reduce) {
+        .gx-busy::after,.gx-dots i,.gm-overlay,.gm-modal { animation:none !important; }
+      }
+
+      [data-theme="dark"] .gm-overlay { background:rgba(0,0,0,.62); }
+      [data-theme="dark"] .gm-modal { box-shadow:0 0 0 1px rgba(255,255,255,.05),0 32px 64px -16px rgba(0,0,0,.7); }
+    `;
+    document.head.appendChild(s);
   }
 
   function _abandonGame() {
@@ -9420,6 +9564,7 @@ function _krLoop(timestamp) {
       [data-theme="dark"] .game-letter-tile { background:linear-gradient(145deg,rgba(107,135,248,.15),rgba(24,24,28,.8));border-color:var(--accent-border); }
     `;
     document.head.appendChild(s);
+    _injectUxStyles();
   }
 
 async function renderTeacherGameRestrictions(containerId) {
@@ -10251,5 +10396,28 @@ async function renderTeacherGameRestrictions(containerId) {
     _chessCloseReview,
     _teacherGameTab: function(tab) { if (typeof window._teacherGameTab === 'function') window._teacherGameTab(tab); },
   };
+
+  /* Loading state per action — chosen to fit what the button does */
+  (function () {
+    const MAP = {
+      // navigating / fetching
+      openGameLobby: ['dots', 'Loading'], openLeaderboard: ['dots', 'Loading'], _showLeaderboardTab: ['sweep'],
+      _showGameHistory: ['dots', 'Loading'], _showChallengeSetup: ['dots', 'Loading'], _showChessSetup: ['dots', 'Loading'],
+      _showScrabbleSetup: ['dots', 'Loading'], _showPendingChallenges: ['dots', 'Loading'], _showAwaitingChallenges: ['dots', 'Loading'],
+      _showChessPending: ['dots', 'Loading'], _showScrabblePending: ['dots', 'Loading'],
+      _openChessGame: ['dots', 'Opening'], _openScrabbleGame: ['dots', 'Opening'], _chessOpenReview: ['dots', 'Loading'],
+      _showChallengeResultDetail: ['dots', 'Loading'],
+      // sending / writing
+      _sendChallenge: ['sweep', 'Sending'], _sendScrabbleChallenge: ['sweep', 'Sending'], _sendChessChallenge: ['sweep', 'Sending'],
+      _declineChallenge: ['sweep', 'Declining'], _declineScrabble: ['sweep', 'Declining'], _declineChess: ['sweep', 'Declining'],
+      _wsConfirmSwap: ['sweep', 'Swapping'], _wsSwapTiles: ['sweep'], _wsPass: ['sweep', 'Passing'], _chessResign: ['sweep', 'Resigning'],
+      // starting / committing
+      _acceptChallenge: ['shimmer', 'Joining'], _acceptScrabble: ['shimmer', 'Joining'], _acceptChess: ['shimmer', 'Joining'],
+      _playChallengerTurn: ['shimmer', 'Starting'], _wsConfirmPlay: ['shimmer', 'Checking word'],
+    };
+    Object.keys(MAP).forEach(function (k) {
+      if (typeof window.Game[k] === 'function') window.Game[k] = _withBusy(window.Game[k], MAP[k][0], MAP[k][1]);
+    });
+  })();
 
 })();
