@@ -5015,7 +5015,7 @@ async function _endGameSession(sessionId, resultData) {
     const result = await _awardXP(xpFinal, 'quizBlitz', { win, perfect, speedDemonCount: _speedDemonCount });
     await _saveGameResult('quizBlitz', { correct, total, pct, xpEarned: xpFinal, perfect });
     await _endGameSession(gs._sessionId, { xpEarned: xpFinal, score: correct, pct, win, meta: { total, perfect } });
-    _renderGameResult({ gameIcon: 'lightning', gameName: 'Quiz Blitz', score: `${correct} / ${total}`, pct, xpEarned: xpFinal, perfect, win, result, extras: [{ label: 'Speed Bonuses', value: `+${gs.speedBonuses * XP_SPEED_BONUS} XP` }, { label: 'Perfect Bonus', value: perfect ? `+${XP_PER_PERFECT} XP` : '—' }], onPlayAgainKey: 'quizBlitz' });
+    _renderGameResult({ gameIcon: 'quiz', tint: '#4f6ef7', gameName: 'Quiz Blitz', score: `${correct} / ${total}`, pct, xpEarned: xpFinal, perfect, win, result, extras: [{ label: 'Speed Bonuses', value: `+${gs.speedBonuses * XP_SPEED_BONUS} XP` }, { label: 'Perfect Bonus', value: perfect ? `+${XP_PER_PERFECT} XP` : '—' }], onPlayAgainKey: 'quizBlitz' });
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -5178,7 +5178,7 @@ async function _endGameSession(sessionId, resultData) {
     const result = await _awardXP(gs.xpEarned, 'speedMath', { win, perfect, difficulty: gs.difficulty });
     await _saveGameResult('speedMath', { score: gs.score, attempted: gs.attempted, pct, xpEarned: gs.xpEarned, difficulty: gs.difficulty });
     await _endGameSession(gs._sessionId, { xpEarned: gs.xpEarned, score: gs.score, pct, win, meta: { attempted: gs.attempted, difficulty: gs.difficulty, perfect } });
-    _renderGameResult({ gameIcon: 'calculator', gameName: 'Speed Math', score: `${gs.score} / ${gs.attempted}`, pct, xpEarned: gs.xpEarned, perfect, win, result, extras: [{ label: 'Difficulty', value: gs.difficulty.charAt(0).toUpperCase() + gs.difficulty.slice(1) }, { label: 'Accuracy', value: pct + '%' }], onPlayAgainKey: 'speedMath' });
+    _renderGameResult({ gameIcon: 'calculator', tint: '#f59e0b', gameName: 'Speed Math', score: `${gs.score} / ${gs.attempted}`, pct, xpEarned: gs.xpEarned, perfect, win, result, extras: [{ label: 'Difficulty', value: gs.difficulty.charAt(0).toUpperCase() + gs.difficulty.slice(1) }, { label: 'Accuracy', value: pct + '%' }], onPlayAgainKey: 'speedMath' });
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -5808,7 +5808,7 @@ function _buildWordPoolForStudent() {
     const result  = await _awardXP(gs.xpEarned, 'wordScramble', { win, perfect, wordCorrect: gs.wordCorrect });
     await _saveGameResult('wordScramble', { correct, total, pct, xpEarned: gs.xpEarned });
     await _endGameSession(gs._sessionId, { xpEarned: gs.xpEarned, score: correct, pct, win, meta: { total, perfect } });
-    _renderGameResult({ gameIcon: 'textT', gameName: 'Word Scramble', score: `${correct} / ${total}`, pct, xpEarned: gs.xpEarned, perfect, win, result, extras: [], onPlayAgainKey: 'wordScramble' });
+    _renderGameResult({ gameIcon: 'scramble', tint: '#8b5cf6', gameName: 'Word Scramble', score: `${correct} / ${total}`, pct, xpEarned: gs.xpEarned, perfect, win, result, extras: [], onPlayAgainKey: 'wordScramble' });
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -6152,7 +6152,8 @@ function _buildWordPoolForStudent() {
     await _endGameSession(gs._sessionId, { xpEarned: xpFinal, score: correct, pct, win, meta: { total, perfect, bestStreak: gs.bestStreak } });
 
     _renderGameResult({
-      gameIcon:      'checkSquare',
+      gameIcon:      'trueFalse',
+      tint:          '#10b981',
       gameName:      'True or False Blitz',
       score:         `${correct} / ${total}`,
       pct,
@@ -6458,28 +6459,22 @@ function _buildWordPoolForStudent() {
                         : 'Better luck next time!';
 
     const extraHtml = `
-      <div style="margin:.75rem 0;padding:1.25rem;border-radius:10px;text-align:center;
-                  background:var(--bg-subtle);border:2px solid ${survivalColor}30;">
-        <div style="font-size:2.5rem;font-weight:900;color:${survivalColor};font-family:var(--font-mono);line-height:1;">
-          ${survived}
+      <div class="gr-feature">
+        <div class="lbl">Distance run</div>
+        <div class="num">${Math.floor(s.distance)}<i>m</i></div>
+        <span class="gr-pill">${distanceTitle}</span>
+        <div class="gr-chips">
+          <span class="gr-chip">${_li('coins', 15)} <b>${s.score}</b> coins</span>
+          <span class="gr-chip">${_li('flame', 15)} Best combo <b>${s.bestCombo > 0 ? s.bestCombo : 1}x</b></span>
         </div>
-        <p style="font-size:.875rem;font-weight:700;color:${survivalColor};margin:.25rem 0;">
-          Questions Survived
-        </p>
-        <p style="font-size:1rem;font-weight:800;color:var(--text-1);margin-top:.5rem;">${survivalTitle}</p>
-        ${died
-          ? `<p style="font-size:.8125rem;color:var(--text-3);margin-top:.375rem;">
-               Eliminated on question ${questionsAttempted}
-             </p>`
-          : `<p style="font-size:.8125rem;color:var(--success);font-weight:700;margin-top:.375rem;">
-               You survived the entire pool — flawless!
-             </p>`}
       </div>`;
 
     _renderGameResult({
       gameIcon:      'skull',
+      tint:          '#e11d48',
       gameName:      'Perfect Run',
-      score:         `${survived} survived`,
+      score:         `${survived}`,
+      scoreLabel:    'Survived',
       pct,
       xpEarned:      xpFinal,
       perfect,
@@ -7022,6 +7017,7 @@ function _buildWordPoolForStudent() {
 
     _renderGameResult({
       gameIcon:      'swords',
+      tint:          '#ef4444',
       gameName:      'Challenge',
       score:         `${myScore} / ${total}`,
       pct:           myPct,
@@ -7154,8 +7150,93 @@ function _closeWatchModal(challengeId) {
      GAME RESULT SCREEN
   ══════════════════════════════════════════════════════════════ */
 
-  function _renderGameResult({ gameIcon, gameName, score, pct, xpEarned, perfect, win, result, extras, extraHtml, onPlayAgainKey }) {
+  function _injectResultStyles() {
+    if (document.getElementById('_grStyles')) return;
+    const st = document.createElement('style'); st.id = '_grStyles';
+    st.textContent = `
+      .gr { max-width:34rem;margin:0 auto;padding:.5rem .25rem calc(6rem + env(safe-area-inset-bottom,0px));font-family:var(--font);color:var(--text-1);--t:var(--accent); }
+      .gr * { box-sizing:border-box; }
+      .gr-card { position:relative;overflow:hidden;background:var(--bg-base);border:1px solid var(--border);border-radius:28px;padding:1.5rem 1.25rem 1.25rem;box-shadow:0 1px 2px rgba(0,0,0,.04),0 24px 48px -24px rgba(0,0,0,.28); }
+      .gr-card::before { content:"";position:absolute;inset:-40% -20% auto -20%;height:340px;background:radial-gradient(60% 60% at 50% 0%,color-mix(in srgb,var(--t) 26%,transparent),transparent 70%);pointer-events:none; }
+      .gr-card > * { position:relative; }
+      .gr-head { text-align:center;margin-bottom:1.5rem; }
+      .gr-tile { display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:20px;color:var(--t);margin-bottom:.875rem;
+        background:linear-gradient(145deg,color-mix(in srgb,var(--t) 20%,transparent),color-mix(in srgb,var(--t) 5%,transparent));
+        border:1px solid color-mix(in srgb,var(--t) 32%,transparent);box-shadow:0 8px 24px -10px color-mix(in srgb,var(--t) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.12); }
+      .gr-eyebrow { font-size:.6875rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3);margin-bottom:.3rem; }
+      .gr-title { font-size:1.5rem;font-weight:700;letter-spacing:-.03em;line-height:1.15;margin:0; }
+
+      .gr-hero { display:flex;align-items:center;gap:1.125rem;padding:1rem 1.125rem;border-radius:22px;background:color-mix(in srgb,var(--bg-subtle) 80%,transparent);border:1px solid var(--border);margin-bottom:.875rem; }
+      .gr-ring { position:relative;width:96px;height:96px;flex:0 0 96px; }
+      .gr-ring svg { width:100%;height:100%;transform:rotate(-90deg);overflow:visible; }
+      .gr-ring .trk { stroke:var(--bg-muted); }
+      .gr-ring .bar { stroke-dasharray:264;animation:grRing 1.1s cubic-bezier(.2,.8,.2,1) both .15s;filter:drop-shadow(0 0 6px color-mix(in srgb,currentColor 55%,transparent)); }
+      .gr-ring b { position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1; }
+      .gr-ring b small { font-size:.625rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin-top:.3rem; }
+      .gr-metrics { flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:.25rem .75rem; }
+      .gr-metric { min-width:0; }
+      .gr-metric span { display:block;font-size:.6875rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:.25rem; }
+      .gr-metric strong { display:block;font-size:clamp(1.25rem,6vw,1.75rem);font-weight:700;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere; }
+      .gr-metric.xp strong { background:linear-gradient(135deg,var(--t),#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent; }
+
+      .gr-feature { text-align:center;padding:1.375rem 1rem 1.125rem;border-radius:22px;margin-bottom:.875rem;border:1px solid color-mix(in srgb,#fbbf24 32%,var(--border));
+        background:radial-gradient(90% 120% at 50% 0%,color-mix(in srgb,#fbbf24 14%,transparent),transparent 70%),var(--bg-subtle); }
+      .gr-feature .lbl { font-size:.6875rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3); }
+      .gr-feature .num { font-family:var(--font-mono);font-size:clamp(2.5rem,13vw,3.5rem);font-weight:800;letter-spacing:-.05em;line-height:1.05;margin:.25rem 0 .5rem;font-variant-numeric:tabular-nums;
+        background:linear-gradient(180deg,#fde68a,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent; }
+      .gr-feature .num i { font-style:normal;font-size:.45em;letter-spacing:0;margin-left:.1em;opacity:.85; }
+      .gr-pill { display:inline-block;padding:.3rem .8rem;border-radius:99px;font-size:.8125rem;font-weight:600;color:#fbbf24;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3); }
+      .gr-chips { display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;margin-top:.875rem; }
+      .gr-chip { display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .75rem;border-radius:12px;font-size:.8125rem;font-weight:500;color:var(--text-2);background:var(--bg-base);border:1px solid var(--border);white-space:nowrap; }
+      .gr-chip b { color:var(--text-1);font-weight:700;font-variant-numeric:tabular-nums; }
+
+      .gr-level { display:flex;align-items:center;gap:.875rem;padding:.875rem 1rem;border-radius:20px;margin-bottom:.875rem;
+        background:linear-gradient(135deg,color-mix(in srgb,var(--lc) 16%,transparent),color-mix(in srgb,var(--lc) 4%,transparent));border:1px solid color-mix(in srgb,var(--lc) 38%,transparent);animation:gameChallengePopIn .45s ease both .2s; }
+      .gr-level .ico { flex:0 0 44px;width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--lc) 18%,transparent);box-shadow:0 6px 18px -8px var(--lc); }
+      .gr-level .txt { min-width:0;flex:1; }
+      .gr-level .txt span { display:block;font-size:.6875rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--lc); }
+      .gr-level .txt strong { display:block;font-size:1.0625rem;font-weight:700;letter-spacing:-.02em;margin-top:1px; }
+      .gr-level em { font-style:normal;font-size:.75rem;font-weight:600;color:var(--text-3);white-space:nowrap; }
+
+      .gr-rows { margin:.25rem 0 .875rem;padding:0 .25rem; }
+      .gr-row { display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem 0;border-bottom:1px solid var(--border);font-size:.875rem; }
+      .gr-row:last-child { border-bottom:0; }
+      .gr-row span { color:var(--text-3); }
+      .gr-row strong { font-weight:600;font-variant-numeric:tabular-nums; }
+
+      .gr-prog { padding:1rem 1.125rem;border-radius:20px;background:var(--bg-subtle);border:1px solid var(--border);margin-bottom:.875rem; }
+      .gr-prog__top { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.375rem .75rem;margin-bottom:.75rem; }
+      .gr-lvl { display:inline-flex;align-items:center;gap:.5rem;font-size:.9375rem;font-weight:650;letter-spacing:-.01em; }
+      .gr-lvl small { white-space:nowrap;font-size:.625rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.15rem .45rem;border-radius:99px;background:var(--bg-muted);color:var(--text-3); }
+      .gr-xptxt { font-size:.75rem;font-weight:500;color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap; }
+      .gr-track { height:6px;border-radius:99px;background:var(--bg-muted);overflow:hidden; }
+      .gr-fill { height:100%;border-radius:99px;background:linear-gradient(90deg,var(--t),#8b5cf6);animation:grBar 1s cubic-bezier(.2,.8,.2,1) both .3s;box-shadow:0 0 12px color-mix(in srgb,var(--t) 60%,transparent); }
+      .gr-perfect { display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.75rem 1rem;border-radius:16px;margin-bottom:.875rem;font-size:.875rem;font-weight:700;color:#b45309;background:linear-gradient(135deg,rgba(251,191,36,.22),rgba(245,158,11,.1));border:1px solid rgba(245,158,11,.45); }
+      [data-theme="dark"] .gr-perfect { color:#fcd34d; }
+
+      .gr-actions { display:grid;gap:.625rem;margin-top:1.25rem; }
+      .gr-actions .two { display:grid;grid-template-columns:1fr 1fr;gap:.625rem; }
+      .gr-btn { display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:48px;padding:.75rem 1rem;border-radius:16px;font:inherit;font-size:.9375rem;font-weight:600;letter-spacing:-.01em;cursor:pointer;border:1px solid var(--border);background:var(--bg-base);color:var(--text-1);transition:transform .15s,background .15s,box-shadow .15s; }
+      .gr-btn:hover { background:var(--bg-subtle); }
+      .gr-btn:active { transform:scale(.98); }
+      .gr-btn.primary { min-height:54px;font-size:1rem;border:0;color:#fff;background:linear-gradient(135deg,var(--t),color-mix(in srgb,var(--t) 55%,#8b5cf6));box-shadow:0 12px 28px -12px color-mix(in srgb,var(--t) 80%,transparent),inset 0 1px 0 rgba(255,255,255,.22); }
+      .gr-btn.primary:hover { filter:brightness(1.06);background:linear-gradient(135deg,var(--t),color-mix(in srgb,var(--t) 55%,#8b5cf6)); }
+      .gr-btn.ghost { border-color:transparent;background:transparent;color:var(--text-3);font-size:.8125rem;font-weight:500;min-height:40px; }
+
+      .gr-card > .gr-head, .gr-card > .gr-hero, .gr-card > .gr-feature, .gr-card > .gr-level, .gr-card > .gr-rows, .gr-card > .gr-prog, .gr-card > .gr-actions { animation:grUp .5s cubic-bezier(.2,.8,.2,1) both; }
+      .gr-card > .gr-hero { animation-delay:.05s } .gr-card > .gr-feature { animation-delay:.1s } .gr-card > .gr-rows { animation-delay:.15s } .gr-card > .gr-prog { animation-delay:.2s } .gr-card > .gr-actions { animation-delay:.25s }
+      @keyframes grUp { from { opacity:0;transform:translateY(12px); } }
+      @keyframes grRing { from { stroke-dashoffset:264; } }
+      @keyframes grBar { from { width:0; } }
+      @media (max-width:360px) { .gr-hero { flex-direction:column;text-align:center; } .gr-metrics { width:100%; } }
+      @media (prefers-reduced-motion:reduce) { .gr-card *, .gr-card { animation:none !important; } }
+    `;
+    document.head.appendChild(st);
+  }
+
+  function _renderGameResult({ gameIcon, gameName, score, scoreLabel, pct, xpEarned, perfect, win, result, extras, extraHtml, onPlayAgainKey, tint }) {
     _stopTimer();
+    _injectResultStyles();
 
     const xp          = (_profile && _profile.xp) || 0;
     const level       = result ? result.newLevel : _getLevelForXP(xp);
@@ -7163,6 +7244,8 @@ function _closeWatchModal(challengeId) {
     const nextLvl     = _getNextLevel(xp);
     const maxed       = _isMaxLevel(xp);
     const gradeColor  = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--warning)' : 'var(--danger)';
+    const C           = 264;                                             // ring circumference (r = 42)
+    const ringOffset  = (C * (1 - Math.max(0, Math.min(100, pct)) / 100)).toFixed(1);
 
     let levelUpHtml = '';
     if (result && result.newLevel) {
@@ -7170,84 +7253,74 @@ function _closeWatchModal(challengeId) {
       const prevLevel = _getLevelForXP(prevXP);
       if (result.newLevel.rank > prevLevel.rank) {
         levelUpHtml = `
-          <div style="margin:.75rem 0;padding:1rem;border-radius:10px;text-align:center;
-                      background:linear-gradient(135deg,${result.newLevel.color}22,${result.newLevel.color}11);
-                      border:2px solid ${result.newLevel.color}55;
-                      animation:gameChallengePopIn .4s ease both;">
-            ${_icon(result.newLevel.icon, 36, { color: result.newLevel.color })}
-            <p style="font-weight:800;font-size:1.125rem;margin:.5rem 0 .25rem;color:${result.newLevel.color};">
-              Level Up! You are now ${_esc(result.newLevel.name)}
-            </p>
-            <p style="font-size:.8125rem;color:var(--text-3);">Rank ${result.newLevel.rank} of ${LEVELS.length}</p>
+          <div class="gr-level" style="--lc:${result.newLevel.color};">
+            <div class="ico">${_icon(result.newLevel.icon, 24, { color: result.newLevel.color })}</div>
+            <div class="txt"><span>Level up</span><strong>${_esc(result.newLevel.name)}</strong></div>
+            <em>Rank ${result.newLevel.rank}/${LEVELS.length}</em>
           </div>`;
       }
     }
 
     const badgeHtml = result && result.earnedBadges && result.earnedBadges.length > 0
-      ? `<div class="game-badges-earned">
-           <p style="font-size:.875rem;font-weight:700;color:var(--text-2);margin-bottom:.5rem;">New Badges Earned!</p>
+      ? `<div class="game-badges-earned" style="margin-bottom:.875rem;">
+           <p style="font-size:.6875rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin-bottom:.625rem;">New badges earned</p>
            ${result.earnedBadges.map(bid => { const b = BADGES.find(x => x.id === bid); return b ? `<div class="game-badge-pop">${_badgeMedal(b, 36)}<span class="game-badge-pop__t"><strong>${_esc(b.name)}</strong><small>${_esc(b.desc)}</small></span></div>` : ''; }).join('')}
          </div>` : '';
 
     const extrasHtml = extras && extras.length > 0
-      ? extras.map(e => `<div style="display:flex;justify-content:space-between;padding:.375rem 0;border-bottom:1px solid var(--border);font-size:.875rem;"><span style="color:var(--text-3);">${_esc(e.label)}</span><span style="font-weight:600;color:var(--text-1);">${_esc(String(e.value))}</span></div>`).join('')
+      ? `<div class="gr-rows">${extras.map(e => `<div class="gr-row"><span>${_esc(e.label)}</span><strong>${_esc(String(e.value))}</strong></div>`).join('')}</div>`
       : '';
 
     const playAgainAttrib = onPlayAgainKey ? `onclick="Game._playAgain('${_esc(onPlayAgainKey)}')"` : '';
 
     window.UI.mount(`
-      <div class="max-w-xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
-        <div class="glass game-result-card">
-          <div style="text-align:center;margin-bottom:1.5rem;">
-            <div style="margin-bottom:.375rem;">${_icon(gameIcon, 48, { color: 'var(--accent)' })}</div>
-            <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-1);">${_esc(gameName)} Complete</h2>
+      <div class="gr animate-fadeIn" style="--t:${tint || 'var(--accent)'};">
+        <div class="gr-card">
+          <div class="gr-head">
+            <div class="gr-tile">${_icon(gameIcon, 30)}</div>
+            <div class="gr-eyebrow">${win ? 'Great run' : 'Run complete'}</div>
+            <h2 class="gr-title">${_esc(gameName)}</h2>
           </div>
 
-          <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;background:var(--bg-subtle);border-radius:10px;padding:1.25rem;margin-bottom:1.25rem;">
-            <div style="text-align:center;">
-              <div style="font-size:2.5rem;font-weight:800;color:${gradeColor};line-height:1;">${pct}%</div>
-              <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">Score</div>
+          <div class="gr-hero">
+            <div class="gr-ring" style="color:${gradeColor};">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="trk" cx="50" cy="50" r="42" fill="none" stroke-width="8"/>
+                <circle class="bar" cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" style="stroke-dashoffset:${ringOffset};"/>
+              </svg>
+              <b style="color:var(--text-1);">${pct}<small>Score %</small></b>
             </div>
-            <div style="width:1px;height:40px;background:var(--border);"></div>
-            <div style="text-align:center;">
-              <div style="font-size:1.5rem;font-weight:700;color:var(--text-1);">${_esc(score)}</div>
-              <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">Result</div>
-            </div>
-            <div style="width:1px;height:40px;background:var(--border);"></div>
-            <div style="text-align:center;">
-              <div style="font-size:1.5rem;font-weight:700;color:var(--accent);">+${xpEarned}</div>
-              <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">XP Earned</div>
+            <div class="gr-metrics">
+              <div class="gr-metric"><span>${_esc(scoreLabel || 'Result')}</span><strong>${_esc(score)}</strong></div>
+              <div class="gr-metric xp"><span>XP earned</span><strong>+${xpEarned}</strong></div>
             </div>
           </div>
 
           ${extraHtml || ''}
           ${levelUpHtml}
-          ${extrasHtml ? `<div style="margin-bottom:1rem;">${extrasHtml}</div>` : ''}
+          ${extrasHtml}
 
-          <div class="glass-dark" style="padding:.875rem 1rem;border-radius:8px;margin-bottom:1rem;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
-              <span style="font-size:.875rem;font-weight:700;color:var(--text-2);display:flex;align-items:center;gap:.3rem;">
-                ${_icon(level.icon, 14, { color: level.color })} ${_esc(level.name)}
-                <span style="font-size:.625rem;background:var(--bg-muted);padding:1px 5px;border-radius:4px;color:var(--text-3);">Rank ${level.rank}</span>
-              </span>
+          <div class="gr-prog">
+            <div class="gr-prog__top">
+              <span class="gr-lvl">${_icon(level.icon, 16, { color: level.color })} ${_esc(level.name)} <small>Rank ${level.rank}</small></span>
               ${!maxed
-                ? `<span style="font-size:.75rem;color:var(--text-3);">${xp.toLocaleString()} / ${nextLvl.minXP.toLocaleString()} XP</span>`
-                : `<span style="font-size:.75rem;color:#f43f5e;font-weight:800;">✦ MAX LEVEL</span>`}
+                ? `<span class="gr-xptxt">${xp.toLocaleString()} / ${nextLvl.minXP.toLocaleString()} XP</span>`
+                : `<span class="gr-xptxt" style="color:#f43f5e;font-weight:700;">✦ Max level</span>`}
             </div>
-            <div class="game-xp-track"><div class="game-xp-fill" style="width:${xpPct}%;"></div></div>
-            ${maxed ? `<p style="font-size:.6875rem;color:var(--text-3);margin-top:.375rem;text-align:center;">Your rank is permanent — you are Absolute.</p>` : ''}
+            <div class="gr-track"><div class="gr-fill" style="width:${xpPct}%;"></div></div>
+            ${maxed ? `<p style="font-size:.75rem;color:var(--text-3);margin:.625rem 0 0;text-align:center;">Your rank is permanent. You are Absolute.</p>` : ''}
           </div>
 
-          ${perfect ? `<div class="game-perfect-banner">${_icon('sparkle', 16)} Perfect Score! +${XP_PER_PERFECT} bonus XP</div>` : ''}
+          ${perfect ? `<div class="gr-perfect">${_icon('sparkle', 16)} Perfect score · +${XP_PER_PERFECT} bonus XP</div>` : ''}
           ${badgeHtml}
 
-          <div style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;margin-top:1.25rem;">
-            <button onclick="Game.openGameLobby()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('house', 15)} Back to Games</button>
-            <button ${playAgainAttrib} class="btn" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('play', 15)} Play Again</button>
-            <button onclick="Game.openLeaderboard()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('trophy', 15)} Leaderboard</button>
-            <button onclick="Game._showScrabblePending()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
-            <svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/></svg> Scrabble Games
-          </button>
+          <div class="gr-actions">
+            <button ${playAgainAttrib} class="gr-btn primary">${_icon('play', 16)} Play again</button>
+            <div class="two">
+              <button onclick="Game.openGameLobby()" class="gr-btn">${_icon('house', 16)} Games</button>
+              <button onclick="Game.openLeaderboard()" class="gr-btn">${_icon('trophy', 16)} Leaderboard</button>
+            </div>
+            <button onclick="Game._showScrabblePending()" class="gr-btn ghost">${_li('scrabble', 15)} Scrabble games</button>
           </div>
         </div>
       </div>`);
@@ -7357,7 +7430,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   // ── NOT LIMITED: show normal setup ────────────────────────────
   _showModal(`
     <div style="text-align:center;margin-bottom:1.25rem;">
-      <div style="margin-bottom:.5rem;font-size:2.5rem;color:var(--accent);"><i class="ph ph-person-simple-run"></i></div>
+      <div style="margin-bottom:.625rem;display:inline-flex;width:64px;height:64px;align-items:center;justify-content:center;border-radius:20px;color:#06b6d4;background:linear-gradient(145deg,rgba(6,182,212,.18),rgba(6,182,212,.05));border:1px solid rgba(6,182,212,.28);">${_li('runner', 32)}</div>
       <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Knowledge Surfer</h2>
       <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
         Run through 3 lanes! Steer into the gold coin lane. Dodge trains & barriers. 3 lives per run.
@@ -7396,7 +7469,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
 
     <button onclick="Game._startKnowledgeRunner()" class="btn btn-lg w-full"
             style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-weight:800;font-size:1rem;">
-      <i class="ph ph-person-simple-run"></i> Start Surfing!
+      ${_li('runner', 18)} Start Surfing!
     </button>
     <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
   `);
@@ -8609,29 +8682,28 @@ function _krLoop(timestamp) {
                         : 'Keep Practising!';
 
     const extraHtml = `
-      <div style="margin:.75rem 0;padding:1.25rem;border-radius:10px;text-align:center;
-                  background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(99,102,241,0.12));
-                  border:2px solid rgba(251,191,36,0.3);">
-        <div style="font-size:2rem;font-weight:900;color:#fbbf24;font-family:var(--font-mono);line-height:1;">
-          ${Math.floor(s.distance)}m
+      <div class="gr-feature">
+        <div class="lbl">Distance run</div>
+        <div class="num">${Math.floor(distance)}<i>m</i></div>
+        <span class="gr-pill">${distanceTitle}</span>
+        <div class="gr-chips">
+          <span class="gr-chip">${_li('coins', 15)} <b>${score}</b> coins</span>
+          <span class="gr-chip">${_li('flame', 15)} Best combo <b>${s.bestCombo > 0 ? s.bestCombo : 1}x</b></span>
         </div>
-        <p style="font-size:.875rem;font-weight:700;color:#f1f5f9;margin:.25rem 0;">${distanceTitle}</p>
-        <p style="font-size:.8125rem;color:var(--text-3);margin-top:.375rem;">
-          <i class="ph ph-coins"></i> ${s.score} correct coins collected &nbsp;|&nbsp; <i class="ph ph-fire"></i> Best combo: ${s.bestCombo > 0 ? s.bestCombo : 1}x
-        </p>
       </div>`;
 
     _renderGameResult({
-      gameIcon:      'bolt',
+      gameIcon:      'runner',
       gameName:      'Knowledge Surfer',
-      score:         `${s.score} coins collected`,
+      score:         `${s.score}`,
+      scoreLabel:    'Coins',
+      tint:          '#06b6d4',
       pct,
       xpEarned:      s.xpEarned,
       perfect:       false,
       win,
       result,
       extras: [
-        { label: 'Distance Run',   value: `${Math.floor(s.distance)}m` },
         { label: 'Combo Bonus XP', value: s.xpEarned > s.score * KR_XP_PER_CORRECT ? `+${s.xpEarned - s.score * KR_XP_PER_CORRECT} XP` : '—' },
       ],
       extraHtml,
@@ -8742,22 +8814,24 @@ function _krLoop(timestamp) {
           ${Math.floor(distance)}m
         </div>
         <p style="font-size:.875rem;font-weight:700;color:#f1f5f9;margin:.25rem 0;">${distanceTitle}</p>
-        <p style="font-size:.8125rem;color:var(--text-3);margin-top:.375rem;">
-          <i class="ph ph-coins"></i> ${score} correct coins collected &nbsp;|&nbsp; <i class="ph ph-fire"></i> Best combo: ${s.bestCombo > 0 ? s.bestCombo : 1}x
+        <p style="font-size:.8125rem;color:var(--text-3);margin-top:.5rem;display:flex;flex-wrap:wrap;justify-content:center;gap:.25rem .875rem;">
+          <span style="white-space:nowrap;"><i class="ph ph-coins"></i> ${score} coins collected</span>
+          <span style="white-space:nowrap;"><i class="ph ph-fire"></i> Best combo: ${s.bestCombo > 0 ? s.bestCombo : 1}x</span>
         </p>
       </div>`;
 
     _renderGameResult({
-      gameIcon:      'bolt',
+      gameIcon:      'runner',
       gameName:      'Knowledge Surfer',
-      score:         `${score} coins collected`,
+      score:         `${score}`,
+      scoreLabel:    'Coins',
+      tint:          '#06b6d4',
       pct,
       xpEarned:      s.xpEarned,
       perfect:       false,
       win,
       result,
       extras: [
-        { label: 'Distance Run',   value: `${Math.floor(distance)}m` },
         { label: 'Combo Bonus XP', value: s.xpEarned > score * KR_XP_PER_CORRECT ? `+${s.xpEarned - score * KR_XP_PER_CORRECT} XP` : '—' },
       ],
       extraHtml,
@@ -9207,6 +9281,7 @@ function _krLoop(timestamp) {
     gameController:'<line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258A4 4 0 0 0 17.32 5z"/>',
     checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
     xCircle:    '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/>',
+    coins:      '<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
     flame:      '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
     crown:      '<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 20h14"/>',
     play:       '<polygon points="6 3 20 12 6 21 6 3"/>',
