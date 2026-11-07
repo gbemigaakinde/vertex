@@ -4476,96 +4476,57 @@ function _dismissScrabblePopup(gameId) {
          </div>`
       : '';
 
-    const challengeNotif = pendingChallenges.length > 0 ? `
-  <div class="game-challenge-alert" onclick="Game._showPendingChallenges()">
-    <span class="game-challenge-alert__icon">${_icon('swords', 20)}</span>
-    <span>${pendingChallenges.length} pending challenge${pendingChallenges.length > 1 ? 's' : ''} — tap to view.</span>
-    <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
-  </div>` : '';
-
-    const scrabbleNotif = pendingScrabble.length > 0 ? `
-  <div class="game-challenge-alert" onclick="Game._showScrabblePending()"
-       style="border-color:#7c3aed;background:linear-gradient(135deg,#ede9fe,#ddd6fe);">
-    <span class="game-challenge-alert__icon"><i class="ph ph-text-aa"></i></span>
-    <span style="color:#5b21b6;">${pendingScrabble.length} pending Scrabble challenge${pendingScrabble.length > 1 ? 's' : ''} — tap to view.</span>
-    <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
-  </div>` : '';
-
-    const myTurnScrabble    = activeScrabble.filter(g => g.turn === uid);
-    const theirTurnScrabble = activeScrabble.filter(g => g.turn !== uid);
-
-    const activeScrabbleNotif = activeScrabble.length > 0 ? `
-  <div class="game-challenge-alert" onclick="Game._showScrabblePending()"
-       style="border-color:${myTurnScrabble.length > 0 ? '#7c3aed' : '#6b7280'};
-              background:${myTurnScrabble.length > 0
-                ? 'linear-gradient(135deg,#ede9fe,#ddd6fe)'
-                : 'linear-gradient(135deg,#f3f4f6,#e5e7eb)'
-              };">
-    <span class="game-challenge-alert__icon"><i class="ph ph-text-aa"></i></span>
-    <span style="color:${myTurnScrabble.length > 0 ? '#5b21b6' : '#374151'};">
-      ${myTurnScrabble.length > 0
-        ? `<i class="ph ph-lightning"></i> ${myTurnScrabble.length} Scrabble game${myTurnScrabble.length > 1 ? 's' : ''} waiting for YOUR move!`
-        : `${theirTurnScrabble.length} Scrabble game${theirTurnScrabble.length > 1 ? 's' : ''} — waiting for opponent.`
-      }
-    </span>
-    <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
-  </div>` : '';
-
-    const chessNotif = pendingChess.length > 0 ? `
-  <div class="game-challenge-alert" onclick="Game._showChessPending()"
-       style="border-color:#1e293b;background:linear-gradient(135deg,#e2e8f0,#cbd5e1);">
-    <span class="game-challenge-alert__icon"><i class="ph ph-castle-turret"></i></span>
-    <span style="color:#1e293b;">${pendingChess.length} pending Chess challenge${pendingChess.length > 1 ? 's' : ''} — tap to view.</span>
-    <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
-  </div>` : '';
-
+    // ── Lobby "needs attention" rows (unified, minimal) ──
+    const myTurnScrabble = activeScrabble.filter(g => g.turn === uid);
     const myTurnChess    = activeChess.filter(g => g.turn === (g.whiteUid === uid ? 'w' : 'b'));
-    const theirTurnChess = activeChess.filter(g => g.turn !== (g.whiteUid === uid ? 'w' : 'b'));
+    const _plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
 
-    const activeChessNotif = activeChess.length > 0 ? `
-  <div class="game-challenge-alert" onclick="Game._showChessPending()"
-       style="border-color:${myTurnChess.length > 0 ? '#1e293b' : '#6b7280'};
-              background:${myTurnChess.length > 0
-                ? 'linear-gradient(135deg,#e2e8f0,#cbd5e1)'
-                : 'linear-gradient(135deg,#f3f4f6,#e5e7eb)'
-              };">
-    <span class="game-challenge-alert__icon"><i class="ph ph-castle-turret"></i></span>
-    <span style="color:${myTurnChess.length > 0 ? '#1e293b' : '#374151'};">
-      ${myTurnChess.length > 0
-        ? `<i class="ph ph-lightning"></i> ${myTurnChess.length} Chess game${myTurnChess.length > 1 ? 's' : ''} waiting for YOUR move!`
-        : `${theirTurnChess.length} Chess game${theirTurnChess.length > 1 ? 's' : ''} — waiting for opponent.`
-      }
-    </span>
-    <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
-  </div>` : '';
+    const alertRows = [];
+    if (pendingChallenges.length)
+      alertRows.push({ fn: 'Game._showPendingChallenges()', color: '#ef4444', icon: 'swords', hot: true,
+        text: `${_plural(pendingChallenges.length, 'quiz challenge')} waiting`, cta: 'View' });
+    if (awaitingPlay.length)
+      alertRows.push({ fn: 'Game._showAwaitingChallenges()', color: '#3b82f6', icon: 'hourglass', hot: true,
+        text: `${_plural(awaitingPlay.length, 'challenge')} accepted — your turn to play`, cta: 'Play' });
+    if (pendingScrabble.length)
+      alertRows.push({ fn: 'Game._showScrabblePending()', color: '#7c3aed', icon: 'scrabble', hot: true,
+        text: `${_plural(pendingScrabble.length, 'Scrabble challenge')} waiting`, cta: 'View' });
+    if (activeScrabble.length)
+      alertRows.push({ fn: 'Game._showScrabblePending()', color: '#7c3aed', icon: 'scrabble', hot: myTurnScrabble.length > 0,
+        text: myTurnScrabble.length
+          ? `${_plural(myTurnScrabble.length, 'Scrabble game')} waiting for your move`
+          : `${_plural(activeScrabble.length, 'Scrabble game')} — opponent's turn`, cta: 'Open' });
+    if (pendingChess.length)
+      alertRows.push({ fn: 'Game._showChessPending()', color: '#64748b', icon: 'chess', hot: true,
+        text: `${_plural(pendingChess.length, 'Chess challenge')} waiting`, cta: 'View' });
+    if (activeChess.length)
+      alertRows.push({ fn: 'Game._showChessPending()', color: '#64748b', icon: 'chess', hot: myTurnChess.length > 0,
+        text: myTurnChess.length
+          ? `${_plural(myTurnChess.length, 'Chess game')} waiting for your move`
+          : `${_plural(activeChess.length, 'Chess game')} — opponent's turn`, cta: 'Open' });
 
-    const awaitingNotif = awaitingPlay.length > 0 ? `
-      <div class="game-challenge-alert game-challenge-alert--info" onclick="Game._showAwaitingChallenges()">
-        <span class="game-challenge-alert__icon">${_icon('hourglass', 20)}</span>
-        <span>${awaitingPlay.length} challenge${awaitingPlay.length > 1 ? 's' : ''} waiting for your response — tap to play!</span>
-        <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
-      </div>` : '';
+    const alertsHtml = alertRows.length ? `
+      <section class="lb-section">
+        <div class="lb-label">Needs attention</div>
+        <div class="lb-alerts">
+          ${alertRows.map(a => `
+            <button class="lb-alert${a.hot ? ' lb-alert--hot' : ''}" style="--c:${a.color};" onclick="${a.fn}">
+              <span class="lb-alert__ico">${_li(a.icon, 18)}</span>
+              <span class="lb-alert__txt">${a.text}</span>
+              <span class="lb-alert__cta">${a.cta} ${_li('arrowRight', 14)}</span>
+            </button>`).join('')}
+        </div>
+      </section>` : '';
 
     const badgesHtml = (_profile.badges || []).length > 0
       ? (_profile.badges || []).map(entry => {
           const bid = _badgeId(entry);
           const b   = BADGES.find(x => x.id === bid);
-          return b ? `<button onclick="Game._showBadgeDetails('${_esc(bid)}')"
-                               style="background:var(--accent-subtle);border:1px solid var(--accent-border);
-                                       color:var(--accent-text);border-radius:99px;padding:2px 9px;
-                                       font-size:.6875rem;font-weight:600;transition:all .15s;
-                                       font-family:var(--font);display:inline-flex;align-items:center;gap:.3125rem;
-                                       cursor:pointer;padding:4px 12px;margin-bottom:.375rem;"
-                               title="Click to view badge details"
-                               onmouseover="this.style.transform='scale(1.08)';this.style.boxShadow='0 4px 12px rgba(79,110,247,0.25)'"
-                               onmouseout="this.style.transform='scale(1)';this.style.boxShadow='none'">
-                       ${_icon(b.icon, 13)} ${_esc(b.name)}
-                     </button>` : '';
+          return b ? `<button class="lb-badge" onclick="Game._showBadgeDetails('${_esc(bid)}')" title="View badge details">
+                        ${_li('medal', 14)} ${_esc(b.name)}
+                      </button>` : '';
         }).join('')
-      : `<span style="font-size:.8125rem;color:var(--text-4);font-style:italic;">No badges yet — play games to earn them.</span>`;
-
-    const currentRank    = level.rank;
-    const levelStripHtml = _renderLevelStrip(currentRank, _profile.xp || 0);
+      : `<span class="lb-empty">No badges yet. Play games to earn them.</span>`;
 
     const _krLimited   = _krIsLimitReached();
     const _krPlaysUsed = _krGetRecentPlays().length;
@@ -4573,241 +4534,116 @@ function _dismissScrabblePopup(gameId) {
     const _krCountdown = _krCooldownLabel();
     const _krCardId    = 'krLobbyCountdown';
 
-    const knowledgeSurferCard = `
-      <div class="game-card game-card--runner${_krLimited ? ' game-card--locked' : ''}"
-           onclick="Game._selectGame('knowledgeRunner')"
-           style="${_krLimited ? 'opacity:.7;cursor:pointer;' : ''}">
-        <div class="game-card__icon">
-          ${_krLimited ? '<i class="ph ph-lock" style="font-size:32px;"></i>' : _icon('bolt', 32, { color: '#06b6d4' })}
-        </div>
-        <div class="game-card__title">
-          Knowledge Surfer
-          ${_krLimited
-            ? `<span style="font-size:.625rem;background:#ef4444;color:#fff;
-                           border-radius:4px;padding:1px 6px;font-weight:700;
-                           margin-left:.375rem;vertical-align:middle;">COOLDOWN</span>`
-            : ''}
-        </div>
-        <div class="game-card__desc">
-          ${_krLimited
-            ? `On a break! Back in&nbsp;<strong id="${_krCardId}" style="color:#ef4444;font-family:var(--font-mono);">${_krCountdown}</strong>.
-               Try Quiz Blitz or Word Scramble in the meantime.`
-            : 'Subway Surfers-style! Swipe across 3 lanes. Collect gold coins. Dodge trains &amp; barriers. Inspector chases you!'}
-        </div>
-        <div class="game-card__meta">
-          <span class="game-card__tag">Action</span>
-          <span class="game-card__tag">Endless Runner</span>
-          ${_krLimited
-            ? `<span class="game-card__tag" style="background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3);">
-                 ${_krPlaysUsed}/${KR_MAX_PLAYS} plays used
-               </span>`
-            : `<span class="game-card__tag game-card__tag--xp">
-                 ${_krPlaysLeft} play${_krPlaysLeft !== 1 ? 's' : ''} left
-               </span>`}
-        </div>
-      </div>`;
-
-    // ── Build all game cards, then keep only the ones this student is allowed to see ──
+    // ── Game catalogue ──
+    
     const cardDefs = [
-      { id: 'quizBlitz', html: `
-          <div class="game-card" onclick="Game._selectGame('quizBlitz')">
-            <div class="game-card__icon">${_icon('lightning', 32, { color: 'var(--accent)' })}</div>
-            <div class="game-card__title">Quiz Blitz</div>
-            <div class="game-card__desc">Answer MCQ questions against the clock. Fast answers earn bonus XP.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">MCQ</span>
-              <span class="game-card__tag">20s / question</span>
-              <span class="game-card__tag game-card__tag--xp">+${XP_PER_CORRECT * QUIZ_BLITZ_QUESTIONS} XP max</span>
-            </div>
-          </div>` },
-      { id: 'trueOrFalse', html: `
-          <div class="game-card" onclick="Game._selectGame('trueOrFalse')">
-            <div class="game-card__icon">${_icon('checkSquare', 32, { color: '#10b981' })}</div>
-            <div class="game-card__title">True or False Blitz</div>
-            <div class="game-card__desc">Rapid-fire T/F statements from your subjects. Build streaks for bonus XP.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">T/F</span>
-              <span class="game-card__tag">18s / question</span>
-              <span class="game-card__tag game-card__tag--xp">+streak multiplier</span>
-            </div>
-          </div>` },
-      { id: 'speedMath', html: `
-          <div class="game-card" onclick="Game._selectGame('speedMath')">
-            <div class="game-card__icon">${_icon('calculator', 32, { color: '#f59e0b' })}</div>
-            <div class="game-card__title">Speed Math</div>
-            <div class="game-card__desc">Solve arithmetic problems as fast as you can. Choose Easy, Medium, or Hard.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">Arithmetic</span>
-              <span class="game-card__tag">90s total</span>
-              <span class="game-card__tag game-card__tag--xp">+XP per correct</span>
-            </div>
-          </div>` },
-      { id: 'wordScramble', html: `
-          <div class="game-card" onclick="Game._selectGame('wordScramble')">
-            <div class="game-card__icon">${_icon('textT', 32, { color: '#7c3aed' })}</div>
-            <div class="game-card__title">Word Scramble</div>
-            <div class="game-card__desc">Unscramble subject vocabulary words before time runs out.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">Vocabulary</span>
-              <span class="game-card__tag">20s / word</span>
-              <span class="game-card__tag game-card__tag--xp">+${XP_PER_CORRECT} XP per word</span>
-            </div>
-          </div>` },
-      { id: 'suddenDeath', html: `
-          <div class="game-card game-card--sudden-death" onclick="Game._selectGame('suddenDeath')">
-            <div class="game-card__icon">${_icon('skull', 32, { color: '#e11d48' })}</div>
-            <div class="game-card__title">Perfect Run</div>
-            <div class="game-card__desc">One wrong answer and it's over. Survive as long as possible for compounding XP.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">High Risk</span>
-              <span class="game-card__tag">20s / question</span>
-              <span class="game-card__tag game-card__tag--xp">XP compounds</span>
-            </div>
-          </div>` },
-      { id: 'challenge', html: `
-          <div class="game-card game-card--challenge" onclick="Game._selectGame('challenge')">
-            <div class="game-card__icon">${_icon('swords', 32, { color: 'var(--danger)' })}</div>
-            <div class="game-card__title">Challenge a Classmate</div>
-            <div class="game-card__desc">Send a quiz challenge to someone in your class. Beat their score to win.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">PvP</span>
-              <span class="game-card__tag">1v1</span>
-              <span class="game-card__tag game-card__tag--xp">+${XP_CHALLENGE_WIN} bonus XP</span>
-            </div>
-          </div>` },
-      { id: 'wordScrabble', html: `
-          <div class="game-card game-card--scrabble" onclick="Game._selectGame('wordScrabble')">
-            <div class="game-card__icon"><i class="ph ph-text-aa" style="font-size:32px;"></i></div>
-            <div class="game-card__title">Word Scrabble</div>
-            <div class="game-card__desc">
-              Classic Scrabble vs a classmate. Place words on the 15×15 board,
-              hit premium squares, and outscore your opponent.
-            </div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">1v1</span>
-              <span class="game-card__tag">Turn-based</span>
-              <span class="game-card__tag game-card__tag--xp">Up to +200 XP</span>
-            </div>
-          </div>` },
-      { id: 'knowledgeRunner', html: knowledgeSurferCard },
-      { id: 'chess', html: `
-          <div class="game-card game-card--chess" onclick="Game._selectGame('chess')">
-            <div class="game-card__icon"><i class="ph ph-castle-turret" style="font-size:32px;"></i></div>
-            <div class="game-card__title">Chess</div>
-            <div class="game-card__desc">
-              Full-rules chess vs a classmate — castling, en passant, promotion, check &amp; checkmate detection. Play at your own pace.
-            </div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">1v1</span>
-              <span class="game-card__tag">Turn-based</span>
-              <span class="game-card__tag game-card__tag--xp">Up to +40 XP</span>
-            </div>
-          </div>` },
+      { id: 'quizBlitz', c: '#4f6ef7', icon: _li('zap', 22), title: 'Quiz Blitz',
+        desc: 'Answer MCQ questions against the clock. Fast answers earn bonus XP.',
+        tags: ['MCQ', '20s per question'], xp: `+${XP_PER_CORRECT * QUIZ_BLITZ_QUESTIONS} XP max` },
+      { id: 'trueOrFalse', c: '#10b981', icon: _li('check', 22), title: 'True or False Blitz',
+        desc: 'Rapid-fire statements from your subjects. Build streaks for bonus XP.',
+        tags: ['T/F', '18s per question'], xp: 'Streak bonus' },
+      { id: 'speedMath', c: '#f59e0b', icon: _li('calculator', 22), title: 'Speed Math',
+        desc: 'Solve arithmetic as fast as you can. Choose Easy, Medium or Hard.',
+        tags: ['Arithmetic', '90s total'], xp: 'XP per correct' },
+      { id: 'wordScramble', c: '#8b5cf6', icon: _li('shuffle', 22), title: 'Word Scramble',
+        desc: 'Unscramble subject vocabulary before time runs out.',
+        tags: ['Vocabulary', '20s per word'], xp: `+${XP_PER_CORRECT} XP per word` },
+      { id: 'suddenDeath', c: '#e11d48', icon: _li('target', 22), title: 'Perfect Run',
+        desc: 'One wrong answer and it is over. Survive for compounding XP.',
+        tags: ['High risk', '20s per question'], xp: 'XP compounds' },
+      { id: 'challenge', c: '#ef4444', icon: _li('swords', 22), title: 'Challenge a Classmate',
+        desc: 'Send a quiz challenge to someone in your class and beat their score.',
+        tags: ['PvP', '1v1'], xp: `+${XP_CHALLENGE_WIN} bonus XP` },
+      { id: 'wordScrabble', c: '#7c3aed', icon: _li('scrabble', 22), title: 'Word Scrabble',
+        desc: 'Classic Scrabble on a 15×15 board. Hit premium squares and outscore your opponent.',
+        tags: ['1v1', 'Turn-based'], xp: 'Up to +200 XP' },
+      { id: 'knowledgeRunner', c: '#06b6d4', locked: _krLimited,
+        icon: _krLimited ? _li('lock', 22) : _li('waves', 22), title: 'Knowledge Surfer',
+        desc: _krLimited
+          ? `On a break. Back in <strong id="${_krCardId}" class="lb-mono">${_krCountdown}</strong>. Try Quiz Blitz or Word Scramble meanwhile.`
+          : 'Swipe across 3 lanes, collect coins and dodge trains while the inspector chases you.',
+        tags: ['Action', 'Endless runner'],
+        xp: _krLimited ? `${_krPlaysUsed}/${KR_MAX_PLAYS} plays used` : `${_krPlaysLeft} play${_krPlaysLeft !== 1 ? 's' : ''} left` },
+      { id: 'chess', c: '#475569', icon: _li('chess', 22), title: 'Chess',
+        desc: 'Full-rules chess vs a classmate: castling, en passant, promotion and checkmate. Play at your pace.',
+        tags: ['1v1', 'Turn-based'], xp: 'Up to +40 XP' },
     ];
-    const gameCardsHtml = cardDefs.filter(d => _isGameAllowed(d.id)).map(d => d.html).join('');
+    const gameCardsHtml = cardDefs.filter(d => _isGameAllowed(d.id)).map(d => `
+      <button class="lb-game${d.locked ? ' lb-game--locked' : ''}" style="--c:${d.c};" onclick="Game._selectGame('${d.id}')">
+        <span class="lb-game__top">
+          <span class="lb-game__ico">${d.icon}</span>
+          ${d.locked ? '<span class="lb-game__chip">Cooldown</span>' : `<span class="lb-game__go">${_li('arrowRight', 16)}</span>`}
+        </span>
+        <span class="lb-game__title">${d.title}</span>
+        <span class="lb-game__desc">${d.desc}</span>
+        <span class="lb-game__meta">
+          <span>${d.tags.join(' · ')}</span>
+          <span class="lb-game__xp">${d.xp}</span>
+        </span>
+      </button>`).join('');
 
-    // XP progress bar values
     const xpCurrent = (_profile.xp || 0).toLocaleString();
     const xpNext    = nextLevel ? nextLevel.minXP.toLocaleString() : null;
+    const initial   = _esc((_student().name || '?').charAt(0).toUpperCase());
+
+    _injectLobbyStyles();
 
     window.UI.mount(`
-      <div class="max-w-4xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+      <div class="lb animate-fadeIn">
 
-        <!-- ═══ PROFILE HEADER CARD ═══ -->
-        <div class="glass game-profile-card">
+        <header class="lb-head">
+          <h1 class="lb-title">Games</h1>
+          <nav class="lb-nav">
+            <button class="lb-iconbtn" onclick="Game.openLeaderboard()">${_li('trophy', 16)}<span>Leaderboard</span></button>
+            <button class="lb-iconbtn" onclick="Game._showGameHistory()">${_li('clock', 16)}<span>History</span></button>
+            <button class="lb-iconbtn" onclick="Game._backToHome()">${_li('arrowLeft', 16)}<span>Profile</span></button>
+          </nav>
+        </header>
 
-          <!-- Row 1: Avatar+Name on left, Level Badge on right — always one line -->
-          <div class="game-profile-top">
-            <div class="game-profile-left">
-              <div class="game-profile-avatar" data-vtx-av="${_esc((window.AppState && AppState.userId) || '')}" style="position:relative">
-                ${_esc((_student().name || '?').charAt(0).toUpperCase())}
-              </div>
-              <div class="game-profile-info">
-                <div class="game-profile-name">${_esc(_student().name || '')}</div>
-                <div class="game-profile-meta">${_esc(_student().class || '')}${_student().school ? ' · ' + _esc(_student().school) : ''}</div>
-              </div>
-            </div>
-            <div class="game-profile-right">
-              <div class="game-level-pill" style="--lvl-color:${level.color};">
-                ${_icon(level.icon, 16, { color: level.color })}
-                <div class="game-level-pill__text">
-                  <span class="game-level-pill__name">${_esc(level.name)}</span>
-                  <span class="game-level-pill__rank">Rank ${currentRank}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        ${!_isOnline() ? `<div class="lb-offline">${_li('warning', 14)} Offline mode. Scores will sync when you reconnect.</div>` : ''}
 
-          <!-- Row 2: XP bar + labels -->
-          <div class="game-profile-xp">
-            <div class="game-profile-xp-labels">
-              <span class="game-profile-xp-left">
-                ${_icon(level.icon, 11, { color: level.color })}
-                <span style="color:${level.color};font-weight:700;">${xpCurrent} XP</span>
-              </span>
-              ${!maxed
-                ? `<span class="game-profile-xp-right">→ ${_esc(nextLevel.name)} at ${xpNext} XP</span>`
-                : `<span class="game-profile-xp-right" style="color:#f43f5e;font-weight:800;">✦ MAX LEVEL</span>`}
+        <section class="lb-profile" style="--lvl:${level.color};">
+          <div class="lb-profile__row">
+            <div class="lb-avatar game-profile-avatar" data-vtx-av="${_esc((window.AppState && AppState.userId) || '')}" style="position:relative">${initial}</div>
+            <div class="lb-profile__id">
+              <div class="lb-profile__name">${_esc(_student().name || '')}</div>
+              <div class="lb-profile__meta">${_esc(_student().class || '')}${_student().school ? ' · ' + _esc(_student().school) : ''}</div>
             </div>
-            <div class="game-xp-track" style="height:7px;margin-top:.3125rem;">
-              <div class="game-xp-fill" style="width:${xpPct}%;"></div>
+            <div class="lb-level">
+              ${_li('award', 16)}
+              <span>${_esc(level.name)}</span>
+              <em>Rank ${level.rank}</em>
             </div>
           </div>
-        </div>
-
-        ${levelStripHtml}
-        ${offlineBanner}
-        ${challengeNotif}
-        ${awaitingNotif}
-        ${scrabbleNotif}
-        ${activeScrabbleNotif}
-        ${chessNotif}
-        ${activeChessNotif}
-
-        <div style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;margin:.75rem 0;">
-          <button onclick="Game.openLeaderboard()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
-            ${_icon('trophy', 15)} Leaderboard
-          </button>
-          <button onclick="Game._showGameHistory()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
-            ${_icon('clock', 15)} Game History
-          </button>
-          <button onclick="Game._backToHome()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
-            ${_icon('arrowLeft', 15)} Back To Profile
-          </button>
-        </div>
-
-        <h2 class="game-section-title">Choose a Game</h2>
-
-        <div class="game-cards-grid">
-          ${gameCardsHtml || `<p style="grid-column:1/-1;text-align:center;color:var(--text-3);font-size:.875rem;padding:1.5rem;">
-             No games are currently available for your account. Ask your teacher if you think this is a mistake.
-           </p>`}
-        </div>
-
-        <h2 class="game-section-title" style="margin-top:1.5rem;">Your Badges</h2>
-        <div class="glass-dark" style="padding:1rem;border-radius:10px;display:flex;flex-wrap:wrap;gap:.5rem;">
-          ${badgesHtml}
-        </div>
-
-        <h2 class="game-section-title" style="margin-top:1.5rem;">Your Stats</h2>
-        <div class="game-stats-row glass-dark">
-          <div class="game-stat-cell">
-            <div class="game-stat-cell__value">${(_profile.totalGames || 0)}</div>
-            <div class="game-stat-cell__label">Games Played</div>
+          <div class="lb-xp">
+            <div class="lb-xp__labels">
+              <span><strong>${xpCurrent}</strong> XP</span>
+              <span>${!maxed ? `${_esc(nextLevel.name)} at ${xpNext} XP` : 'Max level reached'}</span>
+            </div>
+            <div class="lb-xp__track"><div class="lb-xp__fill" style="width:${xpPct}%;"></div></div>
           </div>
-          <div class="game-stat-cell">
-            <div class="game-stat-cell__value">${(_profile.totalWins || 0)}</div>
-            <div class="game-stat-cell__label">Games Won</div>
+          <div class="lb-stats">
+            <div><b>${_profile.totalGames || 0}</b><span>Played</span></div>
+            <div><b>${_profile.totalWins || 0}</b><span>Won</span></div>
+            <div><b>${_profile.streak || 0}</b><span>Streak</span></div>
+            <div><b>${(_profile.xp || 0).toLocaleString()}</b><span>Total XP</span></div>
           </div>
-          <div class="game-stat-cell">
-            <div class="game-stat-cell__value">${(_profile.streak || 0)}</div>
-            <div class="game-stat-cell__label">Win Streak</div>
+        </section>
+
+        ${alertsHtml}
+
+        <section class="lb-section">
+          <div class="lb-label">Choose a game</div>
+          <div class="lb-grid">
+            ${gameCardsHtml || `<p class="lb-empty" style="grid-column:1/-1;text-align:center;padding:1.5rem;">No games are currently available for your account. Ask your teacher if you think this is a mistake.</p>`}
           </div>
-          <div class="game-stat-cell">
-            <div class="game-stat-cell__value" style="color:var(--accent);">${(_profile.xp || 0).toLocaleString()}</div>
-            <div class="game-stat-cell__label">Total XP</div>
-          </div>
-        </div>
+        </section>
+
+        <section class="lb-section">
+          <div class="lb-label">Badges</div>
+          <div class="lb-badges">${badgesHtml}</div>
+        </section>
 
       </div>`);
 
@@ -9170,6 +9006,109 @@ function _krLoop(timestamp) {
   /* ══════════════════════════════════════════════════════════════
      CSS INJECTION
   ══════════════════════════════════════════════════════════════ */
+
+  /* Clean 24px line icons used by the games lobby (inline, no icon font needed) */
+  const _LI = {
+    zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    check: '<path d="M21.8 10A10 10 0 1 1 17 3.3"/><path d="m9 11 3 3L22 4"/>',
+    calculator: '<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>',
+    shuffle: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>',
+    target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+    swords: '<polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" x2="19" y1="19" y2="13"/><line x1="16" x2="20" y1="16" y2="20"/><line x1="19" x2="21" y1="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" x2="9" y1="14" y2="18"/><line x1="7" x2="4" y1="17" y2="20"/><line x1="3" x2="5" y1="19" y2="21"/>',
+    scrabble: '<rect width="18" height="18" x="3" y="3" rx="3"/><path d="M8 8h8M12 8v8"/>',
+    waves: '<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>',
+    chess: '<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 20h14"/>',
+    lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+    clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    arrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+    hourglass: '<path d="M5 22h14M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.41L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.41L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/>',
+    warning: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
+    award: '<circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/>',
+    medal: '<circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/>',
+  };
+  function _li(name, size) {
+    const d = _LI[name] || _LI.award;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;flex-shrink:0;">${d}</svg>`;
+  }
+
+  function _injectLobbyStyles() {
+    if (document.getElementById('_gameLobbyStyles')) return;
+    const s = document.createElement('style');
+    s.id = '_gameLobbyStyles';
+    s.textContent = `
+      .lb { --lb-r:16px; max-width:64rem;margin:0 auto;padding:.5rem .25rem 3rem;font-family:var(--font);color:var(--text-1); }
+      .lb button { font-family:inherit; }
+      .lb-head { display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin:.5rem 0 1.5rem; }
+      .lb-eyebrow { font-size:.6875rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin-bottom:.375rem; }
+      .lb-title { font-size:clamp(1.5rem,4.5vw,2rem);font-weight:700;letter-spacing:-.03em;line-height:1.1;margin:0;color:var(--text-1); }
+      .lb-nav { display:flex;gap:.375rem;flex-wrap:wrap; }
+      .lb-iconbtn { display:inline-flex;align-items:center;gap:.4375rem;padding:.5rem .875rem;border-radius:99px;border:1px solid var(--border);background:transparent;color:var(--text-2);font-size:.8125rem;font-weight:500;cursor:pointer;transition:background .15s,color .15s,border-color .15s; }
+      .lb-iconbtn:hover { background:var(--bg-subtle);color:var(--text-1);border-color:var(--text-4,var(--border)); }
+      .lb-offline { display:flex;align-items:center;gap:.5rem;padding:.625rem .875rem;margin-bottom:1rem;border-radius:12px;font-size:.8125rem;font-weight:500;background:var(--warning-subtle);color:var(--warning-text);border:1px solid var(--warning-border); }
+
+      .lb-profile { background:var(--bg-base);border:1px solid var(--border);border-radius:calc(var(--lb-r) + 4px);padding:1.5rem;box-shadow:0 1px 2px rgba(0,0,0,.03),0 8px 24px -12px rgba(0,0,0,.08); }
+      .lb-profile__row { display:flex;align-items:center;gap:.875rem; }
+      .lb-avatar.game-profile-avatar { width:48px;height:48px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.125rem;background:var(--text-1);color:var(--bg-base);border:0;box-shadow:none;outline:0; }
+      .lb-profile__id { min-width:0;flex:1; }
+      .lb-profile__name { font-size:1rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+      .lb-profile__meta { font-size:.8125rem;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+      .lb-level { display:inline-flex;align-items:center;gap:.4375rem;padding:.375rem .75rem;border-radius:99px;background:color-mix(in srgb,var(--lvl) 10%,transparent);font-size:.8125rem;font-weight:600;color:var(--text-1);white-space:nowrap; }
+      .lb-level em { font-style:normal;font-weight:500;color:var(--text-3);font-size:.75rem; }
+      .lb-xp { margin-top:1.375rem; }
+      .lb-xp__labels { display:flex;justify-content:space-between;gap:.75rem;font-size:.75rem;color:var(--text-3);margin-bottom:.5rem; }
+      .lb-xp__labels strong { color:var(--text-1);font-weight:600;font-size:.8125rem; }
+      .lb-xp__track { height:6px;border-radius:99px;background:var(--bg-muted);overflow:hidden; }
+      .lb-xp__fill { height:100%;border-radius:99px;background:var(--lvl);transition:width .9s cubic-bezier(.4,0,.2,1); }
+      .lb-stats { display:grid;grid-template-columns:repeat(4,1fr);margin-top:1.375rem;padding-top:1.25rem;border-top:1px solid var(--border); }
+      .lb-stats > div { display:flex;flex-direction:column;gap:.25rem; }
+      .lb-stats > div + div { padding-left:1rem;border-left:1px solid var(--border); }
+      .lb-stats b { font-size:1.375rem;font-weight:700;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums; }
+      .lb-stats span { font-size:.6875rem;color:var(--text-3);letter-spacing:.06em;text-transform:uppercase; }
+
+      .lb-section { margin-top:2rem; }
+      .lb-label { font-size:.6875rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin-bottom:.875rem; }
+
+      .lb-alerts { display:flex;flex-direction:column;gap:.5rem; }
+      .lb-alert { display:flex;align-items:center;gap:.75rem;width:100%;text-align:left;padding:.75rem .875rem;border-radius:14px;border:1px solid var(--border);background:var(--bg-base);color:var(--text-1);cursor:pointer;transition:border-color .15s,transform .15s,background .15s; }
+      .lb-alert:hover { border-color:var(--c);transform:translateY(-1px); }
+      .lb-alert__ico { width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--c);font-size:18px; }
+      .lb-alert--hot .lb-alert__ico { position:relative; }
+      .lb-alert--hot .lb-alert__ico::after { content:'';position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--c);border:2px solid var(--bg-base); }
+      .lb-alert__txt { flex:1;font-size:.875rem;font-weight:500;min-width:0; }
+      .lb-alert__cta { display:inline-flex;align-items:center;gap:.25rem;font-size:.8125rem;font-weight:600;color:var(--c);flex-shrink:0; }
+
+      .lb-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:.875rem; }
+      @media (max-width:860px) { .lb-grid { grid-template-columns:repeat(2,1fr); } }
+      @media (max-width:560px) { .lb-grid { grid-template-columns:1fr; } .lb-stats b { font-size:1.125rem; } .lb-stats > div + div { padding-left:.625rem; } .lb-profile { padding:1.125rem; } .lb-level em { display:none; } }
+      .lb-game { display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:0;padding:1.125rem;min-height:11.5rem;border-radius:var(--lb-r);border:1px solid var(--border);background:var(--bg-base);color:var(--text-1);cursor:pointer;position:relative;overflow:hidden;transition:transform .2s cubic-bezier(.2,.7,.3,1),box-shadow .2s,border-color .2s; }
+      .lb-game::before { content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--c) 9%,transparent),transparent 60%);opacity:0;transition:opacity .25s;pointer-events:none; }
+      .lb-game:hover { transform:translateY(-3px);border-color:color-mix(in srgb,var(--c) 45%,var(--border));box-shadow:0 14px 30px -14px color-mix(in srgb,var(--c) 40%,transparent); }
+      .lb-game:hover::before { opacity:1; }
+      .lb-game:active { transform:translateY(-1px); }
+      .lb-game:focus-visible,.lb-alert:focus-visible,.lb-iconbtn:focus-visible,.lb-badge:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+      .lb-game > * { position:relative; }
+      .lb-game__top { display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:1rem; }
+      .lb-game__ico { width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--c) 11%,transparent);color:var(--c); }
+      .lb-game__go { width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-4);opacity:0;transform:translateX(-4px);transition:all .2s; }
+      .lb-game:hover .lb-game__go { opacity:1;transform:none;color:var(--c); }
+      .lb-game__chip { font-size:.625rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:rgba(239,68,68,.1);color:#ef4444; }
+      .lb-game__title { font-size:1rem;font-weight:600;letter-spacing:-.015em;margin-bottom:.375rem; }
+      .lb-game__desc { font-size:.8125rem;line-height:1.55;color:var(--text-3);flex:1; }
+      .lb-game__meta { display:flex;justify-content:space-between;align-items:center;gap:.5rem;width:100%;margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--border);font-size:.6875rem;color:var(--text-3); }
+      .lb-game__xp { font-weight:600;color:var(--c);white-space:nowrap; }
+      .lb-game--locked { opacity:.72; }
+      .lb-mono { font-family:var(--font-mono);color:#ef4444; }
+
+      .lb-badges { display:flex;flex-wrap:wrap;gap:.5rem; }
+      .lb-badge { display:inline-flex;align-items:center;gap:.375rem;padding:.4375rem .875rem;border-radius:99px;border:1px solid var(--border);background:var(--bg-base);color:var(--text-2);font-size:.75rem;font-weight:500;cursor:pointer;transition:all .15s; }
+      .lb-badge:hover { border-color:var(--accent);color:var(--accent-text);background:var(--accent-subtle); }
+      .lb-empty { font-size:.8125rem;color:var(--text-4); }
+      @media (prefers-reduced-motion:reduce) { .lb *,.lb *::before { transition:none !important; } }
+    `;
+    document.head.appendChild(s);
+  }
 
   function _injectStyles() {
     if (document.getElementById('_gameStyles')) return;
