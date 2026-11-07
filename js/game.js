@@ -2048,6 +2048,7 @@ const GAME_CATALOG = [
   { id: 'wordScrabble',    label: 'Word Scrabble' },
   { id: 'knowledgeRunner', label: 'Knowledge Surfer' },
   { id: 'chess',           label: 'Chess' },
+  { id: 'echoGrid',        label: 'Echo Grid' },
 ];
 
 let _allowedGamesSet = null; // null = unrestricted (default: everything allowed)
@@ -4523,6 +4524,9 @@ function _dismissScrabblePopup(gameId) {
       { id: 'chess', c: '#475569', icon: _li('chess', 22), title: 'Chess',
         desc: 'Full-rules chess vs a classmate: castling, en passant, promotion and checkmate. Play at your pace.',
         tags: ['1v1', 'Turn-based'], xp: 'Up to +40 XP' },
+      { id: 'echoGrid', c: '#8b5cf6', icon: _li('sparkle', 22), title: 'Echo Grid',
+        desc: 'Claim a tile and its mirror dies. Build lines of three on a shifting board. Solo vs bot, pass and play, or online duel.',
+        tags: ['Solo', 'Multiplayer', 'Strategy'], xp: 'Up to +35 XP' },
     ];
     const gameCardsHtml = cardDefs.filter(d => _isGameAllowed(d.id)).map(d => `
       <button class="lb-game${d.locked ? ' lb-game--locked' : ''}" style="--c:${d.c};" onclick="Game._selectGame('${d.id}')">
@@ -4738,6 +4742,7 @@ function _showAllLevelsModal(currentXP) {
   else if (type === 'knowledgeRunner') _showKnowledgeRunnerSetup();
   else if (type === 'wordScrabble')    _showScrabbleSetup();
   else if (type === 'chess')           _showChessSetup();
+  else if (type === 'echoGrid')        { if (window.EchoGrid) window.EchoGrid.open(); }
 }
 
   /* ══════════════════════════════════════════════════════════════
@@ -7362,6 +7367,7 @@ function _closeWatchModal(challengeId) {
   else if (key === 'knowledgeRunner') _showKnowledgeRunnerSetup();
   else if (key === 'wordScrabble')    _showScrabbleSetup();
   else if (key === 'chess')           _showChessSetup();
+  else if (key === 'echoGrid')        { if (window.EchoGrid) window.EchoGrid.open(); }
   else openGameLobby();
 }
 
@@ -9849,11 +9855,12 @@ async function renderTeacherGameRestrictions(containerId) {
       knowledgeRunner:'Knowledge Surfer',
       wordScrabble:   'Word Scrabble',
       chess:          'Chess',
+      echoGrid:       'Echo Grid',
     };
 
     const GAME_ICONS = {
       quizBlitz: 'quiz', speedMath: 'calculator', wordScramble: 'scramble', trueOrFalse: 'trueFalse',
-      suddenDeath: 'skull', challenge: 'swords', knowledgeRunner: 'runner', wordScrabble: 'scrabble', chess: 'chess',
+      suddenDeath: 'skull', challenge: 'swords', knowledgeRunner: 'runner', wordScrabble: 'scrabble', chess: 'chess', echoGrid: 'sparkle',
     };
 
     function gameIcon(type)  { return _li(GAME_ICONS[type] || 'gameController', 16); }
@@ -10521,6 +10528,8 @@ async function renderTeacherGameRestrictions(containerId) {
     _wsSubmitArranged,
     _wsClearArranged,
     _showChessSetup,
+    _awardXP,
+    _showEchoGrid: function () { if (window.EchoGrid) window.EchoGrid.open(); },
     _sendChessChallenge,
     _showChessPending,
     _acceptChess,
