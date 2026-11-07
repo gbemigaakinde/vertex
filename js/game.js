@@ -10182,6 +10182,7 @@ async function renderTeacherGameRestrictions(containerId) {
       _histSessionDocs  = [];
       _histChessDocs    = [];
       _histScrabbleDocs = [];
+      const _histErrors = [];
 
       function renderMerged() {
         const content2 = document.getElementById('gTabContent');
@@ -10200,8 +10201,13 @@ async function renderTeacherGameRestrictions(containerId) {
           rows.push({ t: _tsMs(d.lastMoveAt || d.createdAt), html: _scrabbleRowHtml(doc) });
         });
 
+        const errorNote = _histErrors.length
+          ? `<p style="text-align:center;padding:.75rem;color:var(--danger);font-size:var(--text-xs);">
+               Some activity could not be loaded: ${_esc2(_histErrors.join(' | '))}</p>`
+          : '';
+
         if (rows.length === 0) {
-          content2.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
+          content2.innerHTML = errorNote || `<p style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
             No game activity recorded yet. Students need to play games first.</p>`;
           return;
         }
@@ -10209,7 +10215,7 @@ async function renderTeacherGameRestrictions(containerId) {
         rows.sort((a, b) => b.t - a.t);
         const top = rows.slice(0, 150);
 
-        content2.innerHTML = `
+        content2.innerHTML = errorNote + `
           <div class="glass-dark" style="border-radius:var(--r-lg);overflow:hidden;padding:0;">
             <div style="padding:.625rem 1rem;border-bottom:1px solid var(--border);
                         background:var(--bg-subtle);display:flex;justify-content:space-between;align-items:center;">
@@ -10228,23 +10234,29 @@ async function renderTeacherGameRestrictions(containerId) {
         if (_histUnsubScrabble) _histUnsubScrabble();
       };
 
+      function _histFail(label, err) {
+        console.warn('[teacher] history ' + label + ' listener error:', err);
+        _histErrors.push(label + ': ' + (err && err.message ? err.message : 'failed'));
+        renderMerged();
+      }
+
       _histUnsubSession = _db().collection('gameSessions')
         .orderBy('startedAt', 'desc')
         .limit(100)
         .onSnapshot(snap => { _histSessionDocs = snap.docs; renderMerged(); },
-          err => console.warn('[teacher] history session listener error:', err));
+          err => _histFail('sessions', err));
 
       _histUnsubChess = _db().collection('chessGames')
         .orderBy('lastMoveAt', 'desc')
         .limit(50)
         .onSnapshot(snap => { _histChessDocs = snap.docs; renderMerged(); },
-          err => console.warn('[teacher] history chess listener error:', err));
+          err => _histFail('chess', err));
 
       _histUnsubScrabble = _db().collection('scrabbleGames')
         .orderBy('lastMoveAt', 'desc')
         .limit(50)
         .onSnapshot(snap => { _histScrabbleDocs = snap.docs; renderMerged(); },
-          err => console.warn('[teacher] history scrabble listener error:', err));
+          err => _histFail('scrabble', err));
     }
 
     // ── LEADERBOARD TAB ──────────────────────────────────────
@@ -10330,13 +10342,16 @@ async function renderTeacherGameRestrictions(containerId) {
       content.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--text-3);">Loading stats…</div>`;
 
       try {
+        // No .where() here on purpose: combining where('status') with orderBy('startedAt')
+        // needs a special Firestore index. We sort by date only and filter in the browser.
         const snap = await _db().collection('gameSessions')
-          .where('status', '==', 'finished')
           .orderBy('startedAt', 'desc')
           .limit(500)
           .get();
 
-        if (snap.empty) {
+        const finishedDocs = snap.docs.filter(doc => doc.data().status === 'finished');
+
+        if (finishedDocs.length === 0) {
           content.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);">No completed sessions yet.</p>`;
           return;
         }
@@ -10344,7 +10359,7 @@ async function renderTeacherGameRestrictions(containerId) {
         const byType = {};
         const byStudent = {};
 
-        snap.docs.forEach(doc => {
+        finishedDocs.forEach(doc => {
           const d = doc.data();
           const type = d.gameType || 'unknown';
           if (!byType[type]) byType[type] = { count: 0, totalXP: 0, wins: 0, totalPct: 0, pctCount: 0 };
@@ -10430,7 +10445,7 @@ async function renderTeacherGameRestrictions(containerId) {
           </div>`;
       } catch (e) {
         console.error('[teacher] stats tab error:', e);
-        content.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--danger);">Could not load stats.</p>`;
+        content.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--danger);">Could not load stats.<br><small style="color:var(--text-3);">${_esc2(e && e.message ? e.message : '')}</small></p>`;
       }
     }
 
