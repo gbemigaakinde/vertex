@@ -4,8 +4,8 @@
   --vc-light:#f0d9b5; --vc-dark:#b58863;
   --vc-sel:rgba(20,85,30,.5); --vc-last:rgba(155,199,0,.41);
 }
-.vc-brand{background:#334155 !important}
-.vc-brand svg{width:30px;height:30px}
+.vc-brand{background:#475569 !important;color:#fff}
+.vc-brand svg{width:26px;height:26px}
 
 .vc-boardwrap{position:relative;width:100%;margin:6px 0}
 .vc-board{
@@ -79,3 +79,10 @@
 [data-theme="dark"] .vc-dot{border-color:#9ca3af}
 @media (prefers-color-scheme:dark){:root:not([data-theme]) .vc-dot{border-color:#9ca3af}}
 @media (max-height:640px){.vc-sheet .vc-moves{max-height:34px}.vc-sheet .eg-end{padding-top:10px;padding-bottom:10px}}
+
+/* Stop the sheet entrance animation replaying on every re-render (this was the flicker) */
+.vc-sheet{animation:none}
+#vcNote:empty{display:none}
+#vcNote{margin:10px 2px 0}
+.gm-piece .vc-pc{width:44px;height:44px;display:block;margin:0 auto}
+#vcNote{color:var(--eg-ink2,#55555c);text-align:center}
