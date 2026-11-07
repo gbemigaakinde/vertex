@@ -590,7 +590,9 @@
               ${S.mode === 'online' ? '' : '<button class="eg-btn" onclick="Chess.rematch()">Play again</button>'}
               <button class="eg-btn eg-btn--ghost" onclick="Chess.leave()">Menu</button>
             </div></div>` : `<div class="vc-actions">
-            ${S.mode === 'local' ? '' : `<button class="eg-btn eg-btn--ghost vc-resign" onclick="Chess.resign()">${IC.flag} Resign</button>`}
+            ${S.mode === 'local' ? '' : (S.mode === 'online' && S.status !== 'playing')
+              ? `<button class="eg-btn eg-btn--ghost vc-resign" onclick="Chess.leave()">${IC.x} Cancel room</button>`
+              : `<button class="eg-btn eg-btn--ghost vc-resign" onclick="Chess.resign()">${IC.flag} Resign</button>`}
           </div>`}
         <div class="vc-moves" aria-label="Move list">${ml || '<span class="vc-none">No moves yet.</span>'}</div>
       </div>`;
@@ -600,6 +602,7 @@
 
   function resign() {
     if (!S || S.over) return;
+    if (S.mode === 'online' && S.status !== 'playing') { leave(); return; }   /* nobody to resign to: just close the room */
     if (!window.confirm('Resign this game?')) return;
     const loser = S.mode === 'local' ? S.st.turn : S.mySide;
     const result = loser === 'w' ? 'black' : 'white';
@@ -609,13 +612,25 @@
 
   function abandonOnline() {
     if (!S || S.mode !== 'online' || S.over || !S.ref) return;
+    const ref = S.ref, me = uid(), mySide = S.mySide;
     if (S.status === 'playing') {
-      S.over = true; S.result = S.mySide === 'w' ? 'black' : 'white'; S.reason = 'resign';
+      S.over = true; S.result = mySide === 'w' ? 'black' : 'white'; S.reason = 'resign';
       settle();
-      try { S.ref.update({ status: 'abandoned', leftBy: uid(), result: S.result, resultReason: 'abandoned' }).catch(() => {}); } catch (e) {}
-    } else {
-      try { S.ref.update({ status: 'abandoned', leftBy: uid() }).catch(() => {}); } catch (e) {}
+      ref.update({ status: 'abandoned', leftBy: me, result: S.result, resultReason: 'abandoned' }).catch(() => {});
+      return;
     }
+    /* still waiting: close the room, unless someone joined at the very same moment (then it counts as a resignation) */
+    const close = (d) => d.status === 'waiting'
+      ? { status: 'abandoned', leftBy: me }
+      : (d.status === 'playing' ? { status: 'abandoned', leftBy: me, result: mySide === 'w' ? 'black' : 'white', resultReason: 'abandoned' } : null);
+    if (typeof db().runTransaction === 'function') {
+      db().runTransaction(async (tx) => {
+        const sn = await tx.get(ref);
+        if (!sn.exists) return;
+        const u = close(sn.data());
+        if (u) tx.update(ref, u);
+      }).catch(() => {});
+    } else ref.update({ status: 'abandoned', leftBy: me }).catch(() => {});
   }
   function leave() { abandonOnline(); open(); }
   function rematch() { if (!S) return; if (S.mode === 'bot') startBot(S.level); else startLocal(); }
@@ -670,9 +685,25 @@
       if (d.p1 === uid()) { attach(ref, 'w', code); return; }
       if (d.p2 === uid()) { attach(ref, 'b', code); return; }
       if (d.p2) { err('That room is already full.'); return; }
-      await ref.update({ p2: uid(), p2Name: myName(), status: 'playing' });
+      const claim = { p2: uid(), p2Name: myName(), status: 'playing' };
+      if (typeof db().runTransaction === 'function') {
+        await db().runTransaction(async (tx) => {
+          const sn = await tx.get(ref);
+          if (!sn.exists) throw new Error('vc:missing');
+          const cur = sn.data();
+          if (cur.status === 'abandoned' || cur.status === 'finished') throw new Error('vc:closed');
+          if (cur.p2 && cur.p2 !== uid()) throw new Error('vc:full');
+          tx.update(ref, claim);
+        });
+      } else await ref.update(claim);
       attach(ref, 'b', code);
-    } catch (e) { console.warn(e); err('Could not join. Check the code and your connection.'); }
+    } catch (e) {
+      const m = String(e && e.message || '');
+      if (m.includes('vc:missing')) err('Room not found.');
+      else if (m.includes('vc:closed')) err('That room was closed.');
+      else if (m.includes('vc:full')) err('That room is already full.');
+      else { console.warn(e); err('Could not join. Check the code and your connection.'); }
+    }
   }
   function attach(ref, side, code) {
     ensureSprite();
