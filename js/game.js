@@ -1315,7 +1315,7 @@ async function _chessRenderGame(gameId, data) {
   }
 
   window.UI.mount(`
-    <div class="max-w-lg mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+    <div class="max-w-lg mx-auto" style="padding-bottom:2rem;">
       <div class="glass" style="padding:.875rem 1.125rem;margin-bottom:.625rem;border-radius:12px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div style="text-align:center;flex:1;">
@@ -1404,7 +1404,7 @@ function _chessShowPromotionModal(gameId, from, to, meta) {
       ${options.map(o => `
         <button type="button" class="gm-piece" aria-label="${o[1]}"
                 onclick="Game._chessPromote('${_esc(gameId)}',${from.r},${from.c},${to.r},${to.c},'${o[0]}')">
-          <span>${CHESS_PIECE_GLYPH[myColor + o[0]]}</span><small>${o[1]}</small>
+          <span>${window.ChessArt.pieceSvg(myColor + o[0])}</span><small>${o[1]}</small>
         </button>`).join('')}
     </div>
   `);
@@ -1847,7 +1847,7 @@ function _chessRenderReview() {
   }
 
   window.UI.mount(`
-    <div class="max-w-lg mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+    <div class="max-w-lg mx-auto" style="padding-bottom:2rem;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem;">
         <h2 style="font-size:1.0625rem;font-weight:700;color:var(--text-1);"><svg class="gi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-.15em"><circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/></svg> Game Review</h2>
         <button onclick="Game._chessCloseReview()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">

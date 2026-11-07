@@ -319,7 +319,7 @@
     flag: I('<path d="M4 22V4M4 4h13l-2 4 2 4H4"/>'),
     list: I('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'),
     bars: (n) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 18v-3" ${n >= 1 ? '' : 'opacity=".25"'}/><path d="M12 18v-7" ${n >= 2 ? '' : 'opacity=".25"'}/><path d="M18 18V6" ${n >= 3 ? '' : 'opacity=".25"'}/></svg>`,
-    brand: '<svg viewBox="0 0 45 45" aria-hidden="true"><use href="#vc-wN" style="color:#fff"/></svg>'
+    brand: I('<circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/>')
   };
   const row = (fn, ico, t, d, xp) => `<button class="eg-row" onclick="${fn}"><span class="eg-row__ico">${ico}</span><span class="eg-row__txt"><b>${t}</b><small>${d}</small></span>${xp ? `<span class="eg-xp">${xp}</span>` : ''}<span class="eg-row__go">${IC.go}</span></button>`;
 
@@ -349,6 +349,7 @@
           ${row('Chess.showOnline()', IC.code, 'Play with a code', 'Create a room and share the code with anyone', '+30 XP')}
           ${row('Chess.startLocal()', IC.users, 'Pass &amp; Play', 'Two players, one device')}
         </div>
+        <div id="vcNote" class="eg-err" role="status" aria-live="polite"></div>
         <details class="eg-how"><summary>How to play online with a code</summary>
           <h4>Player 1 (the host)</h4>
           <ol>
@@ -378,7 +379,19 @@
   }
 
   function classmate() { close(); if (window.Game && window.Game._showChessSetup) window.Game._showChessSetup(); }
-  function myGames() { close(); if (window.Game && window.Game._showChessPending) window.Game._showChessPending(); }
+  async function myGames() {
+    const note = document.getElementById('vcNote');
+    const say = (m) => { const n = document.getElementById('vcNote'); if (n) n.textContent = m; };
+    const go = () => { close(); if (window.Game && window.Game._showChessPending) window.Game._showChessPending(); };
+    if (!db() || !uid()) { say('Sign in to see your classmate games.'); return; }
+    if (note) note.textContent = '';
+    try {
+      const u = uid(), q = (f, st) => db().collection('chessGames').where(f, '==', u).where('status', '==', st).get();
+      const snaps = await Promise.all([q('whiteUid', 'pending'), q('blackUid', 'pending'), q('whiteUid', 'active'), q('blackUid', 'active')]);
+      const has = snaps.slice(2).some(x => x.size > 0) || snaps.slice(0, 2).some(x => x.docs.some(d => d.data().challengerUid !== u));
+      if (has) go(); else say('No classmate games right now. Tap Challenge a classmate to start one.');
+    } catch (e) { console.warn(e); say('Could not load your games. Check your connection.'); }
+  }
 
   /* ───────── starting games ───────── */
   function begin(cfg) {
@@ -557,6 +570,7 @@
     let ml = '';
     for (let i = 0; i < S.moves.length; i += 2) ml += `<span class="vc-mv-n">${i / 2 + 1}.</span><span class="vc-mv-m">${esc(S.moves[i])}</span><span class="vc-mv-m">${esc(S.moves[i + 1] || '')}</span>`;
 
+    const prevSheet = document.querySelector('#vcRoot .vc-sheet'), prevTop = prevSheet ? prevSheet.scrollTop : 0;
     root().innerHTML = `
       <div class="eg-sheet eg-sheet--game vc-sheet">
         <div class="eg-top">
@@ -580,6 +594,7 @@
           </div>`}
         <div class="vc-moves" aria-label="Move list">${ml || '<span class="vc-none">No moves yet.</span>'}</div>
       </div>`;
+    const sh = document.querySelector('#vcRoot .vc-sheet'); if (sh && prevTop) sh.scrollTop = prevTop;
     const mv = document.querySelector('#vcRoot .vc-moves'); if (mv) mv.scrollTop = mv.scrollHeight;
   }
 
