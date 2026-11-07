@@ -129,6 +129,31 @@
     S = null;
   }
 
+
+  /* Icons: ECHO matches the app-wide "echo" icon in js/game.js (_LI.echo) */
+  const ECHO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="3"/><circle cx="8.25" cy="8.25" r="1.75" fill="currentColor" stroke="none"/><path d="M14 14l3.5 3.5m0-3.5L14 17.5"/><path d="M11 11l2 2" opacity=".5"/></svg>';
+  const IC = {
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+    go: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>',
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm14 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3Z"/></svg>',
+    bars: (n) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 18v-3" ' + (n >= 1 ? '' : 'opacity=".25"') + '/><path d="M12 18v-7" ' + (n >= 2 ? '' : 'opacity=".25"') + '/><path d="M18 18V6" ' + (n >= 3 ? '' : 'opacity=".25"') + '/></svg>'
+  };
+  const row = (fn, ico, t, d, xp) => `<button class="eg-row" onclick="${fn}"><span class="eg-row__ico">${ico}</span><span class="eg-row__txt"><b>${t}</b><small>${d}</small></span>${xp ? `<span class="eg-xp">${xp}</span>` : ''}<span class="eg-row__go">${IC.go}</span></button>`;
+
+  /* cells that belong to at least one scoring line of p */
+  function scoringCells(board, p) {
+    const set = new Set();
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) for (const [dr, dc] of DIRS) {
+      const er = r + dr * 2, ec = c + dc * 2;
+      if (er < 0 || er >= N || ec < 0 || ec >= N) continue;
+      const a = r * N + c, b = (r + dr) * N + c + dc, z = er * N + ec;
+      if (board[a] === p && board[b] === p && board[z] === p) { set.add(a); set.add(b); set.add(z); }
+    }
+    return set;
+  }
+
   /* ───────── menu ───────── */
   function open() {
     clearTimeout(botTimer);
@@ -136,34 +161,54 @@
     S = null;
     const el = root();
     el.innerHTML = `
-      <div class="eg-panel">
-        <button class="eg-x" aria-label="Close" onclick="EchoGrid.close()">&times;</button>
-        <div class="eg-hero">
-          <div class="eg-logo" aria-hidden="true">${logoSvg()}</div>
-          <h2>Echo Grid</h2>
-          <p>Every tile you claim <b>echoes</b> across the board and kills its mirror cell.
-             Build lines of three - but remember, your moves shape your rival's board too.</p>
+      <div class="eg-sheet">
+        <div class="eg-head">
+          <span class="eg-brand">${ECHO}</span>
+          <div class="eg-head__t"><h2>Echo Grid</h2><p>Claim a tile. Its mirror dies. Outscore your rival.</p></div>
+          <button class="eg-icobtn" aria-label="Close" onclick="EchoGrid.close()">${IC.x}</button>
         </div>
-        <div class="eg-modes">
-          <button class="eg-mode" onclick="EchoGrid.startBot('easy')"><span class="eg-mode__t">Solo - Rookie</span><span class="eg-mode__d">Relaxed bot, good for learning</span></button>
-          <button class="eg-mode" onclick="EchoGrid.startBot('medium')"><span class="eg-mode__t">Solo - Tactician</span><span class="eg-mode__d">Plays sharp, thinks one move ahead</span></button>
-          <button class="eg-mode" onclick="EchoGrid.startBot('hard')"><span class="eg-mode__t">Solo - Mastermind</span><span class="eg-mode__d">Looks two moves ahead. Good luck.</span></button>
-          <button class="eg-mode eg-mode--mp" onclick="EchoGrid.startLocal()"><span class="eg-mode__t">Pass &amp; Play</span><span class="eg-mode__d">Two players, one device</span></button>
-          <button class="eg-mode eg-mode--mp" onclick="EchoGrid.showOnline()"><span class="eg-mode__t">Online Duel</span><span class="eg-mode__d">Create or join a room with a code</span></button>
+        <div class="eg-label eg-label--first">Play solo</div>
+        <div class="eg-group">
+          ${row("EchoGrid.startBot('easy')", IC.bars(1), 'Rookie', 'Relaxed bot, good for learning', '+10 XP')}
+          ${row("EchoGrid.startBot('medium')", IC.bars(2), 'Tactician', 'Plays sharp and plans one move ahead', '+20 XP')}
+          ${row("EchoGrid.startBot('hard')", IC.bars(3), 'Mastermind', 'Looks two moves ahead. Good luck.', '+35 XP')}
+        </div>
+        <div class="eg-label">Play with others</div>
+        <div class="eg-group">
+          ${row('EchoGrid.startLocal()', IC.users, 'Pass &amp; Play', 'Two players, one device')}
+          ${row('EchoGrid.showOnline()', IC.globe, 'Online Duel', 'Create or join a room with a code', '+30 XP')}
         </div>
         <details class="eg-how"><summary>How to play</summary>
           <ol>
             <li>Take turns claiming one empty cell.</li>
-            <li>The cell directly opposite (180 degrees through the centre) turns into a <b>Void</b> and can't be used.</li>
-            <li>Every straight line of 3 of your tiles (across, down, diagonal) scores 1 point. A line of 4 scores 2.</li>
-            <li>The game ends when no empty cells remain. Highest score wins.</li>
+            <li>The cell directly opposite (rotated 180 degrees through the centre) becomes a <b>Void</b> and cannot be used.</li>
+            <li>Every straight line of 3 of your tiles (across, down or diagonal) scores 1 point. A line of 4 scores 2.</li>
+            <li>When no empty cells remain, the highest score wins.</li>
+          </ol>
+        </details>
+        <details class="eg-how"><summary>How to play online</summary>
+          <h4>Player 1 (the host)</h4>
+          <ol>
+            <li>Tap <b>Online Duel</b>, then <b>Create a room</b>.</li>
+            <li>A 6-letter code appears at the top of the board. Send it to your friend by WhatsApp, text or just say it out loud.</li>
+            <li>Wait on the board. The game starts the moment your friend joins. You play the blue circles and move first.</li>
+          </ol>
+          <h4>Player 2 (the guest)</h4>
+          <ol>
+            <li>Open Echo Grid on your own phone or computer and tap <b>Online Duel</b>.</li>
+            <li>Type the 6-letter code you were sent in the box. Capital or small letters both work.</li>
+            <li>Tap <b>Join</b>. You play the orange diamonds and move second.</li>
+          </ol>
+          <h4>Good to know</h4>
+          <ol>
+            <li>Both players must be signed in and connected to the internet.</li>
+            <li>You can only tap the board on your turn. The top of the screen tells you whose move it is.</li>
+            <li>If you leave the room, the game ends for both players, so stay on the board until it finishes.</li>
+            <li>"Room not found"? Check the code for typos. "Room is full"? Ask your friend to create a new room.</li>
+            <li>Playing in the same room? Use <b>Pass &amp; Play</b> instead and share one device.</li>
           </ol>
         </details>
       </div>`;
-  }
-
-  function logoSvg() {
-    return `<svg viewBox="0 0 48 48" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="6" y="6" width="14" height="14" rx="3" fill="currentColor" fill-opacity=".25"/><rect x="28" y="28" width="14" height="14" rx="3" stroke-dasharray="3 4"/><path d="M24 24l-3 3m6-6l3-3"/></svg>`;
   }
 
   /* ───────── starting games ───────── */
@@ -239,9 +284,9 @@
 
   /* ───────── render ───────── */
   function cellSvg(v) {
-    if (v === P1) return '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" fill="currentColor"/></svg>';
-    if (v === P2) return '<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3.5" transform="rotate(45 12 12)" fill="currentColor"/></svg>';
-    if (v === VOID) return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+    if (v === P1) return '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg>';
+    if (v === P2) return '<svg viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="3" transform="rotate(45 12 12)" fill="currentColor"/></svg>';
+    if (v === VOID) return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>';
     return '';
   }
 
@@ -258,38 +303,44 @@
     else if (S.mode === 'bot') status = S.turn === S.mySide ? 'Your move' : 'Bot is thinking...';
     else status = `${esc(turnName)}'s move`;
 
+    const sc1 = scoringCells(S.board, P1), sc2 = scoringCells(S.board, P2);
+    const tap_ = canTap();
     const cells = S.board.map((v, i) => {
       const cls = ['eg-cell'];
       if (v === P1) cls.push('eg-p1'); else if (v === P2) cls.push('eg-p2'); else if (v === VOID) cls.push('eg-void');
-      else if (canTap()) cls.push('eg-open');
+      else if (tap_) cls.push('eg-open');
       if (i === S.last) cls.push('eg-last');
       if (i === S.lastVoid) cls.push('eg-lastvoid');
       if (i === CENTER) cls.push('eg-center');
+      if (sc1.has(i) || sc2.has(i)) cls.push('eg-scored');
       const r = Math.floor(i / N) + 1, c = (i % N) + 1;
-      return `<button class="${cls.join(' ')}" data-i="${i}" aria-label="Row ${r} column ${c}${v === P1 ? ', player 1' : v === P2 ? ', player 2' : v === VOID ? ', void' : ''}" ${v !== EMPTY || !canTap() ? 'tabindex="-1"' : ''} onclick="EchoGrid.tap(${i})">${cellSvg(v)}</button>`;
+      const label = `Row ${r} column ${c}` + (v === P1 ? ', player 1' : v === P2 ? ', player 2' : v === VOID ? ', void' : '');
+      return `<button class="${cls.join(' ')}" aria-label="${label}" ${v !== EMPTY || !tap_ ? 'tabindex="-1"' : ''} onclick="EchoGrid.tap(${i})">${cellSvg(v)}</button>`;
     }).join('');
 
     el.innerHTML = `
-      <div class="eg-panel eg-panel--game">
+      <div class="eg-sheet eg-sheet--game">
         <div class="eg-top">
-          <button class="eg-back" onclick="EchoGrid.leave()">&larr; Menu</button>
+          <button class="eg-icobtn" aria-label="Back to menu" onclick="EchoGrid.leave()">${IC.back}</button>
           <div class="eg-status ${S.over ? 'eg-status--over' : ''}" aria-live="polite">${status}</div>
-          <button class="eg-x eg-x--inline" aria-label="Close" onclick="EchoGrid.close()">&times;</button>
+          <button class="eg-icobtn" aria-label="Close" onclick="EchoGrid.close()">${IC.x}</button>
         </div>
         <div class="eg-score">
-          <div class="eg-pl eg-pl--1 ${!S.over && S.turn === P1 ? 'is-turn' : ''}"><span class="eg-tok">${cellSvg(P1)}</span><span class="eg-pl__n">${esc(S.names[1])}</span><span class="eg-pl__s">${sc[1]}</span></div>
-          <div class="eg-left"><b>${left}</b><span>cells left</span></div>
-          <div class="eg-pl eg-pl--2 ${!S.over && S.turn === P2 ? 'is-turn' : ''}"><span class="eg-pl__s">${sc[2]}</span><span class="eg-pl__n">${esc(S.names[2])}</span><span class="eg-tok">${cellSvg(P2)}</span></div>
+          <div class="eg-pl eg-pl--1 ${!S.over && S.turn === P1 ? 'is-turn' : ''}"><span class="eg-tok">${cellSvg(P1)}</span><span class="eg-pl__m"><span class="eg-pl__n">${esc(S.names[1])}</span><span class="eg-pl__s">${sc[1]}</span></span></div>
+          <div class="eg-left"><b>${left}</b><span>left</span></div>
+          <div class="eg-pl eg-pl--2 ${!S.over && S.turn === P2 ? 'is-turn' : ''}"><span class="eg-tok">${cellSvg(P2)}</span><span class="eg-pl__m"><span class="eg-pl__n">${esc(S.names[2])}</span><span class="eg-pl__s">${sc[2]}</span></span></div>
         </div>
         ${S.mode === 'online' && S.code ? `<div class="eg-room">Room code <b>${esc(S.code)}</b></div>` : ''}
-        <div class="eg-board" role="grid">${cells}</div>
+        ${S.mode === 'online' && S.status === 'waiting' && !S.over ? '<div class="eg-wait">Share this code with your friend. The game starts as soon as they join.</div>' : ''}
+        <div class="eg-board" role="grid" aria-label="Echo Grid board">${cells}</div>
         ${S.over ? `<div class="eg-end">
             <div class="eg-end__t">${S.winner === 0 ? 'A perfect stalemate' : esc(S.names[S.winner]) + ' takes it'}</div>
             <div class="eg-end__s">${sc[1]} - ${sc[2]}${S.xpEarned ? ` &middot; +${S.xpEarned} XP` : ''}</div>
             <div class="eg-end__b">
               ${S.mode === 'online' ? '' : '<button class="eg-btn" onclick="EchoGrid.rematch()">Play again</button>'}
               <button class="eg-btn eg-btn--ghost" onclick="EchoGrid.leave()">Menu</button>
-            </div></div>` : '<div class="eg-hint">Claim a cell: its mirror cell dies. Three in a row scores.</div>'}
+            </div></div>` : `<div class="eg-hint">Claim a cell: its mirror cell dies. Three in a row scores.</div>
+            <div class="eg-legend"><span><i></i>Scoring line</span></div>`}
       </div>`;
   }
 
@@ -307,18 +358,21 @@
     if (!db() || !uid()) { toast('Sign in to play online.', 'warning'); return; }
     if (navigator.onLine === false) { toast('Online duels need an internet connection.', 'warning'); return; }
     root().innerHTML = `
-      <div class="eg-panel">
-        <button class="eg-x" aria-label="Close" onclick="EchoGrid.close()">&times;</button>
-        <div class="eg-hero"><h2>Online Duel</h2><p>Create a room and share the code, or enter a friend's code to join.</p></div>
-        <div class="eg-modes">
-          <button class="eg-mode eg-mode--mp" onclick="EchoGrid.createRoom()"><span class="eg-mode__t">Create a room</span><span class="eg-mode__d">You'll get a 6-letter code</span></button>
-          <div class="eg-join">
-            <input id="egCode" maxlength="6" placeholder="ENTER CODE" autocapitalize="characters" autocomplete="off" spellcheck="false" />
-            <button class="eg-btn" onclick="EchoGrid.joinRoom()">Join</button>
-          </div>
-          <div id="egErr" class="eg-err" role="alert"></div>
+      <div class="eg-sheet">
+        <div class="eg-head">
+          <button class="eg-icobtn" aria-label="Back" onclick="EchoGrid.open()">${IC.back}</button>
+          <div class="eg-head__t"><h2>Online Duel</h2><p>Play a friend in real time.</p></div>
+          <button class="eg-icobtn" aria-label="Close" onclick="EchoGrid.close()">${IC.x}</button>
         </div>
-        <button class="eg-btn eg-btn--ghost eg-wide" onclick="EchoGrid.open()">&larr; Back</button>
+        <div class="eg-group">
+          ${row('EchoGrid.createRoom()', IC.globe, 'Create a room', 'You get a 6-letter code to share')}
+        </div>
+        <div class="eg-label">Or join with a code</div>
+        <div class="eg-join">
+          <input id="egCode" maxlength="6" placeholder="ENTER CODE" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Room code" />
+          <button class="eg-btn" onclick="EchoGrid.joinRoom()">Join</button>
+        </div>
+        <div id="egErr" class="eg-err" role="alert"></div>
       </div>`;
   }
 
