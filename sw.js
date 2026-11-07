@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.23.7';
+const CACHE_VERSION = 'v1.23.8';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -35,7 +35,7 @@ const CDN_ORIGINS = [
 /* ─────────────────────────────────────────────────────────── */
 const CORE_ASSETS = [
   '/', '/index.html', '/offline.html', '/manifest.json',
-  '/css/main.css', '/css/tailwind.css', '/css/voice-ui.css', '/css/studyroom.css', '/css/echogrid.css',
+  '/css/main.css', '/css/tailwind.css', '/css/voice-ui.css', '/css/studyroom.css', '/css/echogrid.css', '/css/chess.css',
   '/news-ticker.css', '/news-ticker.js',
   '/data/questions.js',
   '/js/config.js', '/js/state.js', '/js/svg-diagram.js', '/js/question-loader.js',
@@ -47,7 +47,7 @@ const CORE_ASSETS = [
   '/js/filemanager.js', '/js/question-manager.js', '/js/teacher.js', '/js/speech.js',
   '/js/activitylog.js', '/js/exam.js', '/js/proctor.js', '/js/notifications.js', '/js/avatar.js',
   '/js/reactions.js', '/js/settings.js', '/js/session-reminders.js', '/js/msgnotif.js',
-  '/js/game.js', '/js/echogrid.js', '/js/landing.js', '/js/app.js', '/js/voice-notes.js', '/js/vendor/lame.min.js', '/js/vendor/mp3-worker.js', '/js/installPrompt.js',
+  '/js/game.js', '/js/echogrid.js', '/js/chess.js', '/js/landing.js', '/js/app.js', '/js/voice-notes.js', '/js/vendor/lame.min.js', '/js/vendor/mp3-worker.js', '/js/installPrompt.js',
 ];
 
 const OPTIONAL_ASSETS = ['/vertex.jpeg', '/IMG_4512.png'];
