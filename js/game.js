@@ -1257,23 +1257,16 @@ async function _chessRenderGame(gameId, data) {
       const isTarget = _chessUI.legalTargets.some(t => t.r === r && t.c === c);
       const isKingInCheck = kingInCheckPos && kingInCheckPos.r === r && kingInCheckPos.c === c;
       const clickable = isMyTurn && !finished;
-      let bg = isLight ? '#f0d9b5' : '#b58863';
-      if (selected) bg = '#7c9a4d';
-      else if (isKingInCheck) bg = '#e0524f';
-      squares.push(`
-        <div onclick="${clickable ? `Game._chessSquareClick(${r},${c})` : ''}"
-             style="position:relative;width:100%;padding-bottom:100%;background:${bg};
-                    cursor:${clickable ? 'pointer' : 'default'};box-sizing:border-box;">
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-                      font-size:clamp(18px,6vw,34px);user-select:none;
-                      color:${piece && piece[0]==='w' ? '#fff' : '#111'};
-                      text-shadow:${piece && piece[0]==='w' ? '0 0 2px #000,0 1px 1px #000' : 'none'};">
-            ${piece ? CHESS_PIECE_GLYPH[piece] : ''}
-          </div>
-          ${isTarget ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-            <div style="width:28%;height:28%;border-radius:50%;background:rgba(0,0,0,0.28);"></div>
-          </div>` : ''}
-        </div>`);
+      const lm = data.lastMove;
+      squares.push(window.ChessArt.squareHtml({
+        r, c, piece,
+        sel: !!selected,
+        last: !!(lm && ((lm.fr === r && lm.fc === c) || (lm.tr === r && lm.tc === c))),
+        check: !!isKingInCheck,
+        target: !!isTarget,
+        showRank: dc === 0, showFile: dr === 7,
+        click: clickable ? `Game._chessSquareClick(${r},${c})` : ''
+      }));
     }
   }
 
@@ -1336,10 +1329,7 @@ async function _chessRenderGame(gameId, data) {
 
       ${turnBanner}
 
-      <div style="display:grid;grid-template-columns:repeat(8,1fr);border:3px solid #4a3423;
-                  border-radius:6px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25);margin-bottom:.75rem;">
-        ${squares.join('')}
-      </div>
+      <div class="vc-page"><div class="vc-board" role="grid" aria-label="Chess board">${squares.join('')}</div></div>
 
       ${!finished ? `
       <div style="text-align:center;margin-bottom:.75rem;">
@@ -1492,6 +1482,7 @@ async function _chessCommitMove(gameId, from, to, meta, promoteChoice) {
     turn:           gameOver ? null : newTurn,
     castling:       newCastling,
     enPassant:      newEnPassant,
+    lastMove:       { fr: from.r, fc: from.c, tr: to.r, tc: to.c },
     moveLog:        [...(data.moveLog || []).slice(-59), notation],
     moves:          [...(data.moves   || []), moveRecord],
     positionCounts,
@@ -1806,17 +1797,7 @@ function _chessRenderReview() {
       const r = flipped ? 7 - dr : dr;
       const c = flipped ? 7 - dc : dc;
       const piece   = frame.board[r][c];
-      const isLight = (r + c) % 2 === 0;
-      squares.push(`
-        <div style="position:relative;width:100%;padding-bottom:100%;
-                    background:${isLight ? '#f0d9b5' : '#b58863'};box-sizing:border-box;">
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-                      font-size:clamp(18px,6vw,34px);user-select:none;
-                      color:${piece && piece[0]==='w' ? '#fff' : '#111'};
-                      text-shadow:${piece && piece[0]==='w' ? '0 0 2px #000,0 1px 1px #000' : 'none'};">
-            ${piece ? CHESS_PIECE_GLYPH[piece] : ''}
-          </div>
-        </div>`);
+      squares.push(window.ChessArt.squareHtml({ r, c, piece, showRank: dc === 0, showFile: dr === 7 }));
     }
   }
 
@@ -1881,10 +1862,7 @@ function _chessRenderReview() {
         <div style="font-size:.8125rem;margin-top:.25rem;">${resultLine}</div>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(8,1fr);border:3px solid #4a3423;
-                  border-radius:6px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25);margin-bottom:.625rem;">
-        ${squares.join('')}
-      </div>
+      <div class="vc-page"><div class="vc-board" role="grid" aria-label="Chess board">${squares.join('')}</div></div>
 
       <div style="display:flex;gap:.375rem;justify-content:center;margin-bottom:.75rem;">
         <button onclick="Game._chessReviewGoTo(0)" class="btn bg-gray-500" style="font-size:.75rem;"><i class="ph ph-skip-back"></i> Start</button>
@@ -4533,8 +4511,8 @@ function _dismissScrabblePopup(gameId) {
         tags: ['Action', 'Endless runner'],
         xp: _krLimited ? `${_krPlaysUsed}/${KR_MAX_PLAYS} plays used` : `${_krPlaysLeft} play${_krPlaysLeft !== 1 ? 's' : ''} left` },
       { id: 'chess', c: '#475569', icon: _li('chess', 22), title: 'Chess',
-        desc: 'Full-rules chess vs a classmate: castling, en passant, promotion and checkmate. Play at your pace.',
-        tags: ['1v1', 'Turn-based'], xp: 'Up to +40 XP' },
+        desc: 'Full-rules chess. Play the engine at three levels, challenge a classmate, or share a code to play anyone.',
+        tags: ['Solo', 'Multiplayer', 'Strategy'], xp: 'Up to +40 XP' },
       { id: 'echoGrid', c: '#0f766e', icon: _li('echo', 22), title: 'Echo Grid',
         desc: 'Claim a tile and its mirror dies. Build lines of three on a shifting board. Solo vs bot, pass and play, or online duel.',
         tags: ['Solo', 'Multiplayer', 'Strategy'], xp: 'Up to +35 XP' },
@@ -4752,7 +4730,7 @@ function _showAllLevelsModal(currentXP) {
   else if (type === 'challenge')       _showChallengeSetup();
   else if (type === 'knowledgeRunner') _showKnowledgeRunnerSetup();
   else if (type === 'wordScrabble')    _showScrabbleSetup();
-  else if (type === 'chess')           _showChessSetup();
+  else if (type === 'chess')           { if (window.Chess) window.Chess.open(); else _showChessSetup(); }
   else if (type === 'echoGrid')        { if (window.EchoGrid) window.EchoGrid.open(); }
 }
 
@@ -7377,7 +7355,7 @@ function _closeWatchModal(challengeId) {
   else if (key === 'challenge')       _showChallengeSetup();
   else if (key === 'knowledgeRunner') _showKnowledgeRunnerSetup();
   else if (key === 'wordScrabble')    _showScrabbleSetup();
-  else if (key === 'chess')           _showChessSetup();
+  else if (key === 'chess')           { if (window.Chess) window.Chess.open(); else _showChessSetup(); }
   else if (key === 'echoGrid')        { if (window.EchoGrid) window.EchoGrid.open(); }
   else openGameLobby();
 }

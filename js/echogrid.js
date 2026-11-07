@@ -432,6 +432,7 @@
       const snap = await ref.get();
       if (!snap.exists) { err('Room not found.'); return; }
       const d = snap.data();
+      if (d.game && d.game !== 'echo') { err('That code is for a different game.'); return; }
       if (d.status === 'abandoned') { err('That room was closed.'); return; }
       if (d.p1 === uid()) { attach(ref, P1, code); return; }
       if (d.p2 === uid()) { attach(ref, P2, code); return; }
