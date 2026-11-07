@@ -4524,7 +4524,7 @@ function _dismissScrabblePopup(gameId) {
       { id: 'chess', c: '#475569', icon: _li('chess', 22), title: 'Chess',
         desc: 'Full-rules chess vs a classmate: castling, en passant, promotion and checkmate. Play at your pace.',
         tags: ['1v1', 'Turn-based'], xp: 'Up to +40 XP' },
-      { id: 'echoGrid', c: '#8b5cf6', icon: _li('sparkle', 22), title: 'Echo Grid',
+      { id: 'echoGrid', c: '#0f766e', icon: _li('echo', 22), title: 'Echo Grid',
         desc: 'Claim a tile and its mirror dies. Build lines of three on a shifting board. Solo vs bot, pass and play, or online duel.',
         tags: ['Solo', 'Multiplayer', 'Strategy'], xp: 'Up to +35 XP' },
     ];
@@ -9297,6 +9297,7 @@ function _krLoop(timestamp) {
     swords:     '<polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" x2="19" y1="19" y2="13"/><line x1="16" x2="20" y1="16" y2="20"/><line x1="19" x2="21" y1="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" x2="9" y1="14" y2="18"/><line x1="7" x2="4" y1="17" y2="20"/><line x1="3" x2="5" y1="19" y2="21"/>',
     scrabble:   '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none" opacity=".25"/>',
     runner:     '<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/>',
+    echo:       '<rect width="18" height="18" x="3" y="3" rx="3"/><circle cx="8.25" cy="8.25" r="1.75" fill="currentColor" stroke="none"/><path d="M14 14l3.5 3.5m0-3.5L14 17.5"/><path d="M11 11l2 2" opacity=".5"/>',
     chess:      '<circle cx="12" cy="6" r="3"/><path d="M10 9.5c0 3-1.5 4.5-2.5 8.5h9c-1-4-2.5-5.5-2.5-8.5"/><path d="M6 21h12"/>',
     // ── general ──
     zap:        '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
@@ -9860,7 +9861,7 @@ async function renderTeacherGameRestrictions(containerId) {
 
     const GAME_ICONS = {
       quizBlitz: 'quiz', speedMath: 'calculator', wordScramble: 'scramble', trueOrFalse: 'trueFalse',
-      suddenDeath: 'skull', challenge: 'swords', knowledgeRunner: 'runner', wordScrabble: 'scrabble', chess: 'chess', echoGrid: 'sparkle',
+      suddenDeath: 'skull', challenge: 'swords', knowledgeRunner: 'runner', wordScrabble: 'scrabble', chess: 'chess', echoGrid: 'echo',
     };
 
     function gameIcon(type)  { return _li(GAME_ICONS[type] || 'gameController', 16); }
