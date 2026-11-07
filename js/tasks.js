@@ -57,6 +57,17 @@
     return icons[name] || '';
   }
 
+  function _joinList(items) {
+    const list = [];
+    (Array.isArray(items) ? items : []).forEach(function (x) {
+      const t = String(x == null ? '' : x).trim();
+      if (t && list.indexOf(t) === -1) list.push(t);
+    });
+    if (list.length <= 1) return list.join('');
+    if (list.length === 2) return list[0] + ' and ' + list[1];
+    return list.slice(0, -1).join(', ') + ', and ' + list[list.length - 1];
+  }
+
   function _localDateStr(date) {
     const d = date || new Date();
     return (
@@ -692,7 +703,7 @@
       const subjects = _resolveSubjectsForDate(currentTask, dateStr);
       const subjNote = subjects.length > 0
         ? '<p style="font-size:.625rem;color:var(--brand-text);margin-top:4px;font-weight:600;line-height:1.4;">' +
-          subjects.map(_esc).join(', ') + '</p>'
+          _esc(_joinList(subjects)) + '</p>'
         : '';
 
       // More than one task applies that day (for example an individual task

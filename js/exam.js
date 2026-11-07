@@ -1805,7 +1805,7 @@ async function renderSubjectSelection() {
            <div>
              <p style="font-size:.8125rem;font-weight:700;color:var(--warning-text);margin-bottom:.2rem;">Subject restriction active</p>
              <p style="font-size:.75rem;color:var(--text-3);line-height:1.6;">
-               Today: <strong style="color:var(--text-2);">${available.map(s => _escHtml(s)).join(', ') || 'none'}</strong>
+               Today: <strong style="color:var(--text-2);">${_escHtml(_joinList(available)) || 'none'}</strong>${available.length ? '.' : ''}
              </p>
            </div>
          </div>`
@@ -1879,7 +1879,7 @@ async function renderSubjectSelection() {
         </div>
         <div class="vtx-start-foot">
           ${enoughSubjects
-            ? `<span class="vtx-start-count"><strong>${bankState.subjects.length}</strong> subjects set for today</span>
+            ? `<span class="vtx-start-count"><strong>${usableAvailable.length}</strong> ${usableAvailable.length === 1 ? 'subject' : 'subjects'} set for today</span>
                <button id="startExamBtn" onclick="Exam.startExam()" class="btn btn-lg">Start exam</button>`
             : `<p style="color:var(--danger);font-size:.8125rem;">Subject not available. Contact Master Timothy.</p>`}
         </div>`;
@@ -2688,6 +2688,17 @@ async function renderSubjectSelection() {
   /* Start exam                                              */
   /* ─────────────────────────────────────────────────────── */
     let _startExamLock = false;
+
+  function _joinList(items) {
+    const list = [];
+    (Array.isArray(items) ? items : []).forEach(function (x) {
+      const t = String(x == null ? '' : x).trim();
+      if (t && list.indexOf(t) === -1) list.push(t);
+    });
+    if (list.length <= 1) return list.join('');
+    if (list.length === 2) return list[0] + ' and ' + list[1];
+    return list.slice(0, -1).join(', ') + ', and ' + list[list.length - 1];
+  }
 
   async function startExam() {
     if (_startExamLock) return;
