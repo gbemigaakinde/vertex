@@ -2884,3 +2884,30 @@ input.shake, select.shake { animation: vtxShake 0.35s ease-in-out; }
 @media (min-width: 900px) and (max-height: 640px) {
   #app { align-items: flex-start; }
 }
+
+/* ── Dashboard tool tile: busy state (equalizer bars + passing light) ── */
+button.tile-busy { pointer-events: none; cursor: progress; border-color: var(--accent) !important; transform: none !important; box-shadow: 0 0 0 4px var(--accent-subtle) !important; }
+.tile-busy .tile-ico { position: relative; overflow: hidden; }
+.tile-busy .tile-ico > svg { opacity: 0; transform: scale(.6); transition: opacity .15s, transform .2s; }
+.tile-busy .tile-ico::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 22px; height: 18px; margin: -9px 0 0 -11px;
+  background:
+    linear-gradient(currentColor, currentColor) 0 100% / 4px 35% no-repeat,
+    linear-gradient(currentColor, currentColor) 50% 100% / 4px 90% no-repeat,
+    linear-gradient(currentColor, currentColor) 100% 100% / 4px 55% no-repeat;
+  border-radius: 2px; animation: tile-eq .9s ease-in-out infinite;
+}
+.tile-busy .tile-ico::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-120%);
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.38) 50%, transparent 70%);
+  animation: tile-sheen 1.2s ease-in-out infinite;
+}
+.tile-busy .tile-lbl { color: var(--accent-text) !important; }
+@keyframes tile-eq {
+  0%, 100% { background-size: 4px 35%, 4px 90%, 4px 55%; }
+  25%      { background-size: 4px 90%, 4px 50%, 4px 80%; }
+  50%      { background-size: 4px 55%, 4px 100%, 4px 35%; }
+  75%      { background-size: 4px 85%, 4px 40%, 4px 95%; }
+}
+@keyframes tile-sheen { to { transform: translateX(120%); } }
+@media (prefers-reduced-motion: reduce) { .tile-busy .tile-ico::before, .tile-busy .tile-ico::after { animation: none; } }
