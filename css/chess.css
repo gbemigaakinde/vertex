@@ -1,0 +1,81 @@
+/* Chess board + pieces. Shared by the Chess lobby (js/chess.js) and the
+   classmate challenge board (js/game.js). Menu chrome reuses echogrid.css. */
+.vc-board,.vc-overlay{
+  --vc-light:#f0d9b5; --vc-dark:#b58863;
+  --vc-sel:rgba(20,85,30,.5); --vc-last:rgba(155,199,0,.41);
+}
+.vc-brand{background:#334155 !important}
+.vc-brand svg{width:30px;height:30px}
+
+.vc-boardwrap{position:relative;width:100%;margin:6px 0}
+.vc-board{
+  display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+  width:100%;aspect-ratio:1/1;border-radius:8px;overflow:hidden;
+  box-shadow:0 0 0 2px #5b4330,0 10px 28px -10px rgba(0,0,0,.45);
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.vc-sq{
+  position:relative;display:block;padding:0;margin:0;border:0;border-radius:0;
+  width:100%;height:100%;min-width:0;min-height:0;cursor:default;
+  background:var(--vc-light);-webkit-tap-highlight-color:transparent;
+}
+.vc-sq.vc-d{background:var(--vc-dark)}
+.vc-sq.vc-click{cursor:pointer}
+.vc-sq.vc-last::before,.vc-sq.vc-sel::before{content:"";position:absolute;inset:0;background:var(--vc-last);z-index:0}
+.vc-sq.vc-sel::before{background:var(--vc-sel)}
+.vc-sq.vc-check::before{content:"";position:absolute;inset:0;z-index:0;
+  background:radial-gradient(circle,rgba(255,0,0,1) 0%,rgba(231,0,0,1) 25%,rgba(169,0,0,0) 89%,rgba(158,0,0,0) 100%)}
+.vc-sq .vc-pc{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:2;pointer-events:none;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.28))}
+.vc-sq.vc-mv::after{content:"";position:absolute;left:50%;top:50%;width:30%;height:30%;transform:translate(-50%,-50%);
+  border-radius:50%;background:rgba(20,85,30,.5);z-index:3;pointer-events:none}
+.vc-sq.vc-cap::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(transparent 0,transparent 78%,rgba(20,85,30,.5) 79%)}
+.vc-sq.vc-click:hover:not(.vc-sel){box-shadow:inset 0 0 0 3px rgba(255,255,255,.55)}
+.vc-sq:focus-visible{outline:3px solid #0f766e;outline-offset:-3px;z-index:5}
+.vc-rk,.vc-fl{position:absolute;z-index:1;font:700 clamp(8px,2.3vw,11px)/1 -apple-system,'Segoe UI',system-ui,sans-serif;font-style:normal;pointer-events:none}
+.vc-rk{top:3px;left:3px}
+.vc-fl{bottom:2px;right:3px}
+.vc-l .vc-rk,.vc-l .vc-fl{color:var(--vc-dark)}
+.vc-d .vc-rk,.vc-d .vc-fl{color:var(--vc-light)}
+
+/* player bars */
+.vc-pl{display:flex;align-items:center;gap:8px;min-height:30px;padding:2px 4px;font-size:.8125rem;color:var(--eg-ink2,#55555c)}
+.vc-pl.is-turn .vc-pl__n{color:var(--eg-ink,#16161a)}
+.vc-pl.is-turn .vc-dot{box-shadow:0 0 0 3px rgba(15,118,110,.35)}
+.vc-dot{width:12px;height:12px;border-radius:50%;flex:none;border:1.5px solid #222}
+.vc-dot--w{background:#fff}.vc-dot--b{background:#222}
+.vc-pl__n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}
+.vc-cap-row{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto;min-height:18px}
+.vc-mini{width:17px;height:17px;margin-right:-6px;display:inline-block}
+.vc-mini .vc-pc{width:100%;height:100%;display:block}
+.vc-adv{margin-left:12px;font-size:.75rem;color:var(--eg-ink2,#55555c)}
+
+/* promotion */
+.vc-promo{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:rgba(0,0,0,.45);border-radius:8px}
+.vc-promo__box{background:var(--eg-surface,#fff);border-radius:14px;padding:10px 12px 12px;box-shadow:0 12px 40px rgba(0,0,0,.4);text-align:center}
+.vc-promo__box p{margin:0 0 6px;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--eg-ink3,#8b8b93)}
+.vc-promo__box div{display:flex;gap:6px}
+.vc-promo__box button{width:clamp(48px,15vw,64px);aspect-ratio:1;border-radius:10px;border:1px solid var(--eg-line,#ddd);background:var(--vc-light);padding:2px;cursor:pointer}
+.vc-promo__box button:hover{background:#fff;border-color:#0f766e}
+.vc-promo__box .vc-pc{width:100%;height:100%;display:block}
+
+/* actions + move list */
+.vc-actions{display:flex;justify-content:center;margin-top:6px}
+.vc-resign{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:.8125rem}
+.vc-resign svg{width:15px;height:15px}
+.vc-moves{margin-top:8px;max-height:64px;overflow-y:auto;display:grid;grid-template-columns:auto 1fr 1fr;column-gap:10px;row-gap:2px;
+  padding:8px 10px;border-radius:12px;background:var(--eg-board,#e9e8e3);font:600 .75rem/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--eg-ink,#16161a)}
+.vc-mv-n{color:var(--eg-ink3,#8b8b93)}
+.vc-none{grid-column:1/-1;color:var(--eg-ink3,#8b8b93);font-weight:500;font-family:inherit}
+
+.vc-sheet{max-width:min(520px,100vw)}
+@media (min-width:600px) and (min-height:760px){.vc-moves{max-height:96px}}
+@media (max-height:700px){.vc-sheet{padding-top:10px}.vc-pl{min-height:26px}.vc-moves{max-height:44px}}
+
+/* classmate challenge page (game.js) */
+.vc-page .vc-board{max-width:560px;margin:0 auto .75rem}
+
+[data-theme="dark"] .vc-dot{border-color:#9ca3af}
+@media (prefers-color-scheme:dark){:root:not([data-theme]) .vc-dot{border-color:#9ca3af}}
+@media (max-height:640px){.vc-sheet .vc-moves{max-height:34px}.vc-sheet .eg-end{padding-top:10px;padding-bottom:10px}}
