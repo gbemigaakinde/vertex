@@ -7172,6 +7172,8 @@ function _closeWatchModal(challengeId) {
       .gr-ring .trk { stroke:var(--bg-muted); }
       .gr-ring .bar { stroke-dasharray:264;animation:grRing 1.1s cubic-bezier(.2,.8,.2,1) both .15s;filter:drop-shadow(0 0 6px color-mix(in srgb,currentColor 55%,transparent)); }
       .gr-ring b { position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1; }
+      .gr-ring b .gr-pct { display:inline-flex;align-items:flex-start;line-height:1; }
+      .gr-ring b .gr-pct sup { font-size:.55em;font-weight:600;letter-spacing:0;margin-left:.08em;margin-top:.12em;line-height:1;vertical-align:baseline; }
       .gr-ring b small { font-size:.625rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin-top:.3rem; }
       .gr-metrics { flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:.25rem .75rem; }
       .gr-metric { min-width:0; }
@@ -7221,6 +7223,7 @@ function _closeWatchModal(challengeId) {
       .gr-btn:active { transform:scale(.98); }
       .gr-btn.primary { min-height:54px;font-size:1rem;border:0;color:#fff;background:linear-gradient(135deg,var(--t),color-mix(in srgb,var(--t) 55%,#8b5cf6));box-shadow:0 12px 28px -12px color-mix(in srgb,var(--t) 80%,transparent),inset 0 1px 0 rgba(255,255,255,.22); }
       .gr-btn.primary:hover { filter:brightness(1.06);background:linear-gradient(135deg,var(--t),color-mix(in srgb,var(--t) 55%,#8b5cf6)); }
+      .gr-btn[hidden] { display:none; }
       .gr-btn.ghost { border-color:transparent;background:transparent;color:var(--text-3);font-size:.8125rem;font-weight:500;min-height:40px; }
 
       .gr-card > .gr-head, .gr-card > .gr-hero, .gr-card > .gr-feature, .gr-card > .gr-level, .gr-card > .gr-rows, .gr-card > .gr-prog, .gr-card > .gr-actions { animation:grUp .5s cubic-bezier(.2,.8,.2,1) both; }
@@ -7288,7 +7291,7 @@ function _closeWatchModal(challengeId) {
                 <circle class="trk" cx="50" cy="50" r="42" fill="none" stroke-width="8"/>
                 <circle class="bar" cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" style="stroke-dashoffset:${ringOffset};"/>
               </svg>
-              <b style="color:var(--text-1);">${pct}<small>Score %</small></b>
+              <b style="color:var(--text-1);"><span class="gr-pct">${pct}<sup>%</sup></span><small>Score</small></b>
             </div>
             <div class="gr-metrics">
               <div class="gr-metric"><span>${_esc(scoreLabel || 'Result')}</span><strong>${_esc(score)}</strong></div>
@@ -7320,10 +7323,33 @@ function _closeWatchModal(challengeId) {
               <button onclick="Game.openGameLobby()" class="gr-btn">${_icon('house', 16)} Games</button>
               <button onclick="Game.openLeaderboard()" class="gr-btn">${_icon('trophy', 16)} Leaderboard</button>
             </div>
-            <button onclick="Game._showScrabblePending()" class="gr-btn ghost">${_li('scrabble', 15)} Scrabble games</button>
+            <button id="grScrabbleBtn" hidden onclick="Game._showScrabblePending()" class="gr-btn ghost">${_li('scrabble', 15)} Scrabble games</button>
           </div>
         </div>
       </div>`);
+
+    _revealScrabbleShortcut();
+  }
+
+  // Shows the "Scrabble games" shortcut on the result screen ONLY when the
+  // player has a Scrabble game that needs them: an invitation to accept, or an
+  // active game where it is their turn.
+  async function _revealScrabbleShortcut() {
+    const uid = _uid();
+    if (!uid || !_db() || !_isOnline()) return;
+    try {
+      const col = _db().collection('scrabbleGames');
+      const [inv, a1, a2] = await Promise.all([
+        col.where('player2Uid', '==', uid).where('status', '==', 'pending').get(),
+        col.where('player1Uid', '==', uid).where('status', '==', 'active').get(),
+        col.where('player2Uid', '==', uid).where('status', '==', 'active').get(),
+      ]);
+      const myMove = [...a1.docs, ...a2.docs].some(d => d.data().turn === uid);
+      if (inv.size > 0 || myMove) {
+        const btn = document.getElementById('grScrabbleBtn');
+        if (btn) btn.hidden = false;
+      }
+    } catch (e) { console.warn('[game] scrabble shortcut check failed:', e); }
   }
 
   function _playAgain(key) {
