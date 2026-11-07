@@ -1014,6 +1014,17 @@ function renderTeacherDashboard() {
               </div>
 
               <div style="margin-bottom:0.875rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Session &amp; Term <span style="font-weight:400;text-transform:none;color:var(--text-4);">— which questions this task uses</span>
+                </label>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                  <select id="taskSession" style="flex:2;min-width:150px;" onchange="Teacher._onTaskPeriodChange()"></select>
+                  <select id="taskTerm" style="flex:1;min-width:110px;" onchange="Teacher._onTaskPeriodChange()"></select>
+                </div>
+                <p id="taskPeriodHint" style="font-size:var(--text-xs);color:var(--text-4);margin-top:.25rem;"></p>
+              </div>
+
+              <div style="margin-bottom:0.875rem;">
                 <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">Message for Students</label>
                 <textarea id="tasksMessage" placeholder="Instructions or motivation..." style="height:4rem;resize:vertical;"></textarea>
               </div>
@@ -3051,6 +3062,56 @@ async function _saveStudentEdit(uid, previousAdmno) {
   _onTaskTargetChange();
 }
 
+  // ── Task session / term ─────────────────────────────────
+  function _livePeriod() {
+    try { if (window.QuestionLoader) return QuestionLoader.getActivePeriod(); } catch (e) {}
+    return { session: '', term: 1 };
+  }
+  function _populateTaskPeriod(session, term) {
+    const sEl = document.getElementById('taskSession');
+    const tEl = document.getElementById('taskTerm');
+    if (!sEl || !tEl) return;
+    const live = _livePeriod();
+    const start = parseInt(live.session, 10) || new Date().getFullYear();
+    const seen = {};
+    const years = [];
+    const add = s => { if (s && !seen[s]) { seen[s] = 1; years.push(s); } };
+    for (let y = start + 1; y >= start - 3; y--) add(y + '/' + (y + 1));
+    add(session);
+    sEl.innerHTML = '<option value="">Default (' + _esc(live.session) + ')</option>' +
+      years.map(s => '<option value="' + _esc(s) + '">' + _esc(s) + '</option>').join('');
+    tEl.innerHTML = '<option value="">Default (Term ' + _esc(live.term) + ')</option>' +
+      [1, 2, 3].map(n => '<option value="' + n + '">Term ' + n + '</option>').join('');
+    sEl.value = session || '';
+    tEl.value = term ? String(term) : '';
+    _onTaskPeriodChange();
+  }
+  // Effective period of the form: a blank field follows the Questions-tab default.
+  function _taskPeriodFromForm() {
+    const live = _livePeriod();
+    const s = document.getElementById('taskSession')?.value || '';
+    const t = document.getElementById('taskTerm')?.value || '';
+    if (!s && !t) return { custom: false, session: live.session, term: live.term };
+    return { custom: true, session: s || live.session, term: parseInt(t || live.term, 10) };
+  }
+  function _onTaskPeriodChange() {
+    const hint = document.getElementById('taskPeriodHint');
+    if (!hint) return;
+    const live = _livePeriod();
+    const p = _taskPeriodFromForm();
+    const label = p.session + ' · Term ' + p.term;
+    if (!p.custom) {
+      hint.style.color = 'var(--text-4)';
+      hint.textContent = 'Follows the default set in the Questions tab (' + label + '). It changes automatically if you change that default.';
+    } else if (p.session === live.session && Number(p.term) === Number(live.term)) {
+      hint.style.color = 'var(--text-4)';
+      hint.textContent = 'Fixed to ' + label + ' (same as the current default, but it will not move if the default changes).';
+    } else {
+      hint.style.color = 'var(--warning, #b45309)';
+      hint.textContent = 'Students get ' + label + ' questions on task days, even though the default is ' + live.session + ' · Term ' + live.term + '.';
+    }
+  }
+
   function _clearTaskFormDates() {
     const datesEl = document.getElementById('tasksDates');
     if (datesEl) datesEl.innerHTML = '';
@@ -3076,6 +3137,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
     document.querySelectorAll('.task-day-cb').forEach(cb => { cb.checked = false; });
     document.querySelectorAll('.recurring-day-subj-cb').forEach(cb => { cb.checked = false; });
     _clearTaskFormDates();
+    _populateTaskPeriod('', '');
   }
 
   function _currentTaskDocId() {
@@ -3352,6 +3414,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
     if (activeEl) activeEl.checked = d.active === true;
     setVal('tasksTitle', d.title || '');
     setVal('tasksMessage', d.message || '');
+    _populateTaskPeriod(d.session || '', d.term || '');
 
     const durEl = document.getElementById('taskDurationMs');
     if (durEl) {
@@ -3524,6 +3587,28 @@ async function _saveStudentEdit(uid, previousAdmno) {
       }
     }
 
+    // Session/term: blank fields follow the Questions-tab default; otherwise pinned.
+    const _pp = _taskPeriodFromForm();
+    if (_pp.custom) {
+      payload.session = _pp.session;
+      payload.term    = _pp.term;
+      payload.periodKey = (window.QuestionLoader && QuestionLoader.periodKey(_pp.session, _pp.term)) || '';
+      if (!payload.periodKey) { UI.toast('Pick a valid session and term.', 'warning'); return; }
+    } else {
+      payload.session = null; payload.term = null; payload.periodKey = null;
+    }
+    // Warn when the chosen period has no questions for the target class.
+    try {
+      const QL = window.QuestionLoader;
+      if (_pp.custom && QL && QL.classHasPeriod && _assignScope === 'class' && payload.className &&
+          !QL.classHasPeriod(payload.className, _pp) &&
+          !(_pp.session === _livePeriod().session && Number(_pp.term) === Number(_livePeriod().term))) {
+        const okP = await UI.confirmAction('There are no questions for ' + payload.className + ' in ' + _pp.session + ' · Term ' + _pp.term +
+          ' yet. Until you add some, students will get the default period instead. Save anyway?');
+        if (!okP) return;
+      }
+    } catch (pe) { console.warn('[teacher] period check failed:', pe); }
+
     // A recurring task whose date window contains none of the chosen weekdays
     // would save fine and then never show up for anyone.
     if (payload.recurrence !== 'once' && window.Tasks && Tasks._resolveTaskDates) {
@@ -3632,6 +3717,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
   _cancel('tasksManager');
   _taskScope   = 'once';
   _assignScope = 'all';
+  _populateTaskPeriod('', '');
 
   _cancel('taskClassList');
   const unsubClasses = Db().collection('students').onSnapshot(snap => {
@@ -3786,6 +3872,8 @@ function _renderExistingTasksList(docs) {
             ? 'background:var(--success-subtle);color:var(--success-text);border:1px solid var(--success-border);'
             : 'background:var(--bg-subtle);color:var(--text-4);border:1px solid var(--border);') +
           '">' + (d.active ? 'Active' : 'Inactive') + '</span>' +
+          `<span style="font-size:var(--text-xs);font-weight:600;padding:1px 7px;border-radius:99px;background:var(--bg-subtle);color:var(--text-3);border:1px solid var(--border);">` +
+          (d.session ? _esc(d.session + ' · T' + d.term) : 'Default period') + '</span>' +
           '</div>' +
           `<p style="font-size:var(--text-xs);color:var(--text-4);word-break:break-all;">${_esc(datesDisplay)}</p>` +
           '</div>' +
@@ -4086,6 +4174,7 @@ function _renderExistingTasksList(docs) {
       p.durationMs || 0,
       p.proctorMode || 'off',
       p.screenMode || 'off',
+      p.session ? p.session + '|' + p.term : '',
     ]);
   }
 
@@ -5802,6 +5891,7 @@ async function _deleteTimetable(weekKey) {
     // ── TASK DETAILS ───────────────────────────────────────────────
     heading('Task details');
     kvRow('Recurrence', recurrenceText(taskDoc));
+    kvRow('Session / Term', taskDoc.session ? (taskDoc.session + ' - Term ' + taskDoc.term) : 'Default (follows Questions tab)');
     kvRow('Duration',   fmtDuration(taskDoc.durationMs));
     kvRow('Visibility', isActive ? 'Visible to students' : 'Hidden from students', isActive ? C.good : C.muted);
     if (taskDoc.recurrence && taskDoc.recurrence !== 'once') {
@@ -6998,6 +7088,7 @@ async function exportResultPDF(resultId) {
   _setTaskScope,
   _setAssignScope,
   _onTaskTargetChange,
+  _onTaskPeriodChange,
   _selectAllDateSubjects,
   _clearDateSubjects,
   _selectAllDaySubjects,

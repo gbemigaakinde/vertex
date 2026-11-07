@@ -408,6 +408,12 @@
     const durationMs = todayOwner && typeof todayOwner.durationMs === 'number' && todayOwner.durationMs > 0
       ? todayOwner.durationMs : null;
 
+    // Session/term the task pins for today (null = follow the default period).
+    let taskPeriod = null;
+    if (todayOwner && todayOwner.session && todayOwner.term && !doneDates[today]) {
+      taskPeriod = { session: todayOwner.session, term: Number(todayOwner.term) };
+    }
+
     const pOwner = todayOwner || primary;
     const proctorMode = (pOwner && (pOwner.proctorMode === 'video' || pOwner.proctorMode === 'photo')) ? pOwner.proctorMode : 'off';
     return Object.assign({}, primary, {
@@ -417,6 +423,7 @@
       screenIntervalSec: (pOwner && pOwner.screenIntervalSec) || 30,
       screenUnsupported: (pOwner && pOwner.screenUnsupported === 'camera') ? 'camera' : 'block',
       active:       true,
+      taskPeriod,
       dates,
       pastDates,
       dateSubjects,
@@ -446,6 +453,7 @@
       (cfg.dateSubjects || {})[today] || [],
       cfg.durationMs || 0,
       dates.find(d => d > today && !done[d]) || '',
+      cfg.taskPeriod ? cfg.taskPeriod.session + '|' + cfg.taskPeriod.term : '',
     ]);
   }
 
@@ -471,6 +479,13 @@
     const resolved = ordered.length > 0 ? _mergeTaskDocs(ordered) : { active: false };
 
     AppState.currentTaskConfig = resolved;
+
+    // Pin the task's session/term for the exam questions (or release it).
+    try {
+      if (window.QuestionLoader && QuestionLoader.setTaskPeriod) {
+        QuestionLoader.setTaskPeriod(resolved.active ? resolved.taskPeriod : null);
+      }
+    } catch (e) { console.warn('[tasks] task period failed:', e); }
 
     const sig     = _taskSignature(resolved);
     const changed = _lastSig !== null && sig !== _lastSig;

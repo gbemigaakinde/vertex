@@ -487,6 +487,11 @@
   function applyForClass(classKey) {
     var want = readSaved();
     var target = activePeriod;
+    if (_taskPeriod && (samePeriod(_taskPeriod, activePeriod) || classHasPeriod(classKey, _taskPeriod))) {
+      var curT = getSelectedPeriod();
+      if (!samePeriod(curT, _taskPeriod) || !window.questions || !Object.keys(window.questions).length) rebuild(_taskPeriod);
+      return getSelectedPeriod();
+    }
     if (want && !samePeriod(want, activePeriod) && freeSelectAllowed(classKey) &&
         periodsFor(classKey).some(function (x) { return x.key === periodKey(want.session, want.term); })) {
       target = want;
@@ -496,6 +501,23 @@
     var cur = getSelectedPeriod();
     if (!samePeriod(cur, target) || !window.questions || !Object.keys(window.questions).length) rebuild(target);
     return getSelectedPeriod();
+  }
+
+  // ── Task period override ───────────────────────────────────
+  // A task can pin a session/term. While a task day is active the student's
+  // questions come from that period, whatever the free-choice setting says.
+  // Falls back to the normal period when the class has no questions there.
+  var _taskPeriod = null;
+  function setTaskPeriod(p) {
+    var np = p && validPeriod(p) ? { session: normSession(p.session), term: normTerm(p.term) } : null;
+    var changed = (!!np !== !!_taskPeriod) || (np && _taskPeriod && !samePeriod(np, _taskPeriod));
+    _taskPeriod = np;
+    return !!changed;
+  }
+  function getTaskPeriod() { return _taskPeriod ? { session: _taskPeriod.session, term: _taskPeriod.term } : null; }
+  function classHasPeriod(classKey, p) {
+    var c = normClass(classKey), k = periodKey(p.session, p.term);
+    return _parsed.some(function (d) { return d.cls === c && !d.legacy && d.key === k; });
   }
 
   function getFreeSelect() { return JSON.parse(JSON.stringify(_free)); }
@@ -578,6 +600,7 @@
     COLLECTION: COLLECTION, MAX_DOC_CHARS: MAX_DOC_CHARS,
     getBundled: function () { return _bundled; },
     getActivePeriod: function () { return { session: activePeriod.session, term: activePeriod.term }; },
+    setTaskPeriod: setTaskPeriod, getTaskPeriod: getTaskPeriod, classHasPeriod: classHasPeriod,
     getSelectedPeriod: getSelectedPeriod, selectPeriod: selectPeriod, applyForClass: applyForClass,
     shuffle: shuffle, shuffleGrouped: shuffleGrouped, fillPassages: fillPassages, shuffleOptions: shuffleOptions, keepsOrder: keepsOrder,
     periodsFor: periodsFor, freeSelectAllowed: freeSelectAllowed, getFreeSelect: getFreeSelect,
