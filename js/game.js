@@ -7472,6 +7472,18 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       </div>
     </div>
 
+    <!-- Garage -->
+    <button type="button" onclick="Game._openGarage({ fromSetup: true })"
+            style="display:flex;align-items:center;gap:.75rem;width:100%;margin-bottom:.75rem;padding:.7rem .85rem;text-align:left;cursor:pointer;
+                   border-radius:12px;border:1px solid rgba(56,189,248,.35);background:linear-gradient(135deg,rgba(14,165,233,.12),rgba(99,102,241,.10));color:var(--text-1);">
+      <span style="display:inline-flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:12px;background:rgba(14,165,233,.18);color:#38bdf8;font-size:1.35rem;"><i class="ph ph-car-profile"></i></span>
+      <span style="flex:1;min-width:0;">
+        <strong style="display:block;font-size:.875rem;">Garage</strong>
+        <span id="krGarageLine" style="display:block;font-size:.75rem;color:var(--text-3);">${(_profile && _profile.garage && Array.isArray(_profile.garage.owned) && _profile.garage.owned.length) ? _profile.garage.owned.length + ' ride' + (_profile.garage.owned.length !== 1 ? 's' : '') + ' owned' : 'Buy a bike, car, train or helicopter with your coins'}</span>
+      </span>
+      <i class="ph ph-caret-right" style="color:var(--text-3);"></i>
+    </button>
+
     <!-- Play limit indicator -->
     <div style="margin-bottom:1.25rem;padding:.5rem .875rem;
                 background:${playsLeft === 1 ? 'rgba(245,158,11,0.10)' : 'var(--bg-subtle)'};
@@ -8749,6 +8761,242 @@ function _krLoop(timestamp) {
   }
 
   /* ══════════════════════════════════════════════════════════════
+     GARAGE  - buy rides with coins (1 XP = 1 coin) for Knowledge Surfer
+     The catalogue and the 3D models live in surfer/surfer-vehicles.js.
+     Owned rides are saved on the profile as  garage = { owned, selected, spent }.
+     Buying takes the coins out of the student's real XP total (in one
+     safe transaction), so levels, badges and the leaderboard all agree.
+  ══════════════════════════════════════════════════════════════ */
+
+  let _garageMod = null;
+  function _garageLoadMod() {
+    if (_garageMod) return Promise.resolve(_garageMod);
+    return import('/surfer/surfer-vehicles.js').then(m => (_garageMod = m));
+  }
+  function _garageState() {
+    const g = (_profile && _profile.garage) || {};
+    const owned = Array.isArray(g.owned) ? g.owned.filter((id, i, a) => a.indexOf(id) === i) : [];
+    return { owned, selected: owned.includes(g.selected) ? g.selected : null };
+  }
+  function _garageForRun() { return _garageState(); }
+
+  function _injectGarageStyles() {
+    if (document.getElementById('gx-css')) return;
+    const st = document.createElement('style'); st.id = 'gx-css';
+    st.textContent = `
+.gx-ov{position:fixed;inset:0;z-index:10050;display:flex;align-items:stretch;justify-content:center;background:radial-gradient(120% 90% at 50% 0%,#12233b 0%,#0a1322 55%,#060b14 100%);color:#e2e8f0;animation:gxIn .22s ease-out}
+@keyframes gxIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.gx-sheet{width:100%;max-width:520px;display:flex;flex-direction:column;min-height:0;padding:max(.75rem,env(safe-area-inset-top)) .9rem max(.75rem,env(safe-area-inset-bottom))}
+.gx-head{display:flex;align-items:center;gap:.6rem;padding-bottom:.55rem}
+.gx-head h2{margin:0;flex:1;font-size:1.15rem;font-weight:900;letter-spacing:.01em}
+.gx-back{display:inline-flex;align-items:center;gap:.3rem;border:1px solid #2b3a52;background:#0f1b2e;color:#cbd5e1;border-radius:10px;padding:.45rem .7rem;font:700 .8rem/1 inherit;cursor:pointer}
+.gx-wallet{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .7rem;border-radius:999px;background:linear-gradient(135deg,#78350f55,#f59e0b22);border:1px solid #f59e0b66;color:#fcd34d;font-weight:900;font-size:.9rem}
+.gx-wallet small{font-size:.58rem;font-weight:700;color:#fbbf24aa;text-transform:uppercase;letter-spacing:.06em}
+.gx-sub{font-size:.7rem;color:#8fa3bd;margin:0 0 .5rem;display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
+.gx-stage{position:relative;flex:0 0 auto;height:clamp(190px,34vh,300px);border-radius:18px;overflow:hidden;background:radial-gradient(90% 80% at 50% 35%,#16314f 0%,#0c1828 60%,#08111d 100%);border:1px solid #223653}
+.gx-viewer{position:absolute;inset:0}
+.gx-nogl{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:4.5rem;color:#38bdf8}
+.gx-lockc{position:absolute;top:10px;right:10px;display:none;align-items:center;gap:.35rem;padding:.32rem .6rem;border-radius:999px;background:#020617cc;border:1px solid #475569;color:#cbd5e1;font-weight:800;font-size:.7rem}
+.gx-own{position:absolute;top:10px;right:10px;display:none;align-items:center;gap:.35rem;padding:.32rem .6rem;border-radius:999px;background:#052e1bcc;border:1px solid #22c55e88;color:#86efac;font-weight:800;font-size:.7rem}
+.gx-nav{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:1px solid #2b3a52;background:#0b1626cc;color:#e2e8f0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem}
+.gx-nav.l{left:8px}.gx-nav.r{right:8px}
+.gx-info{flex:1 1 auto;min-height:0;overflow:auto;padding:.8rem .1rem .4rem}
+.gx-name{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem}
+.gx-name h3{margin:0;font-size:1.2rem;font-weight:900}
+.gx-name span{font-size:.72rem;font-weight:800;color:#7dd3fc}
+.gx-tag{margin:.1rem 0 .6rem;font-size:.78rem;color:#8fa3bd}
+.gx-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.65rem}
+.gx-stats div{padding:.45rem .5rem;border-radius:12px;background:#0d1a2d;border:1px solid #203350;text-align:center}
+.gx-stats b{display:block;font-size:.95rem;color:#f8fafc}
+.gx-stats small{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7b90ab}
+.gx-perks{list-style:none;margin:0 0 .7rem;padding:0;display:grid;gap:.28rem}
+.gx-perks li{display:flex;gap:.45rem;align-items:flex-start;font-size:.78rem;color:#cbd5e1}
+.gx-perks i{color:#38bdf8;margin-top:.12rem}
+.gx-act{display:block;width:100%;border:0;border-radius:14px;padding:.85rem 1rem;font:900 .92rem/1.1 inherit;cursor:pointer;color:#fff;background:linear-gradient(135deg,#f59e0b,#ef4444);box-shadow:0 8px 24px #ef444433}
+.gx-act:active{transform:scale(.985)}
+.gx-act.use{background:linear-gradient(135deg,#0ea5e9,#6366f1);box-shadow:0 8px 24px #6366f133}
+.gx-act.on{background:#12382a;color:#86efac;box-shadow:none;border:1px solid #22c55e66;cursor:default}
+.gx-act.confirm{background:linear-gradient(135deg,#dc2626,#b91c1c);animation:gxPulse 1s ease-in-out infinite}
+.gx-act[disabled]{background:#1a2638;color:#7b90ab;box-shadow:none;cursor:not-allowed;animation:none}
+@keyframes gxPulse{50%{box-shadow:0 0 0 6px #ef444433}}
+.gx-link{display:block;margin:.5rem auto 0;border:0;background:none;color:#8fa3bd;font:700 .75rem/1 inherit;text-decoration:underline;cursor:pointer;padding:.3rem}
+.gx-note{margin:.55rem 0 0;font-size:.68rem;line-height:1.5;color:#7b90ab;text-align:center}
+.gx-msg{margin:.5rem 0 0;font-size:.78rem;font-weight:800;text-align:center;min-height:1.1em}
+.gx-msg.ok{color:#86efac}.gx-msg.bad{color:#fca5a5}
+.gx-strip{flex:0 0 auto;display:flex;gap:.45rem;overflow-x:auto;padding:.5rem .05rem .2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.gx-strip::-webkit-scrollbar{display:none}
+.gx-chip{flex:0 0 auto;width:84px;padding:.5rem .3rem;border-radius:14px;border:1px solid #223653;background:#0c1828;color:#cbd5e1;text-align:center;cursor:pointer;font:inherit}
+.gx-chip i.ph{font-size:1.5rem;display:block;margin:0 auto .15rem}
+.gx-chip b{display:block;font-size:.66rem;font-weight:800;line-height:1.15}
+.gx-chip small{display:block;margin-top:.2rem;font-size:.62rem;font-weight:800;color:#fbbf24}
+.gx-chip.own small{color:#86efac}.gx-chip.lock i.ph{opacity:.55}
+.gx-chip.cur{border-color:#38bdf8;background:#0c2a44;box-shadow:0 0 0 1px #38bdf866}
+@media (max-height:640px){.gx-stage{height:170px}}
+`;
+    document.head.appendChild(st);
+  }
+
+  async function _openGarage(opts) {
+    if (document.getElementById('garageOverlay')) return;
+    _injectGarageStyles();
+    const cameFromSetup = !!(opts && opts.fromSetup);
+    if (!_profile) { try { await _loadProfile(); } catch (e) {} }
+    if (_isOnline()) { try { await _loadProfile(); } catch (e) {} }     // make sure the coin balance is the real one
+    let mod;
+    try { mod = await _garageLoadMod(); }
+    catch (e) {
+      console.error('[garage] could not load vehicles:', e);
+      if (window.UI && window.UI.toast) window.UI.toast('The garage could not load. Please try again.', 'error', 4000);
+      return;
+    }
+    const V = mod.VEHICLES;
+    const ov = document.createElement('div');
+    ov.id = 'garageOverlay'; ov.className = 'gx-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Garage');
+    ov.innerHTML = `
+      <div class="gx-sheet">
+        <div class="gx-head">
+          <button type="button" class="gx-back" data-act="close"><i class="ph ph-arrow-left"></i> Back</button>
+          <h2>Garage</h2>
+          <div class="gx-wallet" title="1 XP = 1 coin"><i class="ph ph-coins"></i><span data-r="coins">0</span></div>
+        </div>
+        <p class="gx-sub"><span>Rank: <b data-r="rank"></b></span><span>1 XP = 1 coin</span></p>
+        <div class="gx-stage">
+          <div class="gx-viewer" data-r="viewer"></div>
+          <div class="gx-nogl" data-r="nogl"></div>
+          <div class="gx-lockc" data-r="lockc"><i class="ph ph-lock-key"></i> Locked</div>
+          <div class="gx-own" data-r="ownc"><i class="ph ph-check-circle"></i> Owned</div>
+          <button type="button" class="gx-nav l" data-act="prev" aria-label="Previous ride"><i class="ph ph-caret-left"></i></button>
+          <button type="button" class="gx-nav r" data-act="next" aria-label="Next ride"><i class="ph ph-caret-right"></i></button>
+        </div>
+        <div class="gx-info" data-r="info"></div>
+        <div class="gx-strip" data-r="strip" role="tablist"></div>
+      </div>`;
+    document.body.appendChild(ov);
+    const prevOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    const $r = k => ov.querySelector(`[data-r="${k}"]`);
+    const viewerHost = $r('viewer');
+    let viewer = null;
+    try { viewer = mod.createViewer(viewerHost); } catch (e) { viewer = null; }
+    let cur = Math.max(0, V.findIndex(v => v.id === (_garageState().selected || '')));
+    let confirming = false, confirmTimer = 0, busy = false, msg = null, closed = false;
+
+    const coins = () => Math.max(0, (_profile && _profile.xp) || 0);
+    const fmt = n => Number(n).toLocaleString();
+
+    function render() {
+      const g = _garageState(), v = V[cur], owns = g.owned.includes(v.id), selected = g.selected === v.id, bal = coins();
+      $r('coins').textContent = fmt(bal);
+      const lv = (typeof _getLevelForXP === 'function') ? _getLevelForXP(bal) : null;
+      $r('rank').textContent = lv ? lv.name : '';
+      $r('lockc').style.display = owns ? 'none' : 'inline-flex';
+      $r('ownc').style.display = owns ? 'inline-flex' : 'none';
+      if (viewer) viewer.show(v.id, !owns); else { const n = $r('nogl'); n.style.display = 'flex'; n.innerHTML = `<i class="ph ph-${v.icon}"></i>`; }
+      const poor = bal < v.cost, online = _isOnline();
+      let btn;
+      if (owns && selected) btn = `<button type="button" class="gx-act on" data-act="noop"><i class="ph ph-check-circle"></i> In use for your next run</button><button type="button" class="gx-link" data-act="foot">Run on foot instead</button>`;
+      else if (owns) btn = `<button type="button" class="gx-act use" data-act="use"><i class="ph ph-key"></i> Use for my next run</button>`;
+      else if (!online) btn = `<button type="button" class="gx-act" disabled><i class="ph ph-wifi-slash"></i> Go online to buy</button>`;
+      else if (poor) btn = `<button type="button" class="gx-act" disabled><i class="ph ph-coins"></i> Need ${fmt(v.cost - bal)} more coins</button>`;
+      else if (confirming) btn = `<button type="button" class="gx-act confirm" data-act="buy"><i class="ph ph-shopping-cart"></i> Tap again to spend ${fmt(v.cost)} coins</button>`;
+      else btn = `<button type="button" class="gx-act" data-act="buy"><i class="ph ph-shopping-cart"></i> Buy for ${fmt(v.cost)} coins</button>`;
+      $r('info').innerHTML = `
+        <div class="gx-name"><h3>${_esc(v.name)}</h3><span>${owns ? 'Yours' : fmt(v.cost) + ' coins'}</span></div>
+        <p class="gx-tag">${_esc(v.tag)}</p>
+        <div class="gx-stats">
+          <div><b>${v.xpMult.toFixed(2).replace(/0$/, '')}x</b><small>Coin XP</small></div>
+          <div><b>${v.fly ? 'Immune' : v.hp >= 99 ? 'Max' : v.hp}</b><small>${v.fly ? 'Obstacles' : 'Armour'}</small></div>
+          <div><b>${v.fuel}s</b><small>Fuel</small></div>
+        </div>
+        <ul class="gx-perks">${v.perks.map(p => `<li><i class="ph ph-check"></i><span>${_esc(p)}</span></li>`).join('')}</ul>
+        ${btn}
+        <p class="gx-msg ${msg ? msg.k : ''}" aria-live="polite">${msg ? _esc(msg.t) : ''}</p>
+        <p class="gx-note">${owns ? 'Tap a ride in the game, or use keys 1 to 6, to hop on and off. A Pit Stop appears now and then to refuel and repair for free.' : 'Locked until you buy it. Spending coins takes the same amount off your total XP, so your rank can change.'}</p>`;
+      $r('strip').innerHTML = V.map((x, i) => {
+        const o = g.owned.includes(x.id);
+        return `<button type="button" class="gx-chip${i === cur ? ' cur' : ''}${o ? ' own' : ' lock'}" data-act="pick" data-i="${i}" role="tab" aria-selected="${i === cur}"><i class="ph ph-${x.icon}"></i><b>${_esc(x.short)}</b><small>${o ? 'Owned' : fmt(x.cost)}</small></button>`;
+      }).join('');
+      const c = $r('strip').querySelector('.cur'); if (c && c.scrollIntoView) { try { c.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) {} }
+    }
+    const resetConfirm = () => { confirming = false; clearTimeout(confirmTimer); };
+    const go = i => { cur = (i + V.length) % V.length; resetConfirm(); msg = null; render(); };
+
+    async function saveSelected(id) {
+      const g = _garageState();
+      _profile.garage = Object.assign({}, _profile.garage || {}, { owned: g.owned, selected: id });
+      await _saveProfileLocally(_profile);
+      if (_isOnline()) {
+        try { await _db().collection('gameProfiles').doc(_uid()).set({ garage: { selected: id } }, { merge: true }); }
+        catch (e) { console.warn('[garage] could not sync selection (saved on this device):', e); }
+      }
+    }
+
+    async function buy() {
+      if (busy) return; const v = V[cur];
+      if (_garageState().owned.includes(v.id)) return;
+      if (!_isOnline()) { msg = { k: 'bad', t: 'You need an internet connection to buy.' }; render(); return; }
+      busy = true; resetConfirm(); msg = { k: '', t: 'Processing...' }; render();
+      const lockBtn = ov.querySelector('.gx-act'); if (lockBtn) lockBtn.disabled = true;
+      try {
+        const uid = _uid(), ref = _db().collection('gameProfiles').doc(uid), lbRef = _db().collection('gameLeaderboard').doc(uid);
+        const res = await _db().runTransaction(async tx => {
+          const snap = await tx.get(ref), d = snap.exists ? snap.data() : {};
+          const xp = Math.max(0, d.xp || 0), g = d.garage || {}, ownedArr = Array.isArray(g.owned) ? g.owned : [];
+          if (ownedArr.includes(v.id)) return { status: 'owned', xp, garage: Object.assign({}, g, { owned: ownedArr }) };
+          if (xp < v.cost) return { status: 'poor', xp, garage: g };
+          const newXp = xp - v.cost, lv = _getLevelForXP(newXp);
+          const garage = { owned: [...ownedArr, v.id], selected: g.selected && ownedArr.includes(g.selected) ? g.selected : v.id, spent: (g.spent || 0) + v.cost };
+          tx.set(ref, { xp: newXp, garage }, { merge: true });
+          tx.set(lbRef, { uid, name: _student().name || '', class: _student().class || '', school: _student().school || '', xp: newXp, level: lv.name, levelIcon: lv.icon, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          return { status: 'ok', xp: newXp, garage };
+        });
+        if (_profile) { _profile.xp = res.xp; _profile.garage = res.garage; await _saveProfileLocally(_profile); }
+        if (res.status === 'ok') { msg = { k: 'ok', t: `${v.name} is yours! ${fmt(v.cost)} coins spent.` }; if (window.VtxSound && VtxSound.gameCoinCollect) try { VtxSound.gameCoinCollect(); } catch (e) {} }
+        else if (res.status === 'owned') msg = { k: 'ok', t: 'You already own this ride.' };
+        else msg = { k: 'bad', t: 'Not enough coins. Earn more XP in the games and come back.' };
+      } catch (e) {
+        console.error('[garage] purchase failed:', e);
+        msg = { k: 'bad', t: 'Purchase failed and no coins were taken. Please try again.' };
+      }
+      busy = false; if (!closed) render();
+    }
+
+    async function close() {
+      if (closed) return; closed = true; clearTimeout(confirmTimer);
+      document.removeEventListener('keydown', onKey, true);
+      if (viewer) { try { viewer.destroy(); } catch (e) {} }
+      ov.remove(); document.body.style.overflow = prevOverflow;
+      if (document.querySelector('.lb-game')) { try { await openGameLobby(); } catch (e) {} }       // refresh XP / rank shown on the games home
+      if (cameFromSetup && !_krIsLimitReached()) _showKnowledgeRunnerSetup();
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); go(cur + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); go(cur - 1); }
+    }
+    document.addEventListener('keydown', onKey, true);
+
+    ov.addEventListener('click', async e => {
+      const b = e.target.closest('[data-act]'); if (!b) return;
+      const act = b.dataset.act;
+      if (act === 'close') close();
+      else if (act === 'prev') go(cur - 1);
+      else if (act === 'next') go(cur + 1);
+      else if (act === 'pick') go(+b.dataset.i);
+      else if (act === 'use') { await saveSelected(V[cur].id); msg = { k: 'ok', t: `${V[cur].name} will be waiting at the start.` }; render(); }
+      else if (act === 'foot') { await saveSelected(null); msg = { k: '', t: 'You will start on foot. You can still take any ride you own mid-run.' }; render(); }
+      else if (act === 'buy') {
+        if (!confirming) { confirming = true; clearTimeout(confirmTimer); confirmTimer = setTimeout(() => { confirming = false; if (!closed && !busy) render(); }, 4000); render(); }
+        else buy();
+      }
+    });
+    let sx = null;                                                    // swipe left/right on the stage to browse
+    const stageEl = ov.querySelector('.gx-stage');
+    stageEl.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+    stageEl.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 60) go(cur + (dx < 0 ? 1 : -1)); }, { passive: true });
+    render();
+  }
+
+  /* ══════════════════════════════════════════════════════════════
      KNOWLEDGE SURFER 3D  — bridge between this file and /surfer
      The 3D game itself lives in surfer/surfer-engine.js. It gets
      the few things it needs from here (sounds, "game over", "quit").
@@ -8798,6 +9046,7 @@ function _krLoop(timestamp) {
             hit:     () => { if (window.VtxSound) VtxSound.gameObstacleHit(); },
             speedUp: () => { if (window.VtxSound) VtxSound.gameSpeedUp(); },
           },
+          garage: _garageForRun(),
           onGameOver: (stats) => { _krSurfer = null; _krSurferFinish(stats, ref.sessionId); },
           onQuit:     ()      => { _krSurfer = null; openGameLobby(); },
           onFatal:    fallBackTo2D,
@@ -8853,7 +9102,9 @@ function _krLoop(timestamp) {
       win,
       result,
       extras: [
-        { label: 'Combo Bonus XP', value: s.xpEarned > score * KR_XP_PER_CORRECT ? `+${s.xpEarned - score * KR_XP_PER_CORRECT} XP` : '—' },
+        { label: 'Combo Bonus XP', value: (s.xpEarned - (s.rideXp || 0)) > score * KR_XP_PER_CORRECT ? `+${(s.xpEarned - (s.rideXp || 0)) - score * KR_XP_PER_CORRECT} XP` : '-' },
+        ...((s.rideXp || 0) > 0 ? [{ label: 'Ride Bonus XP', value: `+${s.rideXp} XP` }] : []),
+        ...((s.smashed || 0) > 0 ? [{ label: 'Barriers Smashed', value: `${s.smashed}` }] : []),
       ],
       extraHtml,
       onPlayAgainKey: 'knowledgeRunner',
@@ -10506,6 +10757,7 @@ async function renderTeacherGameRestrictions(containerId) {
     renderTeacherGameRestrictions,
     _saveGameRestrictions: function(uid) { if (window._saveGameRestrictionsForUid) window._saveGameRestrictionsForUid(uid); },
     _showKnowledgeRunnerSetup,
+    _openGarage,
     _startKnowledgeRunner,
     _krChangeLane,
     _krRoll,
