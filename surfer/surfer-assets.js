@@ -279,15 +279,36 @@ function bridgeModel(wood) {
   return g;
 }
 function boatModel() {
+  /* the free river canoe: pointed, up-swept ends, wooden ribs, two thwarts, a bench seat and a swinging double-blade paddle */
   const g = new THREE.Group();
-  const hullM = mat(0x8a4b22, { roughness: 0.7, side: THREE.DoubleSide }), inner = mat(0xc79a62, { roughness: 0.8 }), rim = mat(0xe8c48a, { roughness: 0.6 }), stripe = mat(0x1d6fb8, { roughness: 0.5 });
-  const hull = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), hullM); hull.scale.set(0.62, 0.5, 1.4); hull.position.y = 0.5; g.add(hull);
-  const r = new THREE.Mesh(new THREE.TorusGeometry(1, 0.04, 8, 44), rim); r.rotation.x = Math.PI / 2; r.scale.set(0.62, 1.4, 1); r.position.y = 0.5; g.add(r);
-  const st = new THREE.Mesh(new THREE.TorusGeometry(1, 0.03, 6, 44), stripe); st.rotation.x = Math.PI / 2; st.scale.set(0.595, 1.34, 1); st.position.y = 0.4; g.add(st);
-  g.add(box(0.8, 0.04, 1.6, inner, 0, 0.18, 0));
-  g.add(box(1.0, 0.05, 0.22, rim, 0, 0.42, 0.45)); g.add(box(1.0, 0.05, 0.22, rim, 0, 0.42, -0.5));
-  g.add(rot(box(0.05, 0.05, 1.5, rim, 0.5, 0.62, -0.1), 0.0, 0.18, 0));      // paddle shaft
-  g.add(rot(box(0.18, 0.02, 0.34, rim, 0.54, 0.62, -0.85), 0, 0.18, 0));
+  const hullM = mat(0xa85a28, { roughness: 0.55, metalness: 0.05, side: THREE.DoubleSide }), inner = mat(0xd9b27a, { roughness: 0.75, side: THREE.DoubleSide }), rim = mat(0xf0d29a, { roughness: 0.5 }), stripe = mat(0x1d7fd8, { roughness: 0.4 }), dark = mat(0x5a3016, { roughness: 0.7 });
+  const mk = (sx, sy, sz, mat_, yOff, thetaScale) => {
+    const geo = new THREE.SphereGeometry(1, 40, 14, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const z = p.getZ(i), az = Math.abs(z), x = p.getX(i), y = p.getY(i);
+      p.setX(i, x * (1 - 0.35 * Math.pow(az, 1.6)));                       // sharper plan at the bow and stern
+      p.setZ(i, z * (1 + 0.04 * (1 - az)));
+      p.setY(i, y + 0.42 * Math.pow(az, 2.6) * thetaScale);               // ends swing upward
+    }
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, mat_); m.scale.set(sx, sy, sz); m.position.y = yOff; return m;
+  };
+  g.add(mk(0.64, 0.5, 1.46, hullM, 0.52, 1));
+  g.add(mk(0.6, 0.46, 1.4, inner, 0.55, 1));
+  const sheer = new THREE.CatmullRomCurve3(Array.from({ length: 25 }, (_, i) => { const t = i / 24 * 2 - 1, az = Math.abs(t); return new THREE.Vector3(0.64 * Math.sqrt(Math.max(0, 1 - t * t)) * (1 - 0.35 * Math.pow(az, 1.6)), 0.52 + 0.42 * Math.pow(az, 2.6) * 0.5 + 0.0, t * 1.46); }));
+  for (const sx of [-1, 1]) {
+    const pts = sheer.getPoints(60).map(v => new THREE.Vector3(v.x * sx, v.y, v.z));
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, 0.034, 8, false), rim));      // gunwale
+  }
+  const st = new THREE.Mesh(new THREE.TorusGeometry(1, 0.024, 6, 52), stripe); st.rotation.x = Math.PI / 2; st.scale.set(0.6, 1.4, 1); st.position.y = 0.38; g.add(st);
+  for (const z of [-0.78, 0.0, 0.78]) g.add(rot(box(1.12 - Math.abs(z) * 0.5, 0.045, 0.05, rim, 0, 0.63 - 0.0, z), 0, 0, 0));    // thwarts
+  g.add(box(0.5, 0.05, 0.34, dark, 0, 0.5, 0.42));                                                                  // bench seat
+  for (let i = -5; i <= 5; i++) g.add(box(0.64 * (1 - Math.abs(i) * 0.06), 0.02, 0.035, dark, 0, 0.2, i * 0.22));    // floor boards
+  g.add(ball(0.045, glowMat(0xffd25a, 1.8), 0, 0.98, -1.5));                                                          // bow lantern
+  const paddle = new THREE.Group(); paddle.position.set(0.0, 0.7, 0.1); paddle.rotation.z = 0.35;
+  paddle.add(box(0.035, 0.035, 1.6, rim, 0, 0, 0));
+  for (const sz of [-1, 1]) paddle.add(box(0.2, 0.025, 0.4, dark, 0, 0, sz * 0.9));
+  g.add(paddle); g.userData.paddle = paddle;
   return g;
 }
 

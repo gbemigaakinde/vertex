@@ -19,6 +19,7 @@ import { loadAssets } from './surfer-assets.js';
 import { GAME, CAMERA, LOOK, OBSTACLE_LOOKS, BIOMES, biomeAt, biomeIndexAt } from './surfer-config.js';
 import { createBiomeKit } from './surfer-biomes.js';
 import { createSim, laneX } from './surfer-sim.js';
+import { createDrive } from './surfer-drive.js';
 import { VEHICLE_BY_ID, buildVehicle, buildPitStop, disposeObject } from './surfer-vehicles.js';
 
 /* ───────────── styles (injected once) ───────────── */
@@ -51,7 +52,7 @@ const CSS = `
 .sf-debug{bottom:4px;left:6px;font:600 9px/1.3 monospace;color:#86efac;text-shadow:0 1px 2px #000;white-space:pre}
 /* ride dock + pit stop */
 .sf-dock{position:absolute;left:6px;right:6px;bottom:6px;z-index:6;display:flex;gap:4px;justify-content:center;flex-wrap:nowrap;pointer-events:none}
-.sf-ride{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:2px;flex:1 1 0;min-width:0;max-width:66px;padding:.3rem .15rem .26rem;border-radius:12px;border:1px solid #334155;background:linear-gradient(160deg,#0f172acc,#1e293bcc);color:#cbd5e1;font:700 .54rem/1 inherit;white-space:nowrap;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .12s,border-color .15s,background .15s}
+.sf-ride{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:2px;flex:1 1 0;min-width:0;max-width:66px;padding:.3rem .08rem .26rem;border-radius:12px;border:1px solid #334155;background:linear-gradient(160deg,#0f172acc,#1e293bcc);color:#cbd5e1;font:700 .46rem/1 inherit;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .12s,border-color .15s,background .15s}
 .sf-ride i.ph{font-size:1.25rem;line-height:1}
 .sf-ride:active{transform:scale(.94)}
 .sf-ride.on{border-color:#38bdf8;background:linear-gradient(160deg,#075985dd,#0c4a6edd);color:#e0f2fe;box-shadow:0 0 0 1px #38bdf855,0 4px 16px #0ea5e944}
@@ -167,6 +168,7 @@ async function init(container, host, api) {
   const disposables = [];
   const rideModels = {};           // id → built 3D ride (created the first time it is used)
   const listeners = [];
+  let drive = null;                // the driving engine (surfer-drive.js), created once the scene exists
   const on = (t, ev, fn, opt) => { t.addEventListener(ev, fn, opt); listeners.push([t, ev, fn, opt]); };
 
   function destroy() {
@@ -174,6 +176,7 @@ async function init(container, host, api) {
     cancelAnimationFrame(rafId);
     listeners.forEach(([t, ev, fn, opt]) => t.removeEventListener(ev, fn, opt));
     if (ro) ro.disconnect();
+    if (drive) { try { drive.destroy(); } catch (e) {} }
     disposables.forEach(d => { try { d.dispose(); } catch (e) {} });
     Object.values(rideModels).forEach(m => disposeObject(m.group));
     clearTimeout(toastTimer);
@@ -406,6 +409,7 @@ async function init(container, host, api) {
     if (paused || ending || destroyed) return;
     const rs = rideStates[id]; if (!rs) return;
     if (S.ride && S.ride.id === id) { sim.dismount('manual'); return; }
+    if (rs.def.water && !biomeAt(S.scroll).water) { toast('The boat only works in the River Crossing'); return; }
     if (rs.fuel <= 0) { toast('Out of fuel. Refuel at the next pit stop'); return; }
     if (rs.def.hp > 0 && rs.hp <= 0) { toast('Wrecked. Repair at the next pit stop'); return; }
     if (sim.mount(rs)) usedRide = true;
@@ -463,13 +467,16 @@ async function init(container, host, api) {
   on(document, 'keydown', e => {
     if (destroyed) return;
     const c = e.code;
+    if (drive && !paused && drive.key(e, true)) { e.preventDefault(); return; }
+    if (c === 'KeyC' && drive) { e.preventDefault(); drive.key(e, true); return; }
     if (['ArrowLeft', 'KeyA'].includes(c))  { e.preventDefault(); if (!paused) sim.changeLane(-1); }
     else if (['ArrowRight', 'KeyD'].includes(c)) { e.preventDefault(); if (!paused) sim.changeLane(1); }
     else if (['ArrowUp', 'KeyW', 'Space'].includes(c)) { e.preventDefault(); if (!paused) sim.jump(); }
     else if (['ArrowDown', 'KeyS'].includes(c)) { e.preventDefault(); if (!paused) sim.slide(); }
     else if (c === 'KeyP') { e.preventDefault(); togglePause(); }
-    else if (/^Digit[1-6]$/.test(c) && owned[+c.slice(5) - 1]) { tryMount(owned[+c.slice(5) - 1]); }
+    else if (/^Digit[1-9]$/.test(c) && owned[+c.slice(5) - 1]) { tryMount(owned[+c.slice(5) - 1]); }
   });
+  on(document, 'keyup', e => { if (drive) drive.key(e, false); });
   on(document, 'visibilitychange', () => { if (document.hidden && !paused) togglePause(); });
 
   let sw = null;
@@ -478,7 +485,7 @@ async function init(container, host, api) {
   };
   on(ui.stage, 'touchstart', e => { e.preventDefault(); const t = e.touches[0]; sw = { x: t.clientX, y: t.clientY, done: false }; }, { passive: false });
   on(ui.stage, 'touchmove', e => {
-    e.preventDefault(); if (!sw || sw.done || paused) return;
+    e.preventDefault(); if (!sw || sw.done || paused || (drive && drive.isOrbit())) return;
     const t = e.touches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y;
     if (Math.hypot(dx, dy) > 26) { sw.done = true; swipeAction(dx, dy); }       // reacts mid-swipe → feels snappy
   }, { passive: false });
@@ -486,9 +493,10 @@ async function init(container, host, api) {
     e.preventDefault(); if (!sw) return;
     const wasDone = sw.done; sw = null;
     if (paused) { togglePause(); return; }
+    if (drive && drive.isOrbit()) return;
     if (!wasDone) sim.jump();                                                     // plain tap = jump
   }, { passive: false });
-  on(ui.stage, 'click', e => { if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return; if (paused) togglePause(); else sim.jump(); });
+  on(ui.stage, 'click', e => { if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return; if (paused) togglePause(); else if (!(drive && drive.isOrbit())) sim.jump(); });
   on(ui.pauseBtn, 'click', togglePause);
   on(ui.quitBtn, 'click', () => { destroy(); if (host.onQuit) host.onQuit(); });
 
@@ -501,6 +509,9 @@ async function init(container, host, api) {
   const camBase = new THREE.Vector3(...CAMERA.position), lookBase = new THREE.Vector3(...CAMERA.lookAt);
   const look = new THREE.Vector3();
   const camOff = new THREE.Vector3();
+  scene.add(camera);
+  drive = createDrive({ stage: ui.stage, sim, camera, scene, on, toast });
+  const rideHint = $('ridehint'); let hintShownFor = '#';
   let rideShown = null, rideT = 1;
   const ease = t => { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
   const getRide = id => { if (!rideModels[id]) { const m = buildVehicle(id); m.def = VEHICLE_BY_ID[id]; m.group.visible = false; scene.add(m.group); rideModels[id] = m; } return rideModels[id]; };
@@ -516,6 +527,8 @@ async function init(container, host, api) {
       } else if (e.type === 'hit') {
         burst(P.x, 0.9, 0, 22, 0xff4d4d, 7, 5, 0.7);
         shake = e.kind === 'train' ? CAMERA.shakeOnHit * 1.5 : CAMERA.shakeOnHit;
+        if (e.kind === 'police') toast('Caught by the inspector! Keep your speed up');
+        if (drive) drive.impact();
         if (e.kind === 'train') burst(P.x, 1.1, 0.4, 34, 0xffa83a, 9, 6, 0.8);
         ui.flash.style.opacity = '1'; setTimeout(() => { ui.flash.style.opacity = '0'; }, 120);
         if (sound.hit) try { sound.hit(); } catch (x) {}
@@ -524,6 +537,7 @@ async function init(container, host, api) {
       } else if (e.type === 'slide') {
         burst(P.x, 0.08, 0.2, 10, 0xb7c3d6, 2.6, 0.8, 0.45);
       } else if (e.type === 'lane') {
+        if (drive) drive.kick(e.dir);
         burst(P.x, 0.5, 0, 5, 0x38bdf8, 2, 1, 0.3);
       } else if (e.type === 'speedup') {
         speedToast = 1.6; fovKick = 5;
@@ -586,7 +600,7 @@ async function init(container, host, api) {
     if (zoneToast > 0) { zoneToast -= dt; if (zoneToast <= 0) ui.zone.classList.remove('on'); }
   }
   function updateBoat(dt, bobBase) {
-    const inRiver = biomeAt(S.scroll).water && !ending && !(S.ride && S.ride.def.fly);
+    const inRiver = biomeAt(S.scroll).water && !ending && !(S.ride && (S.ride.def.fly || S.ride.def.water));
     const prev = boatT;
     boatT += ((inRiver ? 1 : 0) - boatT) * (1 - Math.exp(-6 * dt));
     if (Math.abs(boatT - (inRiver ? 1 : 0)) < 0.01) boatT = inRiver ? 1 : 0;
@@ -596,6 +610,7 @@ async function init(container, host, api) {
       const lat = laneX(P.lane) - P.x, t = S.time;
       boat.position.set(P.x, -0.12 - (1 - boatT) * 0.75 + Math.sin(t * 3.1) * 0.025, 0.1);
       boat.rotation.set(Math.sin(t * 1.9) * 0.02 + (P.jumping ? -0.04 : 0), -lat * 0.12, -lat * 0.12 + Math.sin(t * 2.4) * 0.025);
+      const pad = boat.getObjectByName('paddle'); if (pad) { pad.rotation.x = Math.sin(t * 3.4) * 0.28; pad.rotation.y = Math.sin(t * 1.7) * 0.12; }
       wakeT -= dt;
       if (wakeT <= 0 && !ending) { wakeT = 0.07; burst(P.x + (Math.random() - 0.5) * 0.9, 0.1, 1.3, 2, 0xd8f1ff, 1.6, 1.4, 0.5); }
     }
@@ -625,7 +640,7 @@ async function init(container, host, api) {
     /* world speed eases to zero once you've lost your last life */
     let worldMul = 1;
     if (ending) { endT += dt; worldMul = Math.max(0, 1 - endT / 0.9); }
-    else sim.step(dt);
+    else { drive.update(dt, false); sim.step(dt); }
     handleEvents();
     applyZone(dt, false); kit.update(dt);
 
@@ -657,7 +672,7 @@ async function init(container, host, api) {
     runner.rotation.z = -lateral * 0.10; runner.rotation.y = -lateral * 0.16;
     const blink = P.invincible > 0 && !ending && Math.floor(now / 70) % 2 === 0;
     const hideRunner = !!(rdef && !rdef.rider && !onBoat);                    // inside a cab / cockpit
-    runner.visible = !blink && !hideRunner;
+    runner.visible = !blink && !hideRunner && !(drive && drive.hideRunner());
     const sh = 1 - clamp(P.y / 2.2, 0, 0.6);                                  // blob shrinks while airborne
     runnerBlob.visible = boatT < 0.5 && !rs; runnerBlob.position.y = 0.03 - (P.y + bob); runnerBlob.scale.set(sh * (pose === 'slide' ? 1.2 : 1), 1, sh * (pose === 'slide' ? 1.8 : 1));
     runnerBlob.rotation.set(-runner.rotation.x, 0, -runner.rotation.z);
@@ -672,11 +687,13 @@ async function init(container, host, api) {
     rideT = Math.min(1, rideT + dt * 2.6);
     rideBlob.visible = !!rideShown && !blink;
     if (rideShown) {
-      const m = rideModels[rideShown], d = m.def, e = ease(rideT), fl = d.fly ? d.flyHeight * e + Math.sin(S.time * 2.4) * 0.05 : 0;
-      m.group.visible = !blink;
+      const m = rideModels[rideShown], d = m.def, e = ease(rideT), fl = d.fly ? d.flyHeight * e + Math.sin(S.time * 2.4) * 0.05 : (d.water ? -0.12 + Math.sin(S.time * 3.1) * 0.03 : 0);
+      if (d.water && !(biomeAt(S.scroll).water) && !ending) { sim.dismount('land'); toast('Boats only float in the river'); }
+      if (d.water && !ending) { wakeT -= dt; if (wakeT <= 0) { wakeT = 0.05; burst(P.x + (Math.random() - 0.5) * 0.9, 0.1, 1.9, 3, 0xd8f1ff, 2.2, 1.8, 0.55); } }
+      m.group.visible = !blink && drive.mode !== 'cockpit';        // in the Driver view you sit inside: only the 3D dashboard is drawn
       m.group.position.set(P.x, P.y + fl, 0);
       m.group.scale.setScalar(0.72 + 0.28 * Math.min(1, e));
-      m.group.rotation.set(d.fly ? -0.1 * Math.min(1, e) - (P.jumping ? 0 : 0) : (P.jumping ? -0.08 : 0), -lateral * 0.16, -lateral * (d.fly ? 0.3 : 0.10));
+      m.group.rotation.set(d.fly ? -0.1 * Math.min(1, e) - (P.jumping ? 0 : 0) : (P.jumping ? -0.08 : 0), -lateral * 0.16 - drive.vs * 0.14, -lateral * (d.fly ? 0.3 : 0.10) - (d.rider ? drive.vs * 0.18 : 0));
       m.update(dt, speed);
       const hs = d.fly ? clamp(1.05 - fl * 0.14, 0.35, 1) : sh;
       rideBlob.position.set(P.x, 0.03, 0); rideBlob.scale.set(d.blob[0] * hs, 1, d.blob[1] * hs);
@@ -687,9 +704,9 @@ async function init(container, host, api) {
 
     /* ── inspector + dog ── */
     const gap = ending ? GAME.inspectorMinGap : S.inspectorGap;
-    const iz = 3.0 + (gap - GAME.inspectorMinGap) * 0.02;
+    const iz = 3.0 + (gap - GAME.inspectorMinGap) * 0.05;
     inspX += (P.x - inspX) * (1 - Math.exp(-5 * dt));
-    const showInsp = iz < 8.5;
+    const showInsp = iz < 12.5 && !(drive.mode === 'cockpit' || drive.mode === 'hood');
     insp.visible = dogG.visible = leash.visible = showInsp;
     if (showInsp) {
       const ib = Math.abs(Math.sin(runClock * Math.PI / (stridePeriod * 1.05))) * 0.05;
@@ -705,13 +722,15 @@ async function init(container, host, api) {
       leashGeo.attributes.position.needsUpdate = true;
     }
 
-    /* ── camera ── */
+    /* ── camera (the driving engine moves it; the player picks the view) ── */
     camX += (P.x * CAMERA.followX - camX) * (1 - Math.exp(-8 * dt));
     shake = Math.max(0, shake - dt * 0.9);
-    const sa = shake * shake * 1.6;
-    camera.position.set(camBase.x + camX + (Math.random() - 0.5) * sa, camBase.y + camOff.y + (Math.random() - 0.5) * sa + P.y * 0.18, camBase.z + camOff.z);
-    look.set(lookBase.x + camX * 0.9, lookBase.y + camOff.y * 0.3, lookBase.z); camera.lookAt(look);
-    if (fovKick > 0.01) { fovKick *= Math.exp(-3 * dt); camera.fov = baseFov + fovKick; camera.updateProjectionMatrix(); }
+    const fk = drive.camera(dt, { camBase, lookBase, camOff, camX, sa: shake * shake * 1.6, camDef: rdef });
+    const wantFov = baseFov * fk + fovKick; fovKick *= Math.exp(-3 * dt); if (fovKick < 0.01) fovKick = 0;
+    if (Math.abs(camera.fov - wantFov) > 0.02) { camera.fov = wantFov; camera.updateProjectionMatrix(); }
+    drive.setRide(rdef);
+    drive.hud();
+    if (rideHint) { const hk = rdef ? rdef.id : '-'; if (hk !== hintShownFor) { hintShownFor = hk; rideHint.innerHTML = drive.hintHtml(rdef); rideHint.style.display = 'block'; } }
 
     updateParticles(dt);
 

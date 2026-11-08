@@ -13,9 +13,10 @@ import { GAME, BIOMES, biomeIndexAt } from './surfer-config.js';
 
 export function laneX(lane) { return (lane - (GAME.laneCount - 1) / 2) * GAME.laneWidth; }
 
+const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
 export function createSim(rng = Math.random, opts = {}) {
   const s = {
-    time: 0, scroll: 0, distance: 0, speedLevel: 0, origSpeed: GAME.baseSpeed, worldSpeed: GAME.baseSpeed * GAME.speedScale,
+    time: 0, scroll: 0, distance: 0, speedLevel: 0, origSpeed: GAME.baseSpeed, speedMul: 1, caughtT: 0, policeMeters: 42, worldSpeed: GAME.baseSpeed * GAME.speedScale,
     lives: GAME.lives, score: 0, xp: 0, combo: 0, bestCombo: 0,
     ride: null, rideXp: 0, smashed: 0, pitEnabled: !!opts.pitEnabled, nextPitAt: GAME.pitEvery, pitVisits: 0,
     gameOver: false, spawnTimer: 0.6, nextId: 1,
@@ -111,8 +112,8 @@ export function createSim(rng = Math.random, opts = {}) {
     const level = Math.floor(s.distance / GAME.speedStepEvery);
     if (level > s.speedLevel) { s.speedLevel = level; emit('speedup'); }
     s.origSpeed = Math.min(GAME.maxSpeed, GAME.baseSpeed + s.speedLevel * GAME.speedStep);
-    s.worldSpeed = s.origSpeed * GAME.speedScale;
-    s.distance += s.origSpeed * 0.022 * 60 * dt;
+    s.worldSpeed = s.origSpeed * GAME.speedScale * s.speedMul;      // speedMul = the driver's pedals / gear (1 = normal pace)
+    s.distance += s.origSpeed * 0.022 * 60 * dt * s.speedMul;
 
     /* fuel burns while riding */
     if (s.ride) { s.ride.fuel = Math.max(0, s.ride.fuel - dt); if (s.ride.fuel <= 0) dismount('fuel'); }
@@ -142,9 +143,19 @@ export function createSim(rng = Math.random, opts = {}) {
     if (p.invincible > 0) p.invincible = Math.max(0, p.invincible - dt);
     if (p.stumble > 0)    p.stumble    = Math.max(0, p.stumble - dt);
 
-    /* inspector closes in when you stumble, drifts back when you run clean */
+    /* inspector: closes in when you stumble OR slow down, falls back when you drive fast. Reach him for 2.5 s and you are caught. */
     if (p.stumble > 0) s.inspectorGap = Math.max(GAME.inspectorMinGap, s.inspectorGap - 1.2 * 60 * dt);
-    else               s.inspectorGap = Math.min(GAME.inspectorMaxGap, s.inspectorGap + 0.12 * 60 * dt);
+    else s.inspectorGap = clampN(s.inspectorGap + (s.speedMul - 0.78) * 0.5 * 60 * dt, GAME.inspectorMinGap, GAME.inspectorMaxGap);
+    s.policeMeters = 6 + (s.inspectorGap - GAME.inspectorMinGap) / (GAME.inspectorMaxGap - GAME.inspectorMinGap) * 54;     // 6 m … 60 m, shown on the HUD
+    if (s.inspectorGap <= GAME.inspectorMinGap + 0.5 && p.invincible <= 0) {
+      s.caughtT += dt;
+      if (s.caughtT > 2.5) {
+        s.caughtT = 0; s.combo = 0; s.lives--; s.inspectorGap = 150;
+        p.invincible = GAME.graceSeconds; p.stumble = GAME.stumbleSeconds;
+        emit('hit', { kind: 'police', z: 0, x: p.x, zone: 0 });
+        if (s.lives <= 0) { s.gameOver = true; emit('gameover'); return; }
+      }
+    } else s.caughtT = 0;
 
     /* move world */
     const dz = s.worldSpeed * dt;
@@ -152,7 +163,7 @@ export function createSim(rng = Math.random, opts = {}) {
     for (const o of s.objects) { o.pz = o.z; o.z += dz + o.vz * dt; }
     s.objects = s.objects.filter(o => !o.hit && o.z < GAME.despawnBehind);
 
-    s.spawnTimer -= dt;
+    s.spawnTimer -= dt * Math.max(0.4, s.speedMul);          // slow driving = fewer waves, never a pile-up
     if (s.spawnTimer <= 0) spawnWave();
 
     /* collisions  (swept: we test the whole stretch an object travelled this frame, so fast trains / low fps can never skip through the runner) */

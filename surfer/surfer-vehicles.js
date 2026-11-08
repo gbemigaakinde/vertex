@@ -15,17 +15,19 @@ import * as THREE from '../vector/lib/three.module.js';
 
 /* ───────────── catalogue ───────────── */
 export const VEHICLES = [
-  { id: 'bicycle',    name: 'Trail Bicycle',   short: 'Bicycle',    icon: 'bicycle',       cost: 150,  fuel: 55, hp: 0,  trainCost: 99, xpMult: 1.10, canJump: true,  canSlide: true,  fly: false, halfW: 0.30, halfD: 0.30, seat: 0.30, rider: true,
+  { id: 'bicycle',    name: 'Trail Bicycle',   short: 'Bicycle',    icon: 'bicycle',       cost: 15000,  fuel: 55, hp: 0,  trainCost: 99, xpMult: 1.10, canJump: true,  canSlide: true,  fly: false, halfW: 0.30, halfD: 0.30, seat: 0.30, rider: true, kind: 'bike', topMul: 0.85, eye: [0, 1.38, 0.12],
     cam: [0, 0, 0], blob: [0.7, 1.9], tag: 'Light and quick', perks: ['+10% XP on coins', 'Can still jump and slide', 'No armour'] },
-  { id: 'motorbike',  name: 'Street Motorbike', short: 'Motorbike', icon: 'motorcycle',    cost: 450,  fuel: 45, hp: 1,  trainCost: 99, xpMult: 1.25, canJump: true,  canSlide: true,  fly: false, halfW: 0.34, halfD: 0.38, seat: 0.40, rider: true,
+  { id: 'motorbike',  name: 'Street Motorbike', short: 'Motorbike', icon: 'motorcycle',    cost: 40000,  fuel: 45, hp: 1,  trainCost: 99, xpMult: 1.25, canJump: true,  canSlide: true,  fly: false, halfW: 0.34, halfD: 0.38, seat: 0.40, rider: true, kind: 'bike', topMul: 1.1, eye: [0, 1.5, 0.22],
     cam: [0, 0.1, 0.2], blob: [0.8, 2.2], tag: 'Fast and nimble', perks: ['+25% XP on coins', 'Absorbs 1 crash', 'Can jump and slide'] },
-  { id: 'car',        name: 'Rosso Coupe',     short: 'Car',        icon: 'car',           cost: 900,  fuel: 40, hp: 3,  trainCost: 3,  xpMult: 1.50, canJump: false, canSlide: false, fly: false, halfW: 0.86, halfD: 1.4,  seat: 0,    rider: false,
+  { id: 'car',        name: 'Rosso Coupe',     short: 'Car',        icon: 'car',           cost: 85000,  fuel: 40, hp: 3,  trainCost: 3,  xpMult: 1.50, canJump: false, canSlide: false, fly: false, halfW: 0.86, halfD: 1.4,  seat: 0,    rider: false, kind: 'car', topMul: 1.0, eye: [0, 1.12, 0.15],
     cam: [0, 0.35, 0.6], blob: [1.8, 4.2], tag: 'Smashes barriers', perks: ['+50% XP on coins', 'Smashes hurdles and gates', 'Armour for 3 hits'] },
-  { id: 'truck',      name: 'Ridge Pickup',    short: 'Truck',      icon: 'truck',         cost: 1400, fuel: 40, hp: 4,  trainCost: 2,  xpMult: 1.75, canJump: false, canSlide: false, fly: false, halfW: 0.94, halfD: 1.7,  seat: 0,    rider: false,
+  { id: 'truck',      name: 'Ridge Pickup',    short: 'Truck',      icon: 'truck',         cost: 130000, fuel: 40, hp: 4,  trainCost: 2,  xpMult: 1.75, canJump: false, canSlide: false, fly: false, halfW: 0.94, halfD: 1.7,  seat: 0,    rider: false, kind: 'truck', topMul: 0.92, eye: [0, 1.75, 0.3],
     cam: [0, 0.55, 1.0], blob: [2.0, 4.8], tag: 'Heavy hitter', perks: ['+75% XP on coins', 'Shrugs off a train (2 armour)', 'Armour for 4 hits'] },
-  { id: 'train',      name: 'Vertex Express',  short: 'Train',      icon: 'train',         cost: 2200, fuel: 30, hp: 99, trainCost: 0,  xpMult: 2.00, canJump: false, canSlide: false, fly: false, halfW: 1.0,  halfD: 2.6,  seat: 0,    rider: false,
+  { id: 'train',      name: 'Vertex Express',  short: 'Train',      icon: 'train',         cost: 185000, fuel: 30, hp: 99, trainCost: 0,  xpMult: 2.00, canJump: false, canSlide: false, fly: false, halfW: 1.0,  halfD: 2.6,  seat: 0,    rider: false, kind: 'train', topMul: 1.12, eye: [0, 2.9, -0.9],
     cam: [0, 0.9, 1.9], blob: [2.1, 6.4], tag: 'Unstoppable', perks: ['2x XP on coins', 'Plows through everything', 'Never takes damage'] },
-  { id: 'helicopter', name: 'Skyhawk Chopper', short: 'Helicopter', icon: 'airplane-tilt', cost: 3500, fuel: 25, hp: 0,  trainCost: 0,  xpMult: 2.50, canJump: false, canSlide: false, fly: true,  halfW: 0.7,  halfD: 1.2,  seat: 0,    rider: false,
+  { id: 'boat',       name: 'Tidewave Speedboat', short: 'Boat',    icon: 'sailboat',      cost: 220000, fuel: 35, hp: 4,  trainCost: 2,  xpMult: 2.25, canJump: false, canSlide: false, fly: false, halfW: 0.8,  halfD: 1.6,  seat: 0,    rider: false, kind: 'boat', topMul: 1.15, eye: [0, 1.05, 0.25], water: true,
+    cam: [0, 0.45, 0.9], blob: [1.5, 3.8], tag: 'Master of the river', perks: ['2.25x XP on coins', 'River Crossing only: replaces the canoe', 'Armour for 4 hits, shrugs off barges'] },
+  { id: 'helicopter', name: 'Skyhawk Chopper', short: 'Helicopter', icon: 'airplane-tilt', cost: 270000, fuel: 25, hp: 0,  trainCost: 0,  xpMult: 2.50, canJump: false, canSlide: false, fly: true,  halfW: 0.7,  halfD: 1.2,  seat: 0,    rider: false, kind: 'heli', topMul: 1.25, eye: [0, 1.45, -0.55],
     cam: [0, 2.0, 1.8], blob: [1.4, 2.4], flyHeight: 2.3, tag: 'Rules the air', perks: ['2.5x XP on coins', 'Flies over every obstacle', 'Pulls in nearby coins'] },
 ];
 export const VEHICLE_BY_ID = Object.fromEntries(VEHICLES.map(v => [v.id, v]));
@@ -272,7 +274,49 @@ function helicopter() {
 }
 
 /* ───────────── public: build one ride ───────────── */
-const BUILDERS = { bicycle, motorbike, car, truck, train: locomotive, helicopter };
+
+/* ============================================================
+   SPEEDBOAT - deep-V hull, windscreen, driver seat, outboard
+   ============================================================ */
+function speedboat() {
+  const M = mats(), root = new THREE.Group();
+  const hullM = paint(0x0b5fa5, { metalness: 0.55, roughness: 0.28, side: THREE.DoubleSide }), white = paint(0xf4f7fb, { metalness: 0.3, roughness: 0.3, side: THREE.DoubleSide });
+  const seatM = std(0x1b2230, 0.1, 0.7), deckM = std(0xc9b48a, 0.1, 0.8);
+  /* side profile: +x is the FRONT. Sharp raised bow, flat stern. */
+  const sh = new THREE.Shape();
+  sh.moveTo(-1.55, 0.18); sh.lineTo(1.0, 0.1); sh.quadraticCurveTo(1.7, 0.2, 2.05, 0.72);
+  sh.lineTo(1.2, 0.7); sh.lineTo(-0.2, 0.62); sh.lineTo(-1.55, 0.62); sh.lineTo(-1.55, 0.18);
+  const hull = profile(sh, 1.3, hullM, 0.06); root.add(hull);
+  const hullTop = profile((() => { const t = new THREE.Shape(); t.moveTo(-1.55, 0.6); t.lineTo(1.2, 0.68); t.lineTo(2.0, 0.7); t.lineTo(2.05, 0.72); t.lineTo(1.2, 0.73); t.lineTo(-1.55, 0.66); t.lineTo(-1.55, 0.6); return t; })(), 1.38, white, 0.02); root.add(hullTop);
+  /* inner cockpit floor + deck */
+  root.add(rbox(1.0, 0.04, 2.1, 0.02, deckM, 0, 0.32, 0.25));
+  root.add(rbox(1.18, 0.05, 1.4, 0.03, white, 0, 0.7, -1.2));                       // foredeck
+  /* windscreen + frame */
+  const scr = rbox(1.02, 0.42, 0.03, 0.04, M.glass, 0, 0.98, -0.52); scr.rotation.x = -0.42; root.add(scr);
+  root.add(tube([-0.53, 0.76, -0.4], [-0.5, 1.15, -0.6], 0.02, M.chrome), tube([0.53, 0.76, -0.4], [0.5, 1.15, -0.6], 0.02, M.chrome), tube([-0.5, 1.15, -0.6], [0.5, 1.15, -0.6], 0.018, M.chrome));
+  /* dash + helm */
+  root.add(rbox(1.0, 0.3, 0.3, 0.06, M.dark, 0, 0.86, -0.38));
+  const wheelG = new THREE.Group(); wheelG.position.set(-0.22, 0.98, -0.28); wheelG.rotation.x = 0.7;
+  wheelG.add(new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.016, 8, 24), M.dark));
+  for (let i = 0; i < 3; i++) { const sp = box(0.3, 0.014, 0.014, M.chrome); sp.rotation.z = (i * Math.PI) / 3; wheelG.add(sp); } root.add(wheelG);
+  /* seats */
+  root.add(rbox(0.46, 0.14, 0.42, 0.05, seatM, -0.26, 0.5, 0.35), rbox(0.46, 0.4, 0.1, 0.05, seatM, -0.26, 0.72, 0.58));
+  root.add(rbox(0.46, 0.14, 0.42, 0.05, seatM, 0.26, 0.5, 0.35), rbox(0.46, 0.4, 0.1, 0.05, seatM, 0.26, 0.72, 0.58));
+  root.add(rbox(1.0, 0.16, 0.5, 0.06, seatM, 0, 0.5, 1.12));
+  /* stripe + rails + lights */
+  root.add(profile((() => { const t = new THREE.Shape(); t.moveTo(-1.5, 0.4); t.lineTo(1.5, 0.42); t.lineTo(1.7, 0.5); t.lineTo(-1.5, 0.48); t.lineTo(-1.5, 0.4); return t; })(), 1.34, glow(0xfacc15, 0.6), 0.01));
+  [-1, 1].forEach(sx => { root.add(tube([sx * 0.62, 0.78, 1.45], [sx * 0.62, 0.78, -0.2], 0.014, M.chrome)); [1.45, 0.6, -0.2].forEach(z => root.add(tube([sx * 0.62, 0.7, z], [sx * 0.62, 0.8, z], 0.014, M.chrome))); });
+  root.add(ball(0.05, glow(0xff3030, 2.2), -0.6, 0.76, -1.42), ball(0.05, glow(0x32e068, 2.2), 0.6, 0.76, -1.42));
+  /* outboard motor */
+  const mot = new THREE.Group(); mot.position.set(0, 0.5, 1.72);
+  mot.add(rbox(0.34, 0.4, 0.3, 0.07, white, 0, 0.12, 0), cyl(0.05, 0.06, 0.5, M.steel, 0, -0.18, 0.04, 12), rbox(0.2, 0.16, 0.3, 0.05, M.steel, 0, -0.44, 0.04));
+  const prop = new THREE.Group(); prop.position.set(0, -0.44, 0.22);
+  for (let i = 0; i < 3; i++) { const bl = box(0.04, 0.2, 0.012, M.chrome, 0, 0.1, 0); const pv = new THREE.Group(); pv.rotation.z = (i * Math.PI * 2) / 3; pv.add(bl); bl.rotation.x = 0.4; prop.add(pv); }
+  mot.add(prop); root.add(mot);
+  return { group: root, wheels: [], spin: [{ o: prop, axis: 'z', k: 40 }], wheelR: [0.4] };
+}
+
+const BUILDERS = { bicycle, motorbike, car, truck, train: locomotive, boat: speedboat, helicopter };
 export function buildVehicle(id) {
   const b = BUILDERS[id]; if (!b) throw new Error('Unknown vehicle ' + id);
   const r = b(), R = r.wheelR[0] || 0.4, spinners = r.spin || [];
