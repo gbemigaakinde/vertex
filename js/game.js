@@ -8910,7 +8910,7 @@ function _krLoop(timestamp) {
         <ul class="gx-perks">${v.perks.map(p => `<li><i class="ph ph-check"></i><span>${_esc(p)}</span></li>`).join('')}</ul>
         ${btn}
         <p class="gx-msg ${msg ? msg.k : ''}" aria-live="polite">${msg ? _esc(msg.t) : ''}</p>
-        <p class="gx-note">${owns ? 'Tap a ride in the game, or use keys 1 to 6, to hop on and off. A Pit Stop appears now and then to refuel and repair for free.' : 'Locked until you buy it. Spending coins takes the same amount off your total XP, so your rank can change.'}</p>`;
+        <p class="gx-note">${owns ? 'Tap a ride in the game, or use keys 1 to 7, to hop on and off. A Pit Stop appears now and then to refuel and repair for free.' : 'Locked until you buy it. Spending coins takes the same amount off your total XP, so your rank can change.'}</p>`;
       $r('strip').innerHTML = V.map((x, i) => {
         const o = g.owned.includes(x.id);
         return `<button type="button" class="gx-chip${i === cur ? ' cur' : ''}${o ? ' own' : ' lock'}" data-act="pick" data-i="${i}" role="tab" aria-selected="${i === cur}"><i class="ph ph-${x.icon}"></i><b>${_esc(x.short)}</b><small>${o ? 'Owned' : fmt(x.cost)}</small></button>`;
