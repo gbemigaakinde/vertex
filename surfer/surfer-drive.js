@@ -100,9 +100,26 @@ function buildCockpit(kind) {
     steer.add(box(0.2, 0.09, 0.07, dark, 0, 0.05, -0.08), box(0.17, 0.04, 0.005, lit(0x38bdf8), 0, 0.06, -0.117), cyl(0.012, 0.12, chrome, 0, -0.07, 0.0));
     g.add(steer);
   } else if (kind === 'heli') {
-    g.add(box(1.5, 0.3, 0.55, dark, 0, -0.55, -0.95), box(0.16, 0.07, 0.02, lit(0x0e7490), -0.3, -0.5, -0.67), box(0.12, 0.07, 0.02, lit(0x166534), -0.1, -0.5, -0.67), box(0.1, 0.07, 0.02, lit(0x7c2d12), 0.08, -0.5, -0.67));
-    steer.position.set(0.0, -0.74, -0.66); steer.add(cyl(0.018, 0.3, chrome, 0, 0.17, 0), (() => { const b = new THREE.Mesh(new THREE.SphereGeometry(0.05, 14, 10), red); b.position.y = 0.36; return b; })()); g.add(steer);
-    lever.position.set(-0.62, -0.66, -0.45); lever.add(cyl(0.014, 0.3, chrome, 0, 0.15, 0), cyl(0.03, 0.14, dark, 0, 0.32, 0)); g.add(lever);
+    /* Built around y = 0 = the front edge of the dash, where the stick and the lever stand.
+       d.hud lifts the whole group every frame so that line sits just above the on-screen
+       controls (wheel, gear box, pedals), so nothing here is ever hidden behind them. */
+    const body = new THREE.MeshStandardMaterial({ color: 0x3b475a, emissive: 0x263244, roughness: 0.6, metalness: 0.2 });
+    const faceCol = c => lit(c);
+    const gauge = (w, h, x, y, z, c) => { g.add(box(w + 0.03, h + 0.03, 0.03, dark, x, y, z), box(w, h, 0.01, faceCol(c), x, y, z + 0.02)); };
+    g.add(box(1.8, 0.3, 0.7, body, 0, -0.15, -1.0));                                      // dash top (a slab you look down onto)
+    g.add(box(1.8, 0.035, 0.035, chrome, 0, 0.0, -0.65));                                // bright front rim, so it reads against dark scenery
+    g.add(box(1.1, 0.24, 0.1, dark, 0, 0.12, -1.0));                                     // instrument binnacle
+    gauge(0.26, 0.15, -0.34, 0.13, -0.945, 0x0891b2);                                    // left panel: cyan
+    gauge(0.26, 0.15, 0.34, 0.13, -0.945, 0x16a34a);                                     // right panel: green
+    gauge(0.1, 0.07, -0.12, 0.17, -0.945, 0xd97706); gauge(0.1, 0.07, 0.12, 0.17, -0.945, 0xdc2626);   // small amber + red lamps
+    g.add(box(0.2, 0.03, 0.02, lit(0x0284c7), 0, 0.07, -0.945));                         // centre strip
+    const boot = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.06, 0.06, 14), dark); boot.position.set(0, 0.0, -0.7); g.add(boot);
+    steer.position.set(0, 0.02, -0.7);                                                   // cyclic stick
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.045, 14, 10), red); knob.position.y = 0.25;
+    steer.add(cyl(0.022, 0.24, chrome, 0, 0.12, 0), knob); g.add(steer);
+    g.add(box(0.12, 0.05, 0.12, dark, -0.47, 0.0, -0.8));                                // collective lever base
+    lever.position.set(-0.47, 0.02, -0.8);                                               // collective lever (left)
+    lever.add(cyl(0.018, 0.22, chrome, 0, 0.11, 0), cyl(0.028, 0.11, red, 0, 0.26, 0)); g.add(lever);
   } else {
     /* car / truck / train / boat */
     const w = kind === 'train' ? 1.9 : 1.55;
@@ -147,18 +164,25 @@ export function createDrive({ stage, sim, camera, scene, on, toast }) {
     <div class="dv-radar" data-d="radar"><i class="ph ph-siren"></i><div class="bar"><b data-d="rbar"></b></div><span class="m" data-d="rm">42 m</span></div>
     <div class="dv-speedo dv-ride" data-d="speedo"><b data-d="spd">0</b><small>KM/H · <span data-d="gl">D</span></small></div>
     <div class="dv-camw" data-d="camw"><button type="button" class="dv-cambtn dv-b" data-d="cambtn"><i class="ph ph-video-camera"></i><span data-d="camname">Chase</span></button>
-      <div class="dv-chips">${CAM_MODES.map(c => `<button type="button" class="dv-chip dv-b" data-cam="${c.id}"><i class="ph ph-${c.icon}"></i>${c.name}</button>`).join('')}</div></div>
+      <div class="dv-chips dv-b">${CAM_MODES.map(c => `<button type="button" class="dv-chip dv-b" data-cam="${c.id}"><i class="ph ph-${c.icon}"></i>${c.name}</button>`).join('')}</div></div>
     <div class="dv-wheel dv-b dv-ride" data-d="wheel" aria-label="Steering"></div>
-    <div class="dv-gear dv-ride" data-d="gearbox"><button type="button" class="dv-b" data-g="up" aria-label="Shift up">▲</button><div class="g" data-d="gnum">D</div><button type="button" class="dv-b" data-g="down" aria-label="Shift down">▼</button><button type="button" class="dv-b a on" data-g="auto">AUTO</button></div>
+    <div class="dv-gear dv-b dv-ride" data-d="gearbox"><button type="button" class="dv-b" data-g="up" aria-label="Shift up">▲</button><div class="g" data-d="gnum">D</div><button type="button" class="dv-b" data-g="down" aria-label="Shift down">▼</button><button type="button" class="dv-b a on" data-g="auto">AUTO</button></div>
     <button type="button" class="dv-cruise dv-b dv-ride on" data-d="cruise"><i class="ph ph-gauge"></i>CRUISE</button>
-    <div class="dv-pedals dv-ride"><div class="dv-pedal brk dv-b" data-d="brk"><i class="ph ph-hand-palm"></i>BRAKE</div><div class="dv-pedal gas dv-b" data-d="gas"><i class="ph ph-arrow-fat-lines-up"></i>GAS</div></div>`;
+    <div class="dv-pedals dv-b dv-ride"><div class="dv-pedal brk dv-b" data-d="brk"><i class="ph ph-hand-palm"></i>BRAKE</div><div class="dv-pedal gas dv-b" data-d="gas"><i class="ph ph-arrow-fat-lines-up"></i>GAS</div></div>`;
   stage.appendChild(ui);
-  const fit = () => { const r = stage.getBoundingClientRect(); ui.style.setProperty('--dvs', clamp(Math.min(r.width / 420, r.height / 640), 0.55, 1).toFixed(3)); };
+  let fitStamp = 0, ctrlStamp = -1, ctrlF = 0.66;        // ctrlF = where the on-screen controls start (0 = top of the stage, 1 = bottom)
+  const fit = () => { fitStamp++; const r = stage.getBoundingClientRect(); ui.style.setProperty('--dvs', clamp(Math.min(r.width / 420, r.height / 640), 0.55, 1).toFixed(3)); };
   fit(); let ro = null; if (window.ResizeObserver) { ro = new ResizeObserver(fit); ro.observe(stage); } else on(window, 'resize', fit);
   const q = k => ui.querySelector(`[data-d="${k}"]`);
   const el = { radar: q('radar'), rbar: q('rbar'), rm: q('rm'), speedo: q('speedo'), spd: q('spd'), gl: q('gl'), camw: q('camw'), camname: q('camname'), wheel: q('wheel'), gnum: q('gnum'), cruise: q('cruise'), gas: q('gas'), brk: q('brk'), gearbox: q('gearbox') };
   const rideEls = ui.querySelectorAll('.dv-ride');
-  for (const t of ['touchstart', 'touchmove', 'touchend', 'mousedown', 'pointerdown', 'click']) on(ui, t, e => { if (e.target.closest('.dv-b')) { e.stopPropagation(); if (t === 'touchstart' && e.cancelable) e.preventDefault(); } });
+  const measureCtrl = () => {
+    const sr = stage.getBoundingClientRect(); if (!sr.height) return;
+    let top = Infinity;
+    for (const n of [el.wheel, el.gearbox, el.cruise, el.gas, el.brk]) { const r = n.getBoundingClientRect(); if (r.height) top = Math.min(top, r.top - sr.top); }
+    if (isFinite(top)) ctrlF = clamp((top - 8) / sr.height, 0.46, 0.72);
+  };
+  for (const t of ['touchstart', 'touchmove', 'touchend', 'mousedown', 'pointerdown', 'click']) on(ui, t, e => { if (e.target.closest('.dv-b')) e.stopPropagation(); });     // keep taps on the controls away from the stage (no jump / pause). Do NOT preventDefault() touchstart here: that cancels the click, which made the gear, cruise and camera buttons dead on touchscreens
 
   /* ── pedals ── */
   const hold = (node, key) => {
@@ -237,7 +261,7 @@ export function createDrive({ stage, sim, camera, scene, on, toast }) {
   /* ── ride changes ── */
   d.setRide = def => {
     if (def === d.def) return; d.def = def;
-    rideEls.forEach(n => { n.style.display = def ? '' : 'none'; });
+    rideEls.forEach(n => { n.style.display = def ? '' : 'none'; }); fitStamp++;
     if (def) {
       const k = KIND_UI[def.kind] || KIND_UI.car;
       el.wheel.innerHTML = k.svg; rotEl = el.wheel.querySelector('.rot');
@@ -296,7 +320,11 @@ export function createDrive({ stage, sim, camera, scene, on, toast }) {
       if (show) {
         const u = cockpit.userData, kd = u.kind;
         if (kd === 'bike') { u.steer.rotation.y = -d.vs * 0.5; u.steer.rotation.z = d.vs * 0.12; }
-        else if (kd === 'heli') { u.steer.rotation.z = -d.vs * 0.5; u.steer.rotation.x = -(d.keyGas || d.padGas) * 0.3 + (d.keyBrk || d.padBrk) * 0.3; u.lever.rotation.x = -(d.v - 1) * 0.5; }
+        else if (kd === 'heli') {
+          if (ctrlStamp !== fitStamp) { measureCtrl(); ctrlStamp = fitStamp; }
+          const tn = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);               // lift the dash so its front edge sits just above the controls
+          cockpit.position.y = (1 - 2 * ctrlF) * 0.7 * tn;
+          u.steer.rotation.z = -d.vs * 0.5; u.steer.rotation.x = -(d.keyGas || d.padGas) * 0.3 + (d.keyBrk || d.padBrk) * 0.3; u.lever.rotation.x = -(d.v - 1) * 0.5; }
         else { u.steer.rotation.z = -d.vs * 1.6; if (u.lever) u.lever.rotation.x = kd === 'train' ? -d.v * 0.6 : (3 - Math.max(0, d.gear)) * 0.09; }
       }
     }

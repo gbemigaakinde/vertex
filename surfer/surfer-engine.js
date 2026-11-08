@@ -52,7 +52,7 @@ const CSS = `
 .sf-debug{bottom:4px;left:6px;font:600 9px/1.3 monospace;color:#86efac;text-shadow:0 1px 2px #000;white-space:pre}
 /* ride dock + pit stop */
 .sf-dock{position:absolute;left:6px;right:6px;bottom:6px;z-index:6;display:flex;gap:4px;justify-content:center;flex-wrap:nowrap;pointer-events:none}
-.sf-ride{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:2px;flex:1 1 0;min-width:0;max-width:66px;padding:.3rem .08rem .26rem;border-radius:12px;border:1px solid #334155;background:linear-gradient(160deg,#0f172acc,#1e293bcc);color:#cbd5e1;font:700 .46rem/1 inherit;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .12s,border-color .15s,background .15s}
+.sf-ride{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:2px;flex:1 1 0;min-width:0;max-width:74px;padding:.3rem .08rem .26rem;border-radius:12px;border:1px solid #334155;background:linear-gradient(160deg,#0f172acc,#1e293bcc);color:#cbd5e1;font-family:inherit;font-size:.7rem;font-weight:700;line-height:1;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .12s,border-color .15s,background .15s}
 .sf-ride i.ph{font-size:1.25rem;line-height:1}
 .sf-ride:active{transform:scale(.94)}
 .sf-ride.on{border-color:#38bdf8;background:linear-gradient(160deg,#075985dd,#0c4a6edd);color:#e0f2fe;box-shadow:0 0 0 1px #38bdf855,0 4px 16px #0ea5e944}
@@ -61,7 +61,7 @@ const CSS = `
 .sf-fuel b{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#22c55e,#a3e635)}
 .sf-fuel.low b{background:linear-gradient(90deg,#ef4444,#f59e0b)}
 .sf-toast{left:0;right:0;top:78px;text-align:center;font-size:.8rem;color:#fde68a;opacity:0;transition:opacity .25s}
-.sf-pit{width:min(92%,330px);max-height:94%;overflow:auto;padding:.75rem .7rem;border-radius:16px;background:linear-gradient(170deg,#0f172af2,#1e293bf2);border:1px solid #38bdf8aa;color:#e2e8f0;text-shadow:none;text-align:left;box-shadow:0 20px 60px #000a}
+.sf-pit{width:min(92%,330px);max-height:94%;overflow:auto;touch-action:pan-y;overscroll-behavior:contain;padding:.75rem .7rem;border-radius:16px;background:linear-gradient(170deg,#0f172af2,#1e293bf2);border:1px solid #38bdf8aa;color:#e2e8f0;text-shadow:none;text-align:left;box-shadow:0 20px 60px #000a}
 .sf-pit h3{margin:0;font-size:1.05rem;font-weight:900;color:#38bdf8;display:flex;align-items:center;gap:.4rem}
 .sf-pit p{margin:.15rem 0 .65rem;font-size:.72rem;color:#94a3b8;font-weight:600}
 .sf-prow{display:flex;align-items:center;gap:.5rem;padding:.38rem .5rem;margin-bottom:.3rem;border-radius:12px;background:#0b1220aa;border:1px solid #334155}
@@ -71,7 +71,7 @@ const CSS = `
 .sf-prow .nm small{display:block;font-size:.62rem;font-weight:600;color:#86efac}
 .sf-pbtn{border:0;border-radius:10px;padding:.45rem .8rem;font:800 .72rem/1 inherit;cursor:pointer;color:#0b1220;background:#38bdf8}
 .sf-pbtn.ghost{background:#334155;color:#e2e8f0}
-.sf-pbtn.go{display:block;width:100%;margin-top:.6rem;padding:.75rem;font-size:.85rem;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff}
+.sf-pbtn.go{position:sticky;bottom:-.75rem;display:block;width:100%;margin-top:.6rem;padding:.75rem;font-size:.85rem;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff}
 @keyframes sfBlink{from{opacity:1}to{opacity:.25}}
 `;
 function injectCss() {
@@ -152,7 +152,7 @@ async function init(container, host, api) {
       <div class="sf-ov sf-center" data-sf="center"><div style="font-size:1.1rem">Loading 3D world…</div><div class="sf-bar"><i data-sf="bar"></i></div><small data-sf="loadtxt"></small></div>
     </div>
     <div class="sf-hint">← → / swipe sideways: change lane &nbsp;|&nbsp; ↑ / swipe up: jump &nbsp;|&nbsp; ↓ / swipe down: slide &nbsp;|&nbsp; P: pause</div>
-    <div class="sf-hint" data-sf="ridehint" style="display:none;margin-top:0">Tap a ride below the track (or keys 1-6) to get on or off. Fuel is refilled at every Pit Stop.</div>
+    <div class="sf-hint" data-sf="ridehint" style="display:none;margin-top:0">Tap a ride below the track (or number keys 1-7) to get on or off. Fuel is refilled at every Pit Stop.</div>
     <div class="sf-btns">
       <button data-sf="pauseBtn" class="btn bg-gray-500" style="font-size:.8125rem;"><i class="ph ph-pause"></i> Pause</button>
       <button data-sf="quitBtn"  class="btn bg-gray-500" style="font-size:.8125rem;"><i class="ph ph-x"></i> Quit</button>
@@ -164,6 +164,7 @@ async function init(container, host, api) {
     bar: $('bar'), loadtxt: $('loadtxt'), toast: $('toast'), dock: $('dock'), pauseBtn: $('pauseBtn'), quitBtn: $('quitBtn') };
 
   let destroyed = false, rafId = 0, assets = null, renderer = null, ro = null, envTex = null;
+  let stageW = 0;                  // current width of the game stage in px (kept up to date by resize())
   let paused = false, ending = false, endT = 0, finished = false, pitOpen = false, toastTimer = 0;
   const disposables = [];
   const rideModels = {};           // id → built 3D ride (created the first time it is used)
@@ -219,7 +220,7 @@ async function init(container, host, api) {
   const camera = new THREE.PerspectiveCamera(CAMERA.fov, 0.64, 0.1, 160);
   let baseFov = CAMERA.fov, fovKick = 0;
   function resize() {
-    const w = Math.max(2, ui.stage.clientWidth), h = Math.max(2, ui.stage.clientHeight);
+    const w = Math.max(2, ui.stage.clientWidth), h = Math.max(2, ui.stage.clientHeight); stageW = w;
     renderer.setPixelRatio(dpr); renderer.setSize(w, h, false);
     camera.aspect = w / h;
     /* make sure all 3 lanes always fit, even on a narrow phone */
@@ -419,11 +420,26 @@ async function init(container, host, api) {
   on(ui.dock, 'click', e => { e.stopPropagation(); const b = e.target.closest('[data-ride]'); if (b) tryMount(b.dataset.ride); });
   ui.dock.style.display = owned.length ? 'flex' : 'none';
   const rh = $('ridehint'); if (rh && owned.length) rh.style.display = 'block';
+  /* Long names ("Motorbike", "Helicopter") do not fit 7 buttons on a narrow phone, so the dock switches to short names
+     (Bike / Moto / Heli) whenever a full name would be cut off. The text is measured with the real font, and the answer is
+     only recalculated when the screen width or the number of rides changes. The full name stays in the aria-label. */
+  const DOCK_ABBR = { bicycle: 'Bike', motorbike: 'Moto', helicopter: 'Heli' };
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  let dockShort = false, dockKey = '';
   function dockHtml() {
+    const n = owned.length, key = stageW + '|' + n;
+    if (key !== dockKey && stageW > 0) {
+      dockKey = key;
+      const btnW = Math.min((stageW - 12 - 4 * (n - 1)) / Math.max(1, n), 74);                  // width of one button (max-width is 74px)
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      measureCtx.font = `700 ${rem * 0.7}px ${getComputedStyle(ui.dock).fontFamily}`;     // same size / weight as .sf-ride in the CSS
+      dockShort = owned.some(id => DOCK_ABBR[id] && measureCtx.measureText(rideStates[id].def.short).width > btnW - 7);   // 7px = padding + border
+    }
     return owned.map(id => {
       const r = rideStates[id], d = r.def, on_ = S.ride && S.ride.id === id, pct = Math.round(r.fuel / d.fuel * 100);
       const dead = r.fuel <= 0 || (d.hp > 0 && r.hp <= 0);
-      return `<button type="button" class="sf-ride${on_ ? ' on' : ''}${dead ? ' dead' : ''}" data-ride="${id}" aria-label="${on_ ? 'Get off ' : 'Ride '}${d.name}"><i class="ph ph-${d.icon}"></i>${d.short}<span class="sf-fuel${pct < 25 ? ' low' : ''}"><b style="width:${pct}%"></b></span></button>`;
+      const label = dockShort && DOCK_ABBR[id] ? DOCK_ABBR[id] : d.short;
+      return `<button type="button" class="sf-ride${on_ ? ' on' : ''}${dead ? ' dead' : ''}" data-ride="${id}" aria-label="${on_ ? 'Get off ' : 'Ride '}${d.name}"><i class="ph ph-${d.icon}"></i>${label}<span class="sf-fuel${pct < 25 ? ' low' : ''}"><b style="width:${pct}%"></b></span></button>`;
     }).join('');
   }
   function pitHtml() {
