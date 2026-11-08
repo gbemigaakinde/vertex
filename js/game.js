@@ -1417,7 +1417,6 @@ async function _chessCommitMove(gameId, from, to, meta, promoteChoice) {
   if (!data) return;
   const board     = _chessDeserialiseBoard(data.board);
   const castling  = data.castling || { wK:true, wQ:true, bK:true, bQ:true };
-  const enPassant = data.enPassant || null;
   const movedPiece = board[from.r][from.c];
   const color      = _chessColorOf(movedPiece);
 
@@ -2220,8 +2219,6 @@ function _wsValidateMove(board, newCells, isFirstMove) {
     if (newCells.length < 2) return { valid: false, error: 'First word must be at least 2 letters.' };
   } else {
     // Must touch at least one existing tile
-    const tempBoard = board.map(row => row.map(cell => cell ? { ...cell } : null));
-    newCells.forEach(({ row, col, letter, points }) => { tempBoard[row][col] = { letter, points }; });
     const adjacent = newCells.some(({ row, col }) => {
       return (row > 0 && board[row-1][col]) ||
              (row < 14 && board[row+1][col]) ||
@@ -2832,7 +2829,6 @@ function _wsRackClick(idx) {
 
 function _wsCellClick(row, col) {
   if (!_wsState) return;
-  const gameId = _wsState.gameId;
 
   // If clicking a placed tile — recall just that tile
   const placedIdx = _wsState.placed.findIndex(p => p.row === row && p.col === col);
@@ -3280,7 +3276,6 @@ function _wsLeave() {
   let _questionStartTime  = 0;
   let _speedDemonCount    = 0;
 
-  let _challengeListener  = null;
   let _challengeUnsubs    = [];
   let _challengeListening = false;
   let _challengeGen       = 0;
@@ -4123,7 +4118,6 @@ async function _showChallengeResultDetail(challengeId, data, myUid) {
       try { unsub(); } catch (e) {}
     });
     _challengeUnsubs = [];
-    _challengeListener = null;
     _challengeListening = false;
   }
 
@@ -4721,7 +4715,6 @@ let _sessionHeartbeatInt = null;
 let _sessionUnloadHandlerAttached = false;
 
 const SESSION_HEARTBEAT_MS = 20_000;   // update every 20s
-const SESSION_STALE_MS     = 90_000;   // teacher dashboard treats >90s silence as dead
 
 function _stopSessionHeartbeat() {
   if (_sessionHeartbeatInt) { clearInterval(_sessionHeartbeatInt); _sessionHeartbeatInt = null; }
@@ -5287,13 +5280,6 @@ async function _endGameSession(sessionId, resultData) {
   { word: 'RANGE',      hint: 'Difference between the highest and lowest values' },
 ];
 
-function _buildWordPoolForStudent() {
-  // Returns only the curated word bank with proper hints.
-  // Question bank extraction has been removed to ensure
-  // all words have real, meaningful hints.
-  return _shuffleArray([..._wordBank]);
-}
-
   function _scrambleWord(word) {
     const letters = word.split('');
     const allSame = letters.every(l => l === letters[0]);
@@ -5351,6 +5337,7 @@ function _buildWordPoolForStudent() {
   function _renderWordScrambleQuestion() {
     const gs = _gameState;
     if (!gs || gs.type !== 'wordScramble') return;
+    gs._advancing = false;
     const entry    = gs.words[gs.currentIndex];
     const scramble = gs.currentScramble || _scrambleWord(entry.word);
     gs.currentScramble = scramble;
@@ -5527,27 +5514,12 @@ function _buildWordPoolForStudent() {
     _renderWordScrambleQuestion();
   }
 
-  function _submitScrambleAnswer() {
-    const gs = _gameState;
-    if (!gs || gs.type !== 'wordScramble') return;
-    _stopTimer();
-    const input   = document.getElementById('scrambleInput');
-    const val     = (input ? input.value : '').trim().toUpperCase();
-    const correct = val === gs.words[gs.currentIndex].word;
-    const fb      = document.getElementById('scrambleFeedback');
-    if (fb) { fb.style.color = correct ? 'var(--success)' : 'var(--danger)'; fb.textContent = correct ? `Correct! +${XP_PER_CORRECT} XP` : `Wrong. The word was ${gs.words[gs.currentIndex].word}`; }
-    if (correct) { gs.score++; gs.xpEarned += XP_PER_CORRECT; gs.wordCorrect++; }
-    setTimeout(() => {
-      gs.currentIndex++;
-      if (gs.currentIndex >= gs.words.length) _finishWordScramble();
-      else { gs.shufflesLeft = MAX_SHUFFLES; gs.currentScramble = _scrambleWord(gs.words[gs.currentIndex].word); _renderWordScrambleQuestion(); }
-    }, 1200);
-  }
-
   function _skipScramble() {
     _stopTimer();
     const gs = _gameState;
     if (!gs || gs.type !== 'wordScramble') return;
+    if (gs._advancing) return;
+    gs._advancing = true;
     const fb = document.getElementById('scrambleFeedback');
     if (fb) { fb.style.color = 'var(--text-3)'; fb.textContent = `Skipped. The word was ${gs.words[gs.currentIndex].word}`; }
     setTimeout(() => {
@@ -5658,6 +5630,8 @@ function _buildWordPoolForStudent() {
       return;
     }
 
+    if (gs._advancing) return;
+    gs._advancing = true;
     const formed  = gs.placedLetters.map(p => p.letter).join('');
     const correct = formed === gs.words[gs.currentIndex].word;
     const fb      = document.getElementById('scrambleFeedback');
@@ -6191,6 +6165,7 @@ function _buildWordPoolForStudent() {
   function _renderSDQuestion() {
     const gs = _gameState;
     if (!gs || gs.type !== 'suddenDeath') return;
+    gs._answering = false;
 
     const q        = gs.pool[gs.currentIndex];
     const survived = gs.survived;
@@ -6305,7 +6280,8 @@ function _buildWordPoolForStudent() {
       gs.xpEarned      += earned;
       gs.survived++;
       gs.currentXPValue = gs.currentXPValue + SD_XP_INCREMENT;
-      gs._answering     = false;
+      // _answering stays true until the next question renders, so a repeat
+      // input during the feedback delay can't re-score the same question.
 
       // Escalating pitch — question number = gs.survived (just incremented)
       if (window.VtxSound) try { VtxSound.gamePerfectRunCorrect(gs.survived); } catch(e) {}
@@ -6330,7 +6306,6 @@ function _buildWordPoolForStudent() {
 
     } else {
       gs.dead      = true;
-      gs._answering = false;
 
       if (window.VtxSound) try { VtxSound.gamePerfectRunDeath(); } catch(e) {}
 
@@ -6354,6 +6329,7 @@ function _buildWordPoolForStudent() {
 
   async function _finishSuddenDeath(died) {
     const gs = _gameState;
+    if (!gs || gs.type !== 'suddenDeath') return;
     _stopTimer();
     _gameState = null;
 
@@ -7199,8 +7175,9 @@ function _closeWatchModal(challengeId) {
            ${result.earnedBadges.map(bid => { const b = BADGES.find(x => x.id === bid); return b ? `<div class="game-badge-pop">${_badgeMedal(b, 36)}<span class="game-badge-pop__t"><strong>${_esc(b.name)}</strong><small>${_esc(b.desc)}</small></span></div>` : ''; }).join('')}
          </div>` : '';
 
-    const extrasHtml = extras && extras.length > 0
-      ? `<div class="gr-rows">${extras.map(e => `<div class="gr-row"><span>${_esc(e.label)}</span><strong>${_esc(String(e.value))}</strong></div>`).join('')}</div>`
+    const shownExtras = (extras || []).filter(e => e && e.value !== '' && e.value != null);
+    const extrasHtml = shownExtras.length > 0
+      ? `<div class="gr-rows">${shownExtras.map(e => `<div class="gr-row"><span>${_esc(e.label)}</span><strong>${_esc(String(e.value))}</strong></div>`).join('')}</div>`
       : '';
 
     const playAgainAttrib = onPlayAgainKey ? `onclick="Game._playAgain('${_esc(onPlayAgainKey)}')"` : '';
@@ -7330,7 +7307,6 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   let _krAnimFrame = null;
   let _krCanvas    = null;
   let _krCtx       = null;
-  let _krLastTime  = 0;
   let _krKeys      = { left: false, right: false, up: false, down: false };
   let _krSwipe     = { startX: 0, startY: 0, active: false };
 
@@ -7607,8 +7583,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     if (_krState) _krState._sessionId = id;
   });
   _krSpawnWave();
-  _krLastTime = performance.now();
-  _krLoop(_krLastTime);
+  _krLoop(performance.now());
 }
 
   function _krJump() {
@@ -7710,8 +7685,6 @@ function _krLoop(timestamp) {
   if (!_krState || _krState.gameOver) return;
   _krAnimFrame = requestAnimationFrame(_krLoop);
 
-  const dt = Math.min(timestamp - _krLastTime, 50);
-  _krLastTime = timestamp;
   const s  = _krState;
   const p  = s.player;
 
@@ -7788,12 +7761,6 @@ function _krLoop(timestamp) {
     /* ── Collision detection ──
          Player hitbox: centred on p.x, top = p.y - height, bottom = p.y */
     if (p.invincible === 0) {
-      const ph = p.rolling ? KR_PLAYER_H_ROLL : KR_PLAYER_H;
-      const pLeft   = p.x - KR_PLAYER_W / 2;
-      const pRight  = p.x + KR_PLAYER_W / 2;
-      const pTop    = p.y - (p.jumping ? KR_PLAYER_H : ph);
-      const pBottom = p.y;
-
       s.objects.forEach(obj => {
         if (obj.hit) return;
         if (obj.lane !== p.lane) return;
@@ -10657,7 +10624,6 @@ async function renderTeacherGameRestrictions(containerId) {
     _showWordScrambleSetup,
     _startWordScramble,
     _reshuffleWord,
-    _submitScrambleAnswer,
     _skipScramble,
     _showTrueOrFalseSetup,
     _startTrueOrFalse,
@@ -10685,7 +10651,6 @@ async function renderTeacherGameRestrictions(containerId) {
     _backToHome,
     _showAllLevelsModal,
     _showBadgeDetails,
-    _buildWordPoolForStudent,
     _startChallengeListener,
     _stopChallengeListener,
     renderTeacherGameStats,
@@ -10723,7 +10688,6 @@ async function renderTeacherGameRestrictions(containerId) {
     _showChessSetup,
     _awardXP,
     _saveGameResult,
-    _showEchoGrid: function () { if (window.EchoGrid) window.EchoGrid.open(); },
     _sendChessChallenge,
     _showChessPending,
     _acceptChess,
