@@ -214,9 +214,7 @@
 
   const QUIZ_BLITZ_QUESTIONS     = 10;
   const QUIZ_BLITZ_TIME          = 20;
-  const SPEED_MATH_TIME          = 8;
   const WORD_SCRAMBLE_TIME       = 20;
-  const CHALLENGE_EXPIRE_MS      = 24 * 60 * 60 * 1000;
 
   // True or False constants
   const TF_TIME_PER_QUESTION     = 18; // seconds — tight but fair
@@ -237,7 +235,6 @@
 const WS_BOARD_SIZE   = 15;
 const WS_RACK_SIZE    = 7;
 const WS_BINGO_BONUS  = 50;
-const WS_TURN_MS      = 3 * 60 * 1000; // 3 minutes per turn
 
 // Official English Scrabble tile distribution
 // [letter, count, points]
@@ -702,11 +699,6 @@ const WS_WORDLIST = new Set([
    Row 7 = rank 1 (white back rank, bottom). Col 0 = file 'a'.
    Piece codes: 'wP','wN','wB','wR','wQ','wK','bP',... or null.
 ══════════════════════════════════════════════════════════════ */
-
-const CHESS_PIECE_GLYPH = {
-  wK:'♔', wQ:'♕', wR:'♖', wB:'♗', wN:'♘', wP:'♙',
-  bK:'♚', bQ:'♛', bR:'♜', bB:'♝', bN:'♞', bP:'♟\uFE0E',
-};
 
 function _chessInitialBoard() {
   return [
@@ -1252,7 +1244,6 @@ async function _chessRenderGame(gameId, data) {
       const r = flipped ? 7 - dr : dr;
       const c = flipped ? 7 - dc : dc;
       const piece    = board[r][c];
-      const isLight  = (r + c) % 2 === 0;
       const selected = _chessUI.selected && _chessUI.selected.r === r && _chessUI.selected.c === c;
       const isTarget = _chessUI.legalTargets.some(t => t.r === r && t.c === c);
       const isKingInCheck = kingInCheckPos && kingInCheckPos.r === r && kingInCheckPos.c === c;
@@ -2078,13 +2069,6 @@ function _wsBuildBag() {
 /** Draw n tiles from bag (mutates bag array), returns drawn tiles */
 function _wsDraw(bag, n) {
   return bag.splice(0, Math.min(n, bag.length));
-}
-
-/** Refill rack from bag up to WS_RACK_SIZE, returns new rack */
-function _wsRefillRack(rack, bag) {
-  const needed = WS_RACK_SIZE - rack.length;
-  if (needed > 0) rack.push(..._wsDraw(bag, needed));
-  return rack;
 }
 
 /** Return letter point value */
@@ -2938,8 +2922,6 @@ let _wsCachedBoard   = null;
 let _wsCachedMyRack  = null;
 
 // Intercept onSnapshot to cache data
-const _wsOrigRender = _wsRenderGame;
-
 // Lightweight rack refresh (no full re-render)
 function _wsRefreshRack() {
   const rack    = document.getElementById('wsRack');
@@ -4423,7 +4405,6 @@ function _dismissScrabblePopup(gameId) {
     // ── Lobby "needs attention" rows (unified, minimal) ──
     const myTurnScrabble = activeScrabble.filter(g => g.turn === uid);
     const myTurnChess    = activeChess.filter(g => g.turn === (g.whiteUid === uid ? 'w' : 'b'));
-    const _plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
 
     const alertRows = [];
     if (pendingChallenges.length)
@@ -4580,6 +4561,7 @@ function _dismissScrabblePopup(gameId) {
           </div>
         </section>
 
+        ${offlineBanner}
         ${alertsHtml}
 
         <section class="lb-section">
@@ -4618,49 +4600,6 @@ function _dismissScrabblePopup(gameId) {
       }
     }
   }
-
-  function _renderLevelStrip(currentRank, xp) {
-  const start = Math.max(0, currentRank - 3);
-  const end   = Math.min(LEVELS.length - 1, currentRank + 2);
-  const slice = LEVELS.slice(start, end + 1);
-
-  const items = slice.map(l => {
-    const isCurrent  = l.rank === currentRank;
-    const isUnlocked = xp >= l.minXP;
-    return `
-      <div style="text-align:center;flex:1;min-width:0;padding:.25rem .125rem;
-                  opacity:${isUnlocked ? '1' : '0.35'};
-                  ${isCurrent ? 'transform:scale(1.12);' : ''}">
-        <div style="width:30px;height:30px;border-radius:50%;margin:0 auto;
-                    background:${isCurrent ? l.color : 'var(--bg-muted)'};
-                    border:2px solid ${isCurrent ? l.color : 'var(--border)'};
-                    display:flex;align-items:center;justify-content:center;
-                    box-shadow:${isCurrent ? '0 0 12px ' + l.color + '55' : 'none'};">
-          ${_icon(l.icon, 15, { color: isCurrent ? '#fff' : (isUnlocked ? l.color : 'var(--text-4)') })}
-        </div>
-        <p style="font-size:.5625rem;font-weight:${isCurrent ? '800' : '500'};
-                  color:${isCurrent ? l.color : 'var(--text-3)'};
-                  margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          ${_esc(l.name)}
-        </p>
-        <p style="font-size:.5rem;color:var(--text-4);margin-top:1px;">${l.minXP.toLocaleString()}</p>
-      </div>`;
-  }).join('');
-
-  return `
-    <div class="glass-dark" style="padding:.625rem .875rem;border-radius:var(--r-lg);margin:.5rem 0;cursor:pointer;"
-         onclick="Game._showAllLevelsModal(${xp})" title="Click to see all ranks">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
-        <p style="font-size:.625rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin:0;">
-          Level Progression
-        </p>
-        <span style="font-size:.625rem;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:.2rem;">
-          ${_icon('arrowRight', 11)} View all ${LEVELS.length} ranks
-        </span>
-      </div>
-      <div style="display:flex;align-items:flex-end;gap:.25rem;overflow-x:auto;">${items}</div>
-    </div>`;
-}
 
 function _showAllLevelsModal(currentXP) {
   currentXP = Number(currentXP) || 0;
