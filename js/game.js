@@ -6454,13 +6454,9 @@ function _buildWordPoolForStudent() {
 
     const extraHtml = `
       <div class="gr-feature">
-        <div class="lbl">Distance run</div>
-        <div class="num">${Math.floor(s.distance)}<i>m</i></div>
-        <span class="gr-pill">${distanceTitle}</span>
-        <div class="gr-chips">
-          <span class="gr-chip">${_li('coins', 15)} <b>${s.score}</b> coins</span>
-          <span class="gr-chip">${_li('flame', 15)} Best combo <b>${s.bestCombo > 0 ? s.bestCombo : 1}x</b></span>
-        </div>
+        <div class="lbl">Questions survived</div>
+        <div class="num" style="color:${survivalColor};">${survived}<i>/ ${total}</i></div>
+        <span class="gr-pill">${survivalTitle}</span>
       </div>`;
 
     _renderGameResult({
@@ -8717,10 +8713,10 @@ function _krLoop(timestamp) {
     const extraHtml = `
       <div class="gr-feature">
         <div class="lbl">Distance run</div>
-        <div class="num">${Math.floor(distance)}<i>m</i></div>
+        <div class="num">${Math.floor(s.distance)}<i>m</i></div>
         <span class="gr-pill">${distanceTitle}</span>
         <div class="gr-chips">
-          <span class="gr-chip">${_li('coins', 15)} <b>${score}</b> coins</span>
+          <span class="gr-chip">${_li('coins', 15)} <b>${s.score}</b> coins</span>
           <span class="gr-chip">${_li('flame', 15)} Best combo <b>${s.bestCombo > 0 ? s.bestCombo : 1}x</b></span>
         </div>
       </div>`;
