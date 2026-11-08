@@ -171,6 +171,7 @@ export const GAME = {
   inspectorMaxGap: 260,
   inspectorCloseWarn: 150,
 
+  pitEvery: 320,              // distance between pit stops (only appear when the player owns a ride)
   graceSeconds: 1.8,          // invincibility after a hit
   stumbleSeconds: 0.9,
 };

@@ -19,6 +19,7 @@ import { loadAssets } from './surfer-assets.js';
 import { GAME, CAMERA, LOOK, OBSTACLE_LOOKS, BIOMES, biomeAt, biomeIndexAt } from './surfer-config.js';
 import { createBiomeKit } from './surfer-biomes.js';
 import { createSim, laneX } from './surfer-sim.js';
+import { VEHICLE_BY_ID, buildVehicle, buildPitStop, disposeObject } from './surfer-vehicles.js';
 
 /* ───────────── styles (injected once) ───────────── */
 const CSS = `
@@ -41,13 +42,35 @@ const CSS = `
 .sf-zone.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .sf-zone small{display:block;font-weight:600;font-size:.6rem;color:#7dd3fc;text-shadow:none}
 .sf-flash{inset:0;background:radial-gradient(ellipse at center,#ef444400 40%,#ef4444aa);opacity:0;transition:opacity .35s}
-.sf-center{inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;background:#000b;color:#38bdf8;text-align:center;pointer-events:auto}
+.sf-center{z-index:9;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;background:#000b;color:#38bdf8;text-align:center;pointer-events:auto}
 .sf-center small{color:#94a3b8;font-weight:500;font-size:.8rem;text-shadow:none}
 .sf-bar{width:60%;height:6px;border-radius:6px;background:#1e293b;overflow:hidden}
 .sf-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#a78bfa);transition:width .15s}
 .sf-hint{margin-top:.5rem;font-size:.6rem;color:#475569;text-align:center;line-height:1.8}
 .sf-btns{text-align:center;margin-top:.625rem;display:flex;gap:.5rem;justify-content:center}
 .sf-debug{bottom:4px;left:6px;font:600 9px/1.3 monospace;color:#86efac;text-shadow:0 1px 2px #000;white-space:pre}
+/* ride dock + pit stop */
+.sf-dock{position:absolute;left:6px;right:6px;bottom:6px;z-index:6;display:flex;gap:4px;justify-content:center;flex-wrap:nowrap;pointer-events:none}
+.sf-ride{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:2px;flex:1 1 0;min-width:0;max-width:66px;padding:.3rem .15rem .26rem;border-radius:12px;border:1px solid #334155;background:linear-gradient(160deg,#0f172acc,#1e293bcc);color:#cbd5e1;font:700 .54rem/1 inherit;white-space:nowrap;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .12s,border-color .15s,background .15s}
+.sf-ride i.ph{font-size:1.25rem;line-height:1}
+.sf-ride:active{transform:scale(.94)}
+.sf-ride.on{border-color:#38bdf8;background:linear-gradient(160deg,#075985dd,#0c4a6edd);color:#e0f2fe;box-shadow:0 0 0 1px #38bdf855,0 4px 16px #0ea5e944}
+.sf-ride.dead{opacity:.5;border-style:dashed}
+.sf-fuel{display:block;width:100%;height:4px;border-radius:4px;background:#0b1220;overflow:hidden}
+.sf-fuel b{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#22c55e,#a3e635)}
+.sf-fuel.low b{background:linear-gradient(90deg,#ef4444,#f59e0b)}
+.sf-toast{left:0;right:0;top:78px;text-align:center;font-size:.8rem;color:#fde68a;opacity:0;transition:opacity .25s}
+.sf-pit{width:min(92%,330px);max-height:94%;overflow:auto;padding:.75rem .7rem;border-radius:16px;background:linear-gradient(170deg,#0f172af2,#1e293bf2);border:1px solid #38bdf8aa;color:#e2e8f0;text-shadow:none;text-align:left;box-shadow:0 20px 60px #000a}
+.sf-pit h3{margin:0;font-size:1.05rem;font-weight:900;color:#38bdf8;display:flex;align-items:center;gap:.4rem}
+.sf-pit p{margin:.15rem 0 .65rem;font-size:.72rem;color:#94a3b8;font-weight:600}
+.sf-prow{display:flex;align-items:center;gap:.5rem;padding:.38rem .5rem;margin-bottom:.3rem;border-radius:12px;background:#0b1220aa;border:1px solid #334155}
+.sf-prow.on{border-color:#38bdf8;background:#0c4a6e66}
+.sf-prow .ic{font-size:1.5rem;color:#7dd3fc;width:2rem;text-align:center}
+.sf-prow .nm{flex:1;min-width:0;font-size:.8rem;font-weight:800;line-height:1.2}
+.sf-prow .nm small{display:block;font-size:.62rem;font-weight:600;color:#86efac}
+.sf-pbtn{border:0;border-radius:10px;padding:.45rem .8rem;font:800 .72rem/1 inherit;cursor:pointer;color:#0b1220;background:#38bdf8}
+.sf-pbtn.ghost{background:#334155;color:#e2e8f0}
+.sf-pbtn.go{display:block;width:100%;margin-top:.6rem;padding:.75rem;font-size:.85rem;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff}
 @keyframes sfBlink{from{opacity:1}to{opacity:.25}}
 `;
 function injectCss() {
@@ -122,10 +145,13 @@ async function init(container, host, api) {
       <div class="sf-ov sf-combo" data-sf="combo"></div>
       <div class="sf-ov sf-warn" data-sf="warn" style="display:none"><i class="ph ph-warning"></i> INSPECTOR CLOSE!</div>
       <div class="sf-ov sf-speed" data-sf="speed"><i class="ph ph-lightning"></i> SPEED UP!</div>
+      <div class="sf-ov sf-toast" data-sf="toast"></div>
+      <div class="sf-dock" data-sf="dock"></div>
       <div class="sf-ov sf-debug" data-sf="debug"></div>
       <div class="sf-ov sf-center" data-sf="center"><div style="font-size:1.1rem">Loading 3D world…</div><div class="sf-bar"><i data-sf="bar"></i></div><small data-sf="loadtxt"></small></div>
     </div>
     <div class="sf-hint">← → / swipe sideways: change lane &nbsp;|&nbsp; ↑ / swipe up: jump &nbsp;|&nbsp; ↓ / swipe down: slide &nbsp;|&nbsp; P: pause</div>
+    <div class="sf-hint" data-sf="ridehint" style="display:none;margin-top:0">Tap a ride below the track (or keys 1-6) to get on or off. Fuel is refilled at every Pit Stop.</div>
     <div class="sf-btns">
       <button data-sf="pauseBtn" class="btn bg-gray-500" style="font-size:.8125rem;"><i class="ph ph-pause"></i> Pause</button>
       <button data-sf="quitBtn"  class="btn bg-gray-500" style="font-size:.8125rem;"><i class="ph ph-x"></i> Quit</button>
@@ -134,11 +160,12 @@ async function init(container, host, api) {
   const $ = k => container.querySelector(`[data-sf="${k}"]`);
   const ui = { lives: $('lives'), score: $('score'), xp: $('xp'), dist: $('dist'), stage: $('stage'), canvas: $('canvas'),
     flash: $('flash'), zone: $('zone'), combo: $('combo'), warn: $('warn'), speed: $('speed'), debug: $('debug'), center: $('center'),
-    bar: $('bar'), loadtxt: $('loadtxt'), pauseBtn: $('pauseBtn'), quitBtn: $('quitBtn') };
+    bar: $('bar'), loadtxt: $('loadtxt'), toast: $('toast'), dock: $('dock'), pauseBtn: $('pauseBtn'), quitBtn: $('quitBtn') };
 
   let destroyed = false, rafId = 0, assets = null, renderer = null, ro = null, envTex = null;
-  let paused = false, ending = false, endT = 0, finished = false;
+  let paused = false, ending = false, endT = 0, finished = false, pitOpen = false, toastTimer = 0;
   const disposables = [];
+  const rideModels = {};           // id → built 3D ride (created the first time it is used)
   const listeners = [];
   const on = (t, ev, fn, opt) => { t.addEventListener(ev, fn, opt); listeners.push([t, ev, fn, opt]); };
 
@@ -148,6 +175,8 @@ async function init(container, host, api) {
     listeners.forEach(([t, ev, fn, opt]) => t.removeEventListener(ev, fn, opt));
     if (ro) ro.disconnect();
     disposables.forEach(d => { try { d.dispose(); } catch (e) {} });
+    Object.values(rideModels).forEach(m => disposeObject(m.group));
+    clearTimeout(toastTimer);
     if (envTex) envTex.dispose();
     if (assets) assets.dispose();
     if (renderer) { renderer.dispose(); try { renderer.forceContextLoss(); } catch (e) {} }
@@ -229,8 +258,14 @@ async function init(container, host, api) {
   const tiles = [];
   let serial = 0;
   const wallX = 3.9 + 1.1;
-  const sim = createSim();
+  /* the player's garage: only rides they actually own can ever appear */
+  const garageIn = host.garage || {};
+  const owned = (Array.isArray(garageIn.owned) ? garageIn.owned : []).filter((id, i, a) => VEHICLE_BY_ID[id] && a.indexOf(id) === i);
+  const rideStates = {};
+  for (const id of owned) { const d = VEHICLE_BY_ID[id]; rideStates[id] = { id, def: d, fuel: d.fuel, hp: d.hp }; }
+  const sim = createSim(Math.random, { pitEnabled: owned.length > 0 });
   const S = sim.state, P = S.player;
+  let usedRide = false;
   for (let i = 0; i < tileCount; i++) {
     const g = new THREE.Group();
     const core = assets.make('track_segment'); g.add(core);
@@ -266,6 +301,7 @@ async function init(container, host, api) {
   const poses = {};
   for (const k of ['run_a', 'run_b', 'jump', 'slide', 'stumble']) { poses[k] = assets.make('player_' + k); poses[k].visible = false; runner.add(poses[k]); }
   const runnerBlob = makeBlob(1.0, 1.0); runner.add(runnerBlob);
+  const rideBlob = makeBlob(1, 1); rideBlob.visible = false; scene.add(rideBlob);
   scene.add(runner);
   const boat = assets.make('player_boat'); boat.visible = false; scene.add(boat);
   let boatT = 0, wakeT = 0;
@@ -291,7 +327,10 @@ async function init(container, host, api) {
   function addObject(o) {
     const root = new THREE.Group();
     let name;
-    if (o.type === 'coin') {
+    if (o.type === 'pit') {
+      name = 'pit';
+      const st = buildPitStop(); st.scale.setScalar(0.85); st.rotation.y = 0.18; root.add(st);
+    } else if (o.type === 'coin') {
       name = 'coin';
       const m = take(name); root.add(m); root.userData.model = m;
       const glow = new THREE.Sprite(glowMat); glow.scale.set(1.5, 1.5, 1); root.add(glow);
@@ -315,7 +354,8 @@ async function init(container, host, api) {
   function removeObject(id) {
     const e = live.get(id); if (!e) return;
     scene.remove(e.root);
-    if (e.name !== 'coin') give(e.name, e.root.children[0]);
+    if (e.name === 'pit') disposeObject(e.root);
+    else if (e.name !== 'coin') give(e.name, e.root.children[0]);
     else give('coin', e.root.userData.model);
     live.delete(id);
   }
@@ -357,12 +397,66 @@ async function init(container, host, api) {
   /* ============================================================
      INPUT
      ============================================================ */
+  /* ── ride helpers: toast, dock, mount, pit stop ── */
+  function toast(txt) {
+    ui.toast.textContent = txt; ui.toast.style.opacity = '1';
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { ui.toast.style.opacity = '0'; }, 1700);
+  }
+  function tryMount(id) {
+    if (paused || ending || destroyed) return;
+    const rs = rideStates[id]; if (!rs) return;
+    if (S.ride && S.ride.id === id) { sim.dismount('manual'); return; }
+    if (rs.fuel <= 0) { toast('Out of fuel. Refuel at the next pit stop'); return; }
+    if (rs.def.hp > 0 && rs.hp <= 0) { toast('Wrecked. Repair at the next pit stop'); return; }
+    if (sim.mount(rs)) usedRide = true;
+  }
+  const isolate = el => ['touchstart', 'touchmove', 'touchend', 'mousedown', 'pointerdown'].forEach(t => on(el, t, e => e.stopPropagation()));
+  isolate(ui.dock); isolate(ui.center);
+  on(ui.dock, 'click', e => { e.stopPropagation(); const b = e.target.closest('[data-ride]'); if (b) tryMount(b.dataset.ride); });
+  ui.dock.style.display = owned.length ? 'flex' : 'none';
+  const rh = $('ridehint'); if (rh && owned.length) rh.style.display = 'block';
+  function dockHtml() {
+    return owned.map(id => {
+      const r = rideStates[id], d = r.def, on_ = S.ride && S.ride.id === id, pct = Math.round(r.fuel / d.fuel * 100);
+      const dead = r.fuel <= 0 || (d.hp > 0 && r.hp <= 0);
+      return `<button type="button" class="sf-ride${on_ ? ' on' : ''}${dead ? ' dead' : ''}" data-ride="${id}" aria-label="${on_ ? 'Get off ' : 'Ride '}${d.name}"><i class="ph ph-${d.icon}"></i>${d.short}<span class="sf-fuel${pct < 25 ? ' low' : ''}"><b style="width:${pct}%"></b></span></button>`;
+    }).join('');
+  }
+  function pitHtml() {
+    const rows = owned.map(id => {
+      const d = rideStates[id].def, on_ = S.ride && S.ride.id === id;
+      return `<div class="sf-prow${on_ ? ' on' : ''}"><i class="ph ph-${d.icon} ic"></i><div class="nm">${d.name}<small>Fuel full${d.hp > 0 && d.hp < 99 ? ' · armour ' + d.hp : ''}</small></div>${on_ ? '<button class="sf-pbtn ghost" data-take="">Park it</button>' : `<button class="sf-pbtn" data-take="${id}">Take</button>`}</div>`;
+    }).join('');
+    return `<div class="sf-pit"><h3><i class="ph ph-gas-pump"></i> PIT STOP</h3><p>Tanks filled and repairs done. Pick your ride for the next stretch.</p>${rows}<button class="sf-pbtn go" data-go="1">Back on the track</button></div>`;
+  }
+  function openPit() {
+    if (ending || destroyed || pitOpen) return;
+    for (const id of owned) { const r = rideStates[id]; r.fuel = r.def.fuel; r.hp = r.def.hp; }    // free refuel + repair
+    pitOpen = true; paused = true; ui.pauseBtn.disabled = true; ui.dock.style.visibility = 'hidden';
+    ui.center.innerHTML = pitHtml(); ui.center.style.display = 'flex';
+  }
+  function closePit() {
+    if (!pitOpen) return;
+    pitOpen = false; paused = false; ui.pauseBtn.disabled = false; ui.dock.style.visibility = '';
+    ui.center.style.display = 'none'; ui.center.innerHTML = '';
+    lastT = performance.now(); P.invincible = Math.max(P.invincible, 1.4);
+  }
+  on(ui.center, 'click', e => {
+    if (!pitOpen) return; e.stopPropagation();
+    const t = e.target.closest('[data-take]'), g = e.target.closest('[data-go]');
+    if (t) {
+      const id = t.dataset.take;
+      if (!id) sim.dismount('manual'); else if (sim.mount(rideStates[id])) usedRide = true;
+      ui.center.innerHTML = pitHtml();
+    } else if (g) closePit();
+  });
+
   const pauseOv = () => {
     ui.center.style.display = paused ? 'flex' : 'none';
     ui.center.innerHTML = paused ? '<div style="font-size:1.6rem"><i class="ph ph-pause"></i> PAUSED</div><small>Tap the screen or press P to resume</small>' : '';
     ui.pauseBtn.innerHTML = paused ? '<i class="ph ph-play"></i> Resume' : '<i class="ph ph-pause"></i> Pause';
   };
-  function togglePause() { if (ending || destroyed) return; paused = !paused; lastT = performance.now(); pauseOv(); }
+  function togglePause() { if (ending || destroyed || pitOpen) return; paused = !paused; lastT = performance.now(); pauseOv(); }
   api.togglePause = togglePause;
   ui.center.style.display = 'none'; ui.center.innerHTML = '';
 
@@ -374,6 +468,7 @@ async function init(container, host, api) {
     else if (['ArrowUp', 'KeyW', 'Space'].includes(c)) { e.preventDefault(); if (!paused) sim.jump(); }
     else if (['ArrowDown', 'KeyS'].includes(c)) { e.preventDefault(); if (!paused) sim.slide(); }
     else if (c === 'KeyP') { e.preventDefault(); togglePause(); }
+    else if (/^Digit[1-6]$/.test(c) && owned[+c.slice(5) - 1]) { tryMount(owned[+c.slice(5) - 1]); }
   });
   on(document, 'visibilitychange', () => { if (document.hidden && !paused) togglePause(); });
 
@@ -405,6 +500,10 @@ async function init(container, host, api) {
   let frames = 0, accDt = 0, dbgT = 0;
   const camBase = new THREE.Vector3(...CAMERA.position), lookBase = new THREE.Vector3(...CAMERA.lookAt);
   const look = new THREE.Vector3();
+  const camOff = new THREE.Vector3();
+  let rideShown = null, rideT = 1;
+  const ease = t => { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+  const getRide = id => { if (!rideModels[id]) { const m = buildVehicle(id); m.def = VEHICLE_BY_ID[id]; m.group.visible = false; scene.add(m.group); rideModels[id] = m; } return rideModels[id]; };
 
   function setText(k, v, el) { if (hudCache[k] !== v) { hudCache[k] = v; el.textContent = v; } }
   function setHTML(k, v, el) { if (hudCache[k] !== v) { hudCache[k] = v; el.innerHTML = v; } }
@@ -429,6 +528,18 @@ async function init(container, host, api) {
       } else if (e.type === 'speedup') {
         speedToast = 1.6; fovKick = 5;
         if (sound.speedUp) try { sound.speedUp(); } catch (x) {}
+      } else if (e.type === 'mount') {
+        burst(P.x, 0.2, 0.2, 14, 0xb7c3d6, 3, 1.4, 0.5); toast(VEHICLE_BY_ID[e.id].name + ' ready');
+      } else if (e.type === 'dismount') {
+        burst(P.x, 0.3, 0.2, 12, 0xb7c3d6, 3, 1.4, 0.5);
+        if (e.reason === 'fuel') toast('Out of fuel. Refuel at the next pit stop');
+        else if (e.reason === 'wrecked') { toast('Wrecked! Repair at the next pit stop'); shake = CAMERA.shakeOnHit; }
+        else if (e.reason === 'crash') toast('You came off!');
+      } else if (e.type === 'smash') {
+        burst(e.x, 0.8, 0, 26, 0xffb347, 8, 5, 0.7); burst(e.x, 0.5, 0, 12, 0xcbd5e1, 5, 3, 0.6); shake = 0.22;
+        if (sound.hit) try { sound.hit(); } catch (x) {}
+      } else if (e.type === 'pit') {
+        openPit();
       } else if (e.type === 'gameover') {
         ending = true; endT = 0;
       }
@@ -475,7 +586,7 @@ async function init(container, host, api) {
     if (zoneToast > 0) { zoneToast -= dt; if (zoneToast <= 0) ui.zone.classList.remove('on'); }
   }
   function updateBoat(dt, bobBase) {
-    const inRiver = biomeAt(S.scroll).water && !ending;
+    const inRiver = biomeAt(S.scroll).water && !ending && !(S.ride && S.ride.def.fly);
     const prev = boatT;
     boatT += ((inRiver ? 1 : 0) - boatT) * (1 - Math.exp(-6 * dt));
     if (Math.abs(boatT - (inRiver ? 1 : 0)) < 0.01) boatT = inRiver ? 1 : 0;
@@ -534,16 +645,45 @@ async function init(container, host, api) {
     const inBoat = updateBoat(dt) > 0.5;
     if (inBoat && pose !== 'run_b') pose = 'run_a'; else if (inBoat) pose = 'run_a';          // no leg swing while sitting in the boat
     if (P.stumble > 0 || ending) pose = 'stumble'; else if (P.sliding) pose = 'slide'; else if (P.jumping) pose = 'jump';
+    const rs = S.ride, rdef = rs ? rs.def : null;
+    const onBoat = boatT > 0.5 && !(rdef && rdef.fly);                       // in the river everyone rides the boat instead
+    const seated = !!(rdef && rdef.rider && !onBoat);
+    if (seated && pose !== 'stumble') pose = 'jump';                          // knees bent on the saddle
     for (const k in poses) poses[k].visible = (k === pose);
     const tx = laneX(P.lane), lateral = tx - P.x;
-    const bob = !inBoat && (pose === 'run_a' || pose === 'run_b') ? Math.abs(Math.sin(runClock * Math.PI / stridePeriod)) * 0.05 : 0;
+    const bob = !inBoat && !rs && (pose === 'run_a' || pose === 'run_b') ? Math.abs(Math.sin(runClock * Math.PI / stridePeriod)) * 0.05 : 0;
     const lift = boatT * (0.14 + Math.sin(S.time * 3.1) * 0.025);
-    runner.position.set(P.x, P.y + bob + (P.jumping ? 0 : lift), 0);
+    runner.position.set(P.x, P.y + bob + (P.jumping ? 0 : lift) + (seated ? rdef.seat : 0), 0);
     runner.rotation.z = -lateral * 0.10; runner.rotation.y = -lateral * 0.16;
-    runner.visible = !(P.invincible > 0 && !ending && Math.floor(now / 70) % 2 === 0);
-    const sh = 1 - clamp(P.y / 2.2, 0, 0.6);                              // blob shrinks while airborne
-    runnerBlob.visible = boatT < 0.5; runnerBlob.position.y = 0.03 - (P.y + bob); runnerBlob.scale.set(sh * (pose === 'slide' ? 1.2 : 1), 1, sh * (pose === 'slide' ? 1.8 : 1));
+    const blink = P.invincible > 0 && !ending && Math.floor(now / 70) % 2 === 0;
+    const hideRunner = !!(rdef && !rdef.rider && !onBoat);                    // inside a cab / cockpit
+    runner.visible = !blink && !hideRunner;
+    const sh = 1 - clamp(P.y / 2.2, 0, 0.6);                                  // blob shrinks while airborne
+    runnerBlob.visible = boatT < 0.5 && !rs; runnerBlob.position.y = 0.03 - (P.y + bob); runnerBlob.scale.set(sh * (pose === 'slide' ? 1.2 : 1), 1, sh * (pose === 'slide' ? 1.8 : 1));
     runnerBlob.rotation.set(-runner.rotation.x, 0, -runner.rotation.z);
+
+    /* ── the ride itself ── */
+    const wantId = rs && !onBoat ? rs.id : null;
+    if (wantId !== rideShown) {
+      if (rideShown && rideModels[rideShown]) rideModels[rideShown].group.visible = false;
+      rideShown = wantId; rideT = 0;
+      if (wantId) getRide(wantId).group.visible = true;
+    }
+    rideT = Math.min(1, rideT + dt * 2.6);
+    rideBlob.visible = !!rideShown && !blink;
+    if (rideShown) {
+      const m = rideModels[rideShown], d = m.def, e = ease(rideT), fl = d.fly ? d.flyHeight * e + Math.sin(S.time * 2.4) * 0.05 : 0;
+      m.group.visible = !blink;
+      m.group.position.set(P.x, P.y + fl, 0);
+      m.group.scale.setScalar(0.72 + 0.28 * Math.min(1, e));
+      m.group.rotation.set(d.fly ? -0.1 * Math.min(1, e) - (P.jumping ? 0 : 0) : (P.jumping ? -0.08 : 0), -lateral * 0.16, -lateral * (d.fly ? 0.3 : 0.10));
+      m.update(dt, speed);
+      const hs = d.fly ? clamp(1.05 - fl * 0.14, 0.35, 1) : sh;
+      rideBlob.position.set(P.x, 0.03, 0); rideBlob.scale.set(d.blob[0] * hs, 1, d.blob[1] * hs);
+    }
+    camOff.x += ((rdef ? rdef.cam[0] : 0) - camOff.x) * (1 - Math.exp(-4 * dt));
+    camOff.y += ((rdef ? rdef.cam[1] : 0) - camOff.y) * (1 - Math.exp(-4 * dt));
+    camOff.z += ((rdef ? rdef.cam[2] : 0) - camOff.z) * (1 - Math.exp(-4 * dt));
 
     /* ── inspector + dog ── */
     const gap = ending ? GAME.inspectorMinGap : S.inspectorGap;
@@ -569,8 +709,8 @@ async function init(container, host, api) {
     camX += (P.x * CAMERA.followX - camX) * (1 - Math.exp(-8 * dt));
     shake = Math.max(0, shake - dt * 0.9);
     const sa = shake * shake * 1.6;
-    camera.position.set(camBase.x + camX + (Math.random() - 0.5) * sa, camBase.y + (Math.random() - 0.5) * sa + P.y * 0.18, camBase.z);
-    look.set(lookBase.x + camX * 0.9, lookBase.y, lookBase.z); camera.lookAt(look);
+    camera.position.set(camBase.x + camX + (Math.random() - 0.5) * sa, camBase.y + camOff.y + (Math.random() - 0.5) * sa + P.y * 0.18, camBase.z + camOff.z);
+    look.set(lookBase.x + camX * 0.9, lookBase.y + camOff.y * 0.3, lookBase.z); camera.lookAt(look);
     if (fovKick > 0.01) { fovKick *= Math.exp(-3 * dt); camera.fov = baseFov + fovKick; camera.updateProjectionMatrix(); }
 
     updateParticles(dt);
@@ -586,6 +726,7 @@ async function init(container, host, api) {
     else if (comboShown) { comboShown = 0; ui.combo.textContent = ''; }
     const close = !ending && S.inspectorGap < GAME.inspectorCloseWarn;
     if (close !== warnShown) { warnShown = close; ui.warn.style.display = close ? 'block' : 'none'; }
+    if (owned.length) setHTML('dock', dockHtml(), ui.dock);
     if (speedToast > 0) { speedToast -= dt; ui.speed.style.opacity = speedToast > 0 ? '1' : '0'; }
 
     renderer.render(scene, camera);
@@ -601,13 +742,14 @@ async function init(container, host, api) {
     /* hand the result to the app after a short "caught!" moment */
     if (ending && !finished && endT > 1.3) {
       finished = true;
-      const stats = { score: S.score, distance: S.distance, xpEarned: S.xp, bestCombo: S.bestCombo };
+      const stats = { score: S.score, distance: S.distance, xpEarned: S.xp, bestCombo: S.bestCombo, rideXp: S.rideXp, smashed: S.smashed, usedRide, pitStops: S.pitVisits };
       destroy();
       if (host.onGameOver) host.onGameOver(stats);
     }
   }
 
   /* go! */
+  if (garageIn.selected && rideStates[garageIn.selected]) { if (sim.mount(rideStates[garageIn.selected])) usedRide = true; }
   lastT = performance.now();
   rafId = requestAnimationFrame(frame);
   applyZone(0, true);
@@ -617,5 +759,5 @@ async function init(container, host, api) {
     tiles.forEach((g, i) => placeTile(g, tileLen * (1 - i)));
     announced = biomeAt(m + 26).id; applyZone(0, true); boatT = biomeAt(m).water ? 1 : 0;
   }
-  api.debug = { sim, scene, camera, renderer, assets, debugScroll };       // handy for testing in the browser console
+  api.debug = { sim, scene, camera, renderer, assets, debugScroll, rideStates, tryMount, openPit, closePit };       // handy for testing in the browser console
 }
