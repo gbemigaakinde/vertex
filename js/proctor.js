@@ -687,31 +687,71 @@
   }
 
   /* ================= Teacher viewer ================= */
-  var urls = [];
+  var urls = [], blobCache = {};
   var FLAG_TEXT = LABEL;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   async function mediaBlob(id) {
+    if (blobCache[id]) return blobCache[id];
     var r = await fetch(WORKER + '/proctor/media', { method: 'POST', headers: { Authorization: 'Bearer ' + await token(), 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
     if (!r.ok) throw new Error('Could not load media.');
-    var b = await r.blob(); var u = URL.createObjectURL(b); urls.push(u); return u;
+    var b = await r.blob(); var u = URL.createObjectURL(b); urls.push(u); blobCache[id] = u; return u;
   }
+  var VIEW_CSS = '#pxv{--px-bg:#0e0f12;--px-panel:#16181d;--px-line:rgba(255,255,255,.08);--px-txt:#ecedf0;--px-dim:#8b909c;--px-acc:#7aa2ff;--px-warn:#e5a93d;--px-bad:#ef6a5e;position:fixed;inset:0;z-index:10000;background:rgba(5,6,8,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:stretch;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--px-txt)}' +
+    '#pxv *{box-sizing:border-box}#pxv button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
+    '.pxs{background:var(--px-bg);width:100%;max-width:980px;display:flex;flex-direction:column;min-height:0}' +
+    '@media(min-width:760px){#pxv{padding:28px 16px}.pxs{border-radius:20px;border:1px solid var(--px-line);box-shadow:0 30px 80px rgba(0,0,0,.55);overflow:hidden}}' +
+    '.pxh{padding:max(14px,env(safe-area-inset-top)) 18px 0;display:flex;align-items:flex-start;gap:12px}' +
+    '.pxh h2{margin:0;font-size:17px;font-weight:650;letter-spacing:-.01em;line-height:1.25;overflow-wrap:anywhere}.pxh small{display:block;color:var(--px-dim);font-size:12px;margin-top:2px}' +
+    '.pxx{margin-left:auto;flex-shrink:0;width:36px;height:36px;border-radius:50%;border:1px solid var(--px-line);background:var(--px-panel);font-size:18px;line-height:1}' +
+    '.pxstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 18px 4px}' +
+    '.pxstat{background:var(--px-panel);border:1px solid var(--px-line);border-radius:12px;padding:9px 11px}.pxstat b{display:block;font-size:19px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.02em}.pxstat span{font-size:11px;color:var(--px-dim)}' +
+    '.pxstat.w b{color:var(--px-warn)}' +
+    '.pxbar{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--px-line);overflow-x:auto;scrollbar-width:none}.pxbar::-webkit-scrollbar{display:none}' +
+    '.pxseg{display:inline-flex;background:var(--px-panel);border:1px solid var(--px-line);border-radius:11px;padding:3px;flex-shrink:0}' +
+    '.pxseg button{border:0;background:none;padding:6px 12px;border-radius:8px;font-size:13px;color:var(--px-dim);white-space:nowrap}.pxseg button.on{background:#262a33;color:var(--px-txt);font-weight:600}.pxseg i{font-style:normal;opacity:.6;margin-left:4px;font-variant-numeric:tabular-nums}' +
+    '.pxchip{flex-shrink:0;border:1px solid var(--px-line);background:none;border-radius:99px;padding:6px 12px;font-size:12.5px;color:var(--px-dim)}.pxchip.on{border-color:var(--px-warn);color:var(--px-warn);background:rgba(229,169,61,.1)}' +
+    '.pxbody{flex:1;overflow-y:auto;padding:6px 18px max(24px,env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}' +
+    '.pxday{position:relative;padding-left:22px}.pxday:before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:1px;background:var(--px-line)}' +
+    '.pxrow{position:relative;padding:10px 0}.pxrow:before{content:"";position:absolute;left:-21px;top:17px;width:9px;height:9px;border-radius:50%;background:#2c313b;border:2px solid var(--px-bg)}' +
+    '.pxrow.w:before{background:var(--px-warn)}.pxrow.b:before{background:var(--px-bad)}.pxrow.m:before{background:var(--px-acc)}' +
+    '.pxev{display:flex;gap:10px;align-items:baseline;font-size:13.5px}.pxev time{color:var(--px-dim);font-size:12px;font-variant-numeric:tabular-nums;flex-shrink:0;min-width:66px}.pxev em{font-style:normal;color:var(--px-dim);font-size:12px}' +
+    '.pxrow.w .pxev strong{color:var(--px-warn)}.pxrow.b .pxev strong{color:var(--px-bad)}' +
+    '.pxtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px}' +
+    '.pxt{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:var(--px-panel);border:1px solid var(--px-line);padding:0;text-align:left;display:flex;flex-direction:column;justify-content:flex-end}' +
+    '.pxt.f{border-color:rgba(239,106,94,.55)}.pxt img,.pxt video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}' +
+    '.pxt .cap{position:relative;padding:22px 9px 7px;font-size:11.5px;background:linear-gradient(transparent,rgba(0,0,0,.72));display:flex;justify-content:space-between;gap:6px;align-items:center}' +
+    '.pxt.u{align-items:center;justify-content:center;gap:4px;color:var(--px-dim)}.pxt.u .ld{font-size:12.5px;font-weight:600;color:var(--px-txt);border:1px solid var(--px-line);border-radius:99px;padding:5px 14px;background:#20242c}.pxt.u .k{font-size:11.5px}' +
+    '.pxt.u .tm{position:absolute;left:9px;top:8px;font-size:11px;color:var(--px-dim)}.pxt .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;text-shadow:0 2px 12px #000}' +
+    '.pxfl{color:var(--px-bad);font-size:11px;font-weight:600;padding:0 2px}' +
+    '.pxempty{color:var(--px-dim);font-size:13px;padding:30px 0;text-align:center}' +
+    /* lightbox */
+    '#pxl{position:fixed;inset:0;z-index:10010;background:#050608;display:flex;flex-direction:column;color:#fff;touch-action:pan-y}' +
+    '#pxl .top{display:flex;align-items:center;gap:10px;padding:max(12px,env(safe-area-inset-top)) 14px 10px}#pxl .top div{min-width:0;flex:1}#pxl .top b{display:block;font-size:14px;overflow-wrap:anywhere}#pxl .top span{font-size:12px;color:#9aa0ac;font-variant-numeric:tabular-nums}' +
+    '#pxl .top button{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:#fff;font-size:18px;cursor:pointer}' +
+    '#pxl .trk{flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;min-height:0}#pxl .trk::-webkit-scrollbar{display:none}' +
+    '#pxl .sl{flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;display:flex;align-items:center;justify-content:center;padding:4px 10px;min-width:0}' +
+    '#pxl .sl img,#pxl .sl video{max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;background:#000}' +
+    '#pxl .sl .ld{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:99px;padding:11px 26px;font-size:15px;font-weight:600;cursor:pointer}#pxl .sl p{color:#9aa0ac;font-size:13px}' +
+    '#pxl .nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(20,22,27,.7);color:#fff;font-size:20px;cursor:pointer;display:none}' +
+    '@media(hover:hover) and (min-width:760px){#pxl .nav{display:block}}#pxl .nav.l{left:14px}#pxl .nav.r{right:14px}#pxl .nav[disabled]{opacity:.25}' +
+    '#pxl .bot{padding:8px 14px max(14px,env(safe-area-inset-bottom));text-align:center;font-size:11.5px;color:#7d828d}';
+  function ensureViewCss() { if (document.getElementById('pxvCss')) return; var s = document.createElement('style'); s.id = 'pxvCss'; s.textContent = VIEW_CSS; document.head.appendChild(s); }
+  function tm(t) { return new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+  function fmtDur(s) { return s >= 60 ? Math.floor(s / 60) + ' min ' + (s % 60) + ' s' : s + ' s'; }
+
   async function openViewer(sessionId, title) {
-    closeViewer();
-    var ov = document.createElement('div'); ov.id = 'proctorViewer';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:8px;';
-    ov.innerHTML = '<div style="background:var(--bg-base,#fff);color:var(--text-1,#111);border-radius:12px;max-width:900px;width:100%;max-height:94vh;overflow:auto;padding:12px;box-sizing:border-box;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;"><strong style="min-width:0;overflow-wrap:anywhere;">Proctoring — ' + esc(title || 'exam') + '</strong>' +
-      '<button id="pxClose" class="btn" style="padding:4px 12px;flex-shrink:0;">Close</button></div><div id="pxBody">Loading…</div></div>';
+    closeViewer(); ensureViewCss();
+    var ov = document.createElement('div'); ov.id = 'pxv';
+    ov.innerHTML = '<div class="pxs"><div class="pxh"><div style="min-width:0"><h2>' + esc(title || 'Exam') + '</h2><small>Proctoring review</small></div><button class="pxx" aria-label="Close">&times;</button></div><div class="pxbody"><p class="pxempty">Loading…</p></div></div>';
     document.body.appendChild(ov);
-    ov.querySelector('#pxClose').onclick = closeViewer;
-    var body = ov.querySelector('#pxBody');
+    ov.querySelector('.pxx').onclick = closeViewer;
+    ov.addEventListener('click', function (e) { if (e.target === ov) closeViewer(); });
+    var sheet = ov.querySelector('.pxs'), body = ov.querySelector('.pxbody');
     try {
       var r = await fetch(WORKER + '/proctor/list', { method: 'POST', headers: { Authorization: 'Bearer ' + await token(), 'Content-Type': 'application/json' }, body: JSON.stringify({ sid: sessionId }) });
       var j = await r.json(); if (!r.ok) throw new Error(j.error || 'Failed');
       var items = j.items || [], evs = j.events || [];
-      if (!items.length && !evs.length) { body.innerHTML = '<p>No recordings were saved for this exam.</p>'; return; }
-
-      // Durations: pair "left" with the next "returned" so each event row shows how long it lasted.
+      if (!items.length && !evs.length) { body.innerHTML = '<p class="pxempty">No recordings were saved for this exam.</p>'; return; }
       var PAIR = { tab_hidden: 'tab_visible', window_blur: 'window_focus', screen_share_stopped: 'screen_share_resumed' };
       function dur(e) {
         var want = PAIR[e.code]; if (!want) return e.code === 'tab_visible' || e.code === 'window_focus' || e.code === 'screen_share_resumed' ? e.durationSec : 0;
@@ -719,88 +759,141 @@
         return 0;
       }
       var entries = [];
-      items.forEach(function (it) {
-        var grp = it.kind === 'flag' ? 'events' : (it.kind === 'screen' || it.kind === 'screenvideo') ? 'screen' : 'camera';
-        entries.push({ t: it.t, grp: grp, item: it });
-      });
+      items.forEach(function (it) { entries.push({ t: it.t, grp: it.kind === 'flag' ? 'events' : (it.kind === 'screen' || it.kind === 'screenvideo') ? 'screen' : 'camera', item: it }); });
       evs.forEach(function (e) { entries.push({ t: e.t, grp: 'events', ev: e }); });
       entries.sort(function (a, b) { return a.t - b.t; });
       var counts = { all: entries.length, camera: 0, screen: 0, events: 0 };
       entries.forEach(function (e) { counts[e.grp]++; });
+      var BAD = { screen_share_stopped: 1, tab_hidden: 1, camera_stopped: 1, unsupported_device_blocked: 1, window_blur: 1 };
+      var nAway = evs.filter(function (e) { return e.code === 'tab_hidden' || e.code === 'window_blur'; }).length;
+      var awaySec = 0; evs.forEach(function (e) { if (e.code === 'tab_hidden' || e.code === 'window_blur') awaySec += dur(e) || 0; });
+      var nFlag = items.filter(function (i) { return i.note || i.kind === 'flag'; }).length;
+      var nVid = items.filter(function (i) { return i.kind === 'video' || i.kind === 'screenvideo'; }).length;
+      var nImg = items.filter(function (i) { return i.kind === 'photo' || i.kind === 'screen'; }).length;
+      var span = entries.length ? entries[entries.length - 1].t - entries[0].t : 0;
+      sheet.querySelector('.pxh small').textContent = new Date(entries[0].t).toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' \u00b7 ' + tm(entries[0].t) + ' \u2013 ' + tm(entries[entries.length - 1].t) + ' \u00b7 ' + fmtDur(Math.round(span / 1000));
+      if (evs.some(function (e) { return e.code === 'unsupported_device_camera_only'; })) {
+        var nb = document.createElement('div'); nb.style.cssText = 'margin:12px 18px 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(122,162,255,.35);background:rgba(122,162,255,.08);color:#c9d6ff;font-size:12.5px;line-height:1.45';
+        nb.textContent = 'This student used a phone or tablet. Mobile browsers cannot share the screen, so only camera photos were taken, as your exam setting allows.';
+        body.parentNode.insertBefore(nb, body);
+      }
       var TABS = [['all', 'All'], ['camera', 'Camera'], ['screen', 'Screen'], ['events', 'Events']];
-      var cur = 'all', onlyFlagged = false;
+      var cur = 'all', onlyFlag = false;
+      sheet.insertAdjacentHTML('afterbegin', '');
+      var stats = document.createElement('div'); stats.className = 'pxstats';
+      stats.innerHTML = '<div class="pxstat"><b>' + nImg + '</b><span>Images</span></div><div class="pxstat"><b>' + nVid + '</b><span>Video clips</span></div>' +
+        '<div class="pxstat' + (nAway ? ' w' : '') + '"><b>' + nAway + '</b><span>Times away' + (awaySec ? ' \u00b7 ' + fmtDur(awaySec) : '') + '</span></div><div class="pxstat' + (nFlag ? ' w' : '') + '"><b>' + nFlag + '</b><span>Flagged</span></div>';
+      var bar = document.createElement('div'); bar.className = 'pxbar';
+      body.parentNode.insertBefore(stats, body); body.parentNode.insertBefore(bar, body);
 
-      body.innerHTML = '<div id="pxTabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>' +
-        '<label id="pxOnlyWrap" style="font-size:12px;display:none;margin-bottom:8px;"><input type="checkbox" id="pxOnly"> Show only flagged photos</label>' +
-        '<div id="pxGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;"></div>';
-      var tabs = body.querySelector('#pxTabs'), grid = body.querySelector('#pxGrid'), onlyWrap = body.querySelector('#pxOnlyWrap'), only = body.querySelector('#pxOnly');
-      only.onchange = function () { onlyFlagged = only.checked; draw(); };
-
-      function fmtDur(s) { return s >= 60 ? Math.floor(s / 60) + ' min ' + (s % 60) + ' s' : s + ' s'; }
-      function eventRow(e) {
-        var d = document.createElement('div');
-        var bad = e.code === 'screen_share_stopped' || e.code === 'tab_hidden' || e.code === 'camera_stopped' || e.code === 'unsupported_device_blocked' || e.code === 'window_blur';
-        d.style.cssText = 'grid-column:1/-1;border:1px solid ' + (bad ? '#f59e0b' : 'var(--border,#ddd)') + ';background:' + (bad ? 'rgba(245,158,11,.14)' : 'transparent') + ';border-radius:8px;padding:6px 8px;font-size:12px;overflow-wrap:anywhere;';
-        var du = dur(e);
-        d.innerHTML = (bad ? '<i class="ph ph-warning" style="margin-right:4px;"></i>' : '&bull; ') + '<strong>' + esc(SCREEN_LABEL[e.code] || e.code) + '</strong> · ' + esc(new Date(e.t).toLocaleTimeString()) +
-          (du ? ' · lasted ' + esc(fmtDur(du)) : '') + (e.detail && e.code !== 'screen_share_resumed' ? ' <span style="opacity:.7">(' + esc(e.detail) + ')</span>' : '');
-        return d;
-      }
-      function flagRow(it) {
-        var d = document.createElement('div');
-        d.style.cssText = 'grid-column:1/-1;border:1px solid #ef4444;background:rgba(239,68,68,.08);border-radius:8px;padding:6px 8px;font-size:12px;overflow-wrap:anywhere;';
-        d.innerHTML = '<i class="ph ph-warning" style="margin-right:4px;"></i><strong>' + esc(FLAG_TEXT[it.note] || it.note || 'Event') + '</strong> · ' + esc(new Date(it.t).toLocaleTimeString()) + ' <span style="opacity:.7">(camera)</span>';
-        return d;
-      }
-      var KIND_LABEL = { photo: '<i class="ph ph-camera"></i> Camera photo', video: '<i class="ph ph-video-camera"></i> Camera video', screen: '<i class="ph ph-monitor"></i> Screenshot', screenvideo: '<i class="ph ph-monitor-play"></i> Screen video' };
-      function mediaCell(it) {
-        var cell = document.createElement('div'), isVid = it.kind === 'video' || it.kind === 'screenvideo';
-        var noteTxt = it.note ? (FLAG_TEXT[it.note] || SCREEN_LABEL[it.note] || it.note) : '';
-        cell.style.cssText = 'border:1px solid ' + (it.note ? '#ef4444' : 'var(--border,#ddd)') + ';border-radius:8px;padding:6px;font-size:12px;';
-        var when = new Date(it.t).toLocaleTimeString();
-        var tag = it.note ? '<div style="color:#ef4444;font-weight:700;margin-bottom:4px;overflow-wrap:anywhere;"><i class="ph ph-warning" style="margin-right:4px;"></i>' + esc(noteTxt) + '</div>' : '';
-        var head = '<div style="margin-bottom:4px;">' + (KIND_LABEL[it.kind] || it.kind) + ' · ' + esc(when) + '</div>';
-        cell.innerHTML = tag + head + '<button class="btn" style="width:100%;padding:4px;">Load</button>';
-        cell.querySelector('button').onclick = async function () {
-          this.textContent = 'Loading…';
-          try {
-            var u = await mediaBlob(it.id);
-            if (it.kind === 'screen' || it.kind === 'screenvideo') cell.style.gridColumn = '1/-1';
-            cell.innerHTML = tag + head + (isVid ? '<video controls playsinline src="' + u + '" style="width:100%;border-radius:6px;"></video>'
-              : '<img src="' + u + '" style="width:100%;border-radius:6px;" alt="Captured image">');
-          } catch (e) { this.textContent = 'Failed — retry'; }
-        };
-        return cell;
-      }
+      var visible = [];   // media entries in the current view, in order \u2014 the lightbox walks this list
       function draw() {
-        tabs.innerHTML = '';
+        bar.innerHTML = '';
+        var seg = document.createElement('div'); seg.className = 'pxseg';
         TABS.forEach(function (tb) {
-          var b = document.createElement('button'); b.className = 'btn'; b.type = 'button';
-          b.style.cssText = 'padding:4px 10px;font-size:12px;' + (cur === tb[0] ? 'font-weight:700;outline:2px solid var(--accent,#4f6ef7);' : '');
-          b.textContent = tb[1] + ' (' + counts[tb[0]] + ')';
-          b.onclick = function () { cur = tb[0]; draw(); };
-          tabs.appendChild(b);
+          if (tb[0] !== 'all' && !counts[tb[0]]) return;
+          var b = document.createElement('button'); b.type = 'button'; b.className = cur === tb[0] ? 'on' : '';
+          b.innerHTML = tb[1] + '<i>' + counts[tb[0]] + '</i>'; b.onclick = function () { cur = tb[0]; draw(); }; seg.appendChild(b);
         });
-        var nFlag = entries.filter(function (e) { return e.item && e.grp === 'camera' && e.item.note; }).length;
-        onlyWrap.style.display = (nFlag && (cur === 'all' || cur === 'camera')) ? 'block' : 'none';
-        grid.innerHTML = '';
+        bar.appendChild(seg);
+        if (nFlag) { var c = document.createElement('button'); c.type = 'button'; c.className = 'pxchip' + (onlyFlag ? ' on' : ''); c.textContent = 'Flagged only'; c.onclick = function () { onlyFlag = !onlyFlag; draw(); }; bar.appendChild(c); }
+        body.innerHTML = ''; visible = [];
+        var day = document.createElement('div'); day.className = 'pxday'; body.appendChild(day);
+        var tiles = null;
+        function flushTiles() { tiles = null; }
         var shown = 0;
         entries.forEach(function (e) {
           if (cur !== 'all' && e.grp !== cur) return;
-          if (onlyFlagged && e.grp === 'camera' && !(e.item && e.item.note)) return;
-          if (e.ev) grid.appendChild(eventRow(e.ev));
-          else if (e.item.kind === 'flag') grid.appendChild(flagRow(e.item));
-          else grid.appendChild(mediaCell(e.item));
+          var isMedia = !!(e.item && e.item.kind !== 'flag');
+          if (onlyFlag && !(e.item && e.item.note) && !(e.item && e.item.kind === 'flag') && !(e.ev && BAD[e.ev.code])) return;
           shown++;
+          if (isMedia) {
+            if (!tiles) { var row = document.createElement('div'); row.className = 'pxrow m'; tiles = document.createElement('div'); tiles.className = 'pxtiles'; row.appendChild(tiles); day.appendChild(row); }
+            tiles.appendChild(tile(e.item)); return;
+          }
+          flushTiles();
+          var row = document.createElement('div'); var ev = e.ev;
+          if (ev) {
+            row.className = 'pxrow' + (BAD[ev.code] ? ' w' : ''); var du = dur(ev);
+            row.innerHTML = '<div class="pxev"><time>' + esc(tm(ev.t)) + '</time><span><strong>' + esc(SCREEN_LABEL[ev.code] || ev.code) + '</strong>' + (du ? ' <em>\u00b7 ' + esc(fmtDur(du)) + '</em>' : '') +
+              (ev.detail && ev.code !== 'screen_share_resumed' ? ' <em>\u00b7 ' + esc(ev.detail) + '</em>' : '') + '</span></div>';
+          } else {
+            row.className = 'pxrow b';
+            row.innerHTML = '<div class="pxev"><time>' + esc(tm(e.item.t)) + '</time><span><strong>' + esc(FLAG_TEXT[e.item.note] || e.item.note || 'Flag') + '</strong> <em>\u00b7 camera</em></span></div>';
+          }
+          day.appendChild(row);
         });
-        if (!shown) grid.innerHTML = '<p style="grid-column:1/-1;font-size:12px;opacity:.75;">Nothing in this view.</p>';
+        if (!shown) body.innerHTML = '<p class="pxempty">Nothing in this view.</p>';
       }
+      var ICON = { photo: 'ph-camera', video: 'ph-video-camera', screen: 'ph-monitor', screenvideo: 'ph-monitor-play' };
+      var KIND = { photo: 'Camera', video: 'Camera clip', screen: 'Screen', screenvideo: 'Screen clip' };
+      function tile(it) {
+        var idx = visible.length; visible.push(it);
+        var isVid = it.kind === 'video' || it.kind === 'screenvideo';
+        var note = it.note ? (FLAG_TEXT[it.note] || SCREEN_LABEL[it.note] || it.note) : '';
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'pxt u' + (it.note ? ' f' : '');
+        function unloaded() { b.className = 'pxt u' + (it.note ? ' f' : ''); b.innerHTML = '<span class="tm">' + esc(tm(it.t)) + '</span><i class="ph ' + ICON[it.kind] + '" style="font-size:20px"></i><span class="k">' + KIND[it.kind] + '</span>' + (note ? '<span class="pxfl">' + esc(note) + '</span>' : '') + '<span class="ld">Load</span>'; }
+        function loaded(u) {
+          b.className = 'pxt' + (it.note ? ' f' : '');
+          b.innerHTML = (isVid ? '<video muted playsinline preload="metadata" src="' + u + '#t=0.3"></video><span class="play">&#9654;</span>' : '<img src="' + u + '" alt="">') +
+            '<div class="cap"><span>' + esc(tm(it.t)) + ' \u00b7 ' + KIND[it.kind] + '</span>' + (note ? '<span class="pxfl" style="color:#ffb4ac">' + esc(note) + '</span>' : '') + '</div>';
+        }
+        unloaded();
+        b.onclick = async function () {
+          if (blobCache[it.id]) { if (!b.querySelector('img,video')) loaded(blobCache[it.id]); return lightbox(visible, visible.indexOf(it), loaded2); }
+          b.querySelector('.ld') && (b.querySelector('.ld').textContent = 'Loading…');
+          try { var u = await mediaBlob(it.id); loaded(u); } catch (e) { var l = b.querySelector('.ld'); if (l) l.textContent = 'Failed \u2014 retry'; }
+        };
+        tileMap[it.id] = function (u) { loaded(u); };
+        if (blobCache[it.id]) loaded(blobCache[it.id]);
+        return b;
+      }
+      var tileMap = {};
+      function loaded2(it, u) { if (tileMap[it.id]) tileMap[it.id](u); }
       draw();
-    } catch (e) { body.innerHTML = '<p style="color:var(--danger,#c00)">' + esc(e.message) + '</p>'; }
+    } catch (e) { body.innerHTML = '<p class="pxempty" style="color:#ef6a5e">' + esc(e.message) + '</p>'; }
   }
+
+  /* Full-screen viewer: swipe (or arrow keys / buttons) to move through every image and clip in the current list. A slide loads when you arrive on it. */
+  function lightbox(list, start, onLoaded) {
+    closeLightbox();
+    var n = list.length, cur = start, lb = document.createElement('div'); lb.id = 'pxl';
+    lb.innerHTML = '<div class="top"><div><b></b><span></span></div><button class="x" aria-label="Close">&times;</button></div><div class="trk"></div><button class="nav l" aria-label="Previous">&#8249;</button><button class="nav r" aria-label="Next">&#8250;</button><div class="bot">Swipe left or right for the next item</div>';
+    var trk = lb.querySelector('.trk'), t1 = lb.querySelector('.top b'), t2 = lb.querySelector('.top span'), bl = lb.querySelector('.nav.l'), br = lb.querySelector('.nav.r');
+    var KIND = { photo: 'Camera photo', video: 'Camera video', screen: 'Screenshot', screenvideo: 'Screen recording' };
+    var slides = list.map(function (it, i) { var s = document.createElement('div'); s.className = 'sl'; trk.appendChild(s); return s; });
+    var rendered = {};
+    async function fill(i) {
+      var it = list[i], s = slides[i]; if (rendered[i] === 'ok') return;
+      var isVid = it.kind === 'video' || it.kind === 'screenvideo';
+      s.innerHTML = '<p>Loading…</p>';
+      try {
+        var u = await mediaBlob(it.id); rendered[i] = 'ok'; onLoaded && onLoaded(it, u);
+        s.innerHTML = isVid ? '<video controls playsinline src="' + u + '"></video>' : '<img src="' + u + '" alt="Captured image" draggable="false">';
+        if (isVid) { var v = s.querySelector('video'); v.onended = function () { if (cur === i && i < n - 1) go(i + 1); }; if (cur === i) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } }
+      } catch (e) { rendered[i] = 0; s.innerHTML = '<button class="ld">Failed \u2014 tap to retry</button>'; s.firstChild.onclick = function () { fill(i); }; }
+    }
+    function show(i, fromScroll) {
+      cur = i; var it = list[i];
+      t1.textContent = KIND[it.kind] + (it.note ? ' \u00b7 ' + (FLAG_TEXT[it.note] || SCREEN_LABEL[it.note] || it.note) : ''); t2.textContent = (i + 1) + ' of ' + n + ' \u00b7 ' + tm(it.t);
+      bl.disabled = i === 0; br.disabled = i === n - 1;
+      slides.forEach(function (s, k) { var v = s.querySelector('video'); if (v && k !== i) v.pause(); });
+      fill(i);
+    }
+    function go(i) { if (i < 0 || i >= n) return; trk.scrollTo({ left: i * trk.clientWidth, behavior: 'smooth' }); setTimeout(function () { if (cur !== i) show(i); }, 350); }
+    var st; trk.addEventListener('scroll', function () { clearTimeout(st); st = setTimeout(function () { var i = Math.round(trk.scrollLeft / trk.clientWidth); if (i !== cur && i >= 0 && i < n) show(i, true); }, 90); });
+    bl.onclick = function () { go(cur - 1); }; br.onclick = function () { go(cur + 1); };
+    lb.querySelector('.x').onclick = closeLightbox;
+    lb._key = function (e) { if (e.key === 'Escape') { e.stopPropagation(); closeLightbox(); } else if (e.key === 'ArrowRight') go(cur + 1); else if (e.key === 'ArrowLeft') go(cur - 1); };
+    document.addEventListener('keydown', lb._key, true);
+    document.body.appendChild(lb);
+    trk.scrollLeft = start * trk.clientWidth; show(start);
+  }
+  function closeLightbox() { var o = document.getElementById('pxl'); if (o) { document.removeEventListener('keydown', o._key, true); o.remove(); } }
   function closeViewer() {
-    var o = document.getElementById('proctorViewer'); if (o) o.remove();
-    urls.forEach(function (u) { URL.revokeObjectURL(u); }); urls = [];
+    closeLightbox();
+    var o = document.getElementById('pxv'); if (o) o.remove();
+    urls.forEach(function (u) { URL.revokeObjectURL(u); }); urls = []; blobCache = {};
   }
 
   window.Proctor = { screenRequired: screenRequired, screenModeOf: screenModeOf, screenSupported: screenSupported, screenFallbackCamera: screenFallbackCamera,
