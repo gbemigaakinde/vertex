@@ -409,7 +409,7 @@
       '<div class="vm-rhead"><div class="vm-rtitle"><b>' + esc(j.title) + '</b><small id="vm-count">Connecting…</small></div><span class="vm-rec' + (R.recording ? ' on' : '') + '"><i></i>REC</span>' +
       (tch ? '<button class="vm-btn" data-r="invite" aria-label="Invite students">' + ic('user-plus') + '<span>Invite</span></button><button class="vm-btn" data-r="rec" aria-label="Record">' + ic(R.recording ? 'stop-circle' : 'record') + '<span>' + (R.recording ? 'Stop' : 'Record') + '</span></button><button class="vm-btn" data-r="muteall" aria-label="Mute everyone">' + ic('microphone-slash') + '<span>Mute all</span></button>' : '') +
       '<button class="vm-iconbtn" data-r="theme" aria-label="Switch light or dark mode" style="display:none"></button></div>' +
-      '<div class="vm-main"><div class="vm-stage" id="vm-stage"></div>' +
+      '<div class="vm-main"><div class="vm-stage" id="vm-stage"></div><div class="vm-joins" id="vm-joins" role="status" aria-live="polite"></div>' +
       '<div class="vm-side" id="vm-side"><div class="vm-sidehead"><button class="seg on" data-p="chat">Chat</button><button class="seg" data-p="people">People</button><button class="vm-iconbtn" data-r="chat" aria-label="Close panel">' + ic('x') + '</button></div><div class="vm-pane" id="vm-pane"></div>' +
       '<div class="vm-send" id="vm-send"><input id="vm-ci" placeholder="Message everyone" maxlength="500" autocomplete="off" aria-label="Message"><button class="vm-iconbtn" data-r="send" aria-label="Send">' + ic('paper-plane-right') + '</button></div></div>' +
       '<div class="vm-connecting" id="vm-conn"><div><div class="vm-spin"></div>Joining the meeting…</div></div></div>' +
@@ -463,6 +463,36 @@
     R.onResize = layout; window.addEventListener('resize', layout);
     // Students show their profile photo (or character); the teacher keeps the letter.
     function isTeach(p) { try { return JSON.parse(p.metadata || '{}').role === 'teacher'; } catch (e) { return false; } }
+    /* ── "Name joined" cards (teacher only). Max 3 at once, extra joins collapse into "+N more". ── */
+    var cards = [], more = { n: 0, el: null }, seenAt = {}; R.joinTimers = [];
+    function later(fn, ms) { var t = setTimeout(fn, ms); R.joinTimers.push(t); return t; }
+    function dismiss(c) {
+      var i = cards.indexOf(c); if (i > -1) cards.splice(i, 1);
+      c.classList.add('out'); later(function () { c.remove(); }, 260);
+    }
+    function announce(p) {
+      if (!tch || p.isLocal || isTeach(p) || !R.t0 || Date.now() - R.t0 < 1500) return;
+      var now = Date.now(); if (seenAt[p.identity] && now - seenAt[p.identity] < 60000) return;   // ignore reconnect flicker
+      seenAt[p.identity] = now;
+      var host = $('#vm-joins', el); if (!host) return;
+      var name = String(p.name || '').trim() || 'A student';
+      if (cards.length >= 3) {
+        more.n++;
+        if (!more.el || !more.el.isConnected) { more.el = document.createElement('div'); more.el.className = 'vm-join more'; host.appendChild(more.el); }
+        more.el.innerHTML = '<div class="vm-join-ic">' + ic('users') + '</div><div class="vm-join-t"><b></b><span>joined the meeting</span></div>';
+        more.el.querySelector('b').textContent = '+' + more.n + ' more';
+        clearTimeout(more.t); more.t = later(function () { var m = more.el; more.n = 0; more.el = null; if (m) { m.classList.add('out'); later(function () { m.remove(); }, 260); } }, 4500);
+        return;
+      }
+      var c = document.createElement('div'); c.className = 'vm-join';
+      c.innerHTML = '<div class="vm-av" data-vtx-av="' + esc(p.identity) + '"></div><div class="vm-join-t"><b></b><span>joined the meeting</span></div>';
+      c.querySelector('.vm-av').textContent = name.charAt(0).toUpperCase();
+      c.querySelector('b').textContent = name; c.title = name;
+      if (more.el && more.el.isConnected) host.insertBefore(c, more.el); else host.appendChild(c);
+      cards.push(c);
+      if (window.VtxAvatar && VtxAvatar.scan) VtxAvatar.scan(c);
+      later(function () { dismiss(c); }, 4500);
+    }
     function people() {
       if (R.panel !== 'people') return; var h = '';
       [room.localParticipant].concat(Array.from(room.remoteParticipants.values())).forEach(function (p) {
@@ -487,7 +517,7 @@
       .on(LK.RoomEvent.TrackUnsubscribed, function (tr, pub, p) { detach(tr, p, pub); })
       .on(LK.RoomEvent.LocalTrackPublished, function (pub, p) { if (pub.track) attach(pub.track, p, pub); syncCtl(); })
       .on(LK.RoomEvent.LocalTrackUnpublished, function (pub, p) { if (pub.track) detach(pub.track, p, pub); if (pub.source === LK.Track.Source.ScreenShare) R.sharing = false; syncCtl(); })
-      .on(LK.RoomEvent.ParticipantConnected, function (p) { if (wantTile(p)) { tileFor(p); updTag(p); } count(); people(); })
+      .on(LK.RoomEvent.ParticipantConnected, function (p) { if (wantTile(p)) { tileFor(p); updTag(p); } count(); people(); announce(p); })
       .on(LK.RoomEvent.TrackUnpublished, function (pub, p) { if (!p.isLocal && !wantTile(p) && R.tiles[p.identity]) { R.tiles[p.identity].remove(); delete R.tiles[p.identity]; layout(); } people(); })
       .on(LK.RoomEvent.ParticipantPermissionsChanged, function (prev, p) {
         p = p || room.localParticipant;
@@ -523,6 +553,7 @@
     room.connect(j.url, j.token).then(function () {
       if (R.canPub) { tileFor(room.localParticipant); updTag(room.localParticipant); } count();
       room.remoteParticipants.forEach(function (p) { if (wantTile(p)) { tileFor(p); updTag(p); } p.trackPublications.forEach(function (pub) { if (pub.track) attach(pub.track, p, pub); }); });
+      R.t0 = Date.now();
       var c = $('#vm-conn'); if (c) c.classList.add('gone');
       var lp = room.localParticipant, blocked = false;
       if (!R.canPub) return;
@@ -545,6 +576,7 @@
     function leave(silent) {
       var r = state.room; if (!r) return; r.leaving = true;
       if (r.rec) { toast('Saving the recording…'); stopRecording(r).then(function () { leave(silent); }); return; }
+      (r.joinTimers || []).forEach(clearTimeout);
       state.room = null; window.removeEventListener('beforeunload', onUnload); window.removeEventListener('resize', layout);
       try { r.lk.disconnect(); } catch (e) { /* ignore */ }
       el.classList.remove('open'); el.innerHTML = '';
