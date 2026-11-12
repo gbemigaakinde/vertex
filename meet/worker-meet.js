@@ -7,7 +7,7 @@
    Recording is done in the teacher's browser and saved to B2, so it does NOT use
    LiveKit's recording quota.
    Teacher only : audience, create, update, cancel, start, end, rec-start,
-                  rec-stop, mute-all, kick, code
+                  rec-stop, mute-all, kick, code, allow
    Everyone     : list, join, replay, replays, find-code (join with a meeting code)
    Access is decided server-side from the verified uid:
      - teacher = env.TEACHER_UID
@@ -178,7 +178,7 @@ export async function handleMeet(request, env, h, verifyIdToken) {
     return out({ ok: true });
   }
   const act = String(b.action || '');
-  const TEACHER_ONLY = ['audience', 'create', 'update', 'cancel', 'start', 'end', 'rec-start', 'rec-stop', 'mute-all', 'kick', 'code'];
+  const TEACHER_ONLY = ['audience', 'create', 'update', 'cancel', 'start', 'end', 'rec-start', 'rec-stop', 'mute-all', 'kick', 'code', 'allow'];
   if (TEACHER_ONLY.indexOf(act) !== -1 && !isTeacher) return out({ error: 'Only the teacher can do that.' }, 403);
 
   try {
@@ -267,10 +267,12 @@ export async function handleMeet(request, env, h, verifyIdToken) {
     if (act === 'join') {
       if (m.status === 'cancelled' || m.status === 'ended') return out({ error: 'This meeting has ended.' }, 400);
       if (!isTeacher && m.status !== 'live') return out({ error: 'waiting', message: 'The teacher has not started the meeting yet.' }, 409);
-      const grant = { room: m.roomName, roomJoin: true, canSubscribe: true, canPublish: true, canPublishData: true };
+      // Classroom mode: only the teacher sends video/audio. Students just watch (one stream each),
+      // chat and raise a hand; the teacher can allow a student to speak with the 'allow' action.
+      const grant = { room: m.roomName, roomJoin: true, canSubscribe: true, canPublish: !!isTeacher, canPublishData: true };
       if (isTeacher) { grant.roomAdmin = true; grant.roomRecord = true; }
       const token = await lkToken(env, { sub: user.uid, name: name, metadata: JSON.stringify({ role: isTeacher ? 'teacher' : 'student', cls: cls }), video: grant }, 4 * 3600);
-      return out({ token: token, url: env.LIVEKIT_URL, room: m.roomName, name: name, role: isTeacher ? 'teacher' : 'student',
+      return out({ token: token, url: env.LIVEKIT_URL, room: m.roomName, name: name, role: isTeacher ? 'teacher' : 'student', canPublish: !!isTeacher,
         recording: m.recStatus === 'recording', title: m.title });
     }
 
@@ -301,6 +303,13 @@ export async function handleMeet(request, env, h, verifyIdToken) {
         }
       }
       return out({ ok: true, muted: n });
+    }
+
+    if (act === 'allow') {
+      const id = cleanStr(b.identity, 128);
+      if (!id || id === user.uid) return out({ error: 'Invalid participant.' }, 400);
+      await lkApi(env, 'RoomService', 'UpdateParticipant', { room: m.roomName, identity: id, permission: { can_subscribe: true, can_publish: !!b.on, can_publish_data: true } }, { roomAdmin: true, room: m.roomName });
+      return out({ ok: true });
     }
 
     if (act === 'kick') {

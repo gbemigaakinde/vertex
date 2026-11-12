@@ -336,7 +336,7 @@
   }
   function startRecorder(R, room) {
     var SLICE = window.MEET_REC_SLICE_MS || 240000, MAXC = 40;
-    var cv = document.createElement('canvas'); cv.width = 1280; cv.height = 720;
+    var cv = document.createElement('canvas'); cv.width = 854; cv.height = 480;
     var cx = cv.getContext('2d'), AC = window.AudioContext || window.webkitAudioContext, actx = new AC(), dest = actx.createMediaStreamDestination(), wired = {};
     function wire() {
       [room.localParticipant].concat(Array.from(room.remoteParticipants.values())).forEach(function (p) {
@@ -351,24 +351,24 @@
       cx.save(); cx.beginPath(); cx.rect(x, y, w, h); cx.clip(); cx.drawImage(v, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh); cx.restore();
     }
     function draw() {
-      cx.fillStyle = '#202124'; cx.fillRect(0, 0, 1280, 720);
+      cx.fillStyle = '#202124'; cx.fillRect(0, 0, 854, 480);
       var keys = Object.keys(R.tiles), scr = keys.filter(function (k) { return /:screen$/.test(k); });
-      var list = scr.length ? [scr[0]] : keys, n = list.length || 1, cols = n <= 1 ? 1 : n <= 4 ? 2 : n <= 9 ? 3 : 4, rows = Math.ceil(n / cols), w = 1280 / cols, h = 720 / rows;
+      var list = scr.length ? [scr[0]] : keys, n = list.length || 1, cols = n <= 1 ? 1 : n <= 4 ? 2 : n <= 9 ? 3 : 4, rows = Math.ceil(n / cols), w = 854 / cols, h = 480 / rows;
       list.forEach(function (k, i) {
         var x = (i % cols) * w, y = Math.floor(i / cols) * h, t = R.tiles[k], v = t.querySelector('video'), tag = t.querySelector('.vm-tag');
         cx.fillStyle = '#3c4043'; cx.fillRect(x + 3, y + 3, w - 6, h - 6);
         if (v && v.videoWidth) box(v, x + 3, y + 3, w - 6, h - 6, !scr.length);
         else { cx.fillStyle = '#1a73e8'; cx.beginPath(); cx.arc(x + w / 2, y + h / 2, Math.min(w, h) / 7, 0, 7); cx.fill(); cx.fillStyle = '#fff'; cx.font = '700 ' + Math.round(Math.min(w, h) / 6) + 'px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(((tag && tag.textContent) || '?').charAt(0).toUpperCase(), x + w / 2, y + h / 2); }
-        if (tag) { cx.font = '600 16px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'alphabetic'; var tw = cx.measureText(tag.textContent).width + 16; cx.fillStyle = 'rgba(0,0,0,.6)'; cx.fillRect(x + 10, y + h - 34, tw, 24); cx.fillStyle = '#fff'; cx.fillText(tag.textContent, x + 18, y + h - 17); }
+        if (tag) { cx.font = '600 13px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'alphabetic'; var tw = cx.measureText(tag.textContent).width + 16; cx.fillStyle = 'rgba(0,0,0,.6)'; cx.fillRect(x + 10, y + h - 34, tw, 24); cx.fillStyle = '#fff'; cx.fillText(tag.textContent, x + 18, y + h - 17); }
       });
     }
     try { var osc = actx.createOscillator(), g0 = actx.createGain(); g0.gain.value = 0; osc.connect(g0); g0.connect(dest); osc.start(); } catch (e) { /* ignore */ }
     wire(); draw();
-    var drawT = setInterval(draw, 66), wireT = setInterval(wire, 3000);
-    var stream = cv.captureStream(15); dest.stream.getAudioTracks().forEach(function (t) { stream.addTrack(t); });
+    var drawT = setInterval(draw, 83), wireT = setInterval(wire, 3000);
+    var stream = cv.captureStream(12); dest.stream.getAudioTracks().forEach(function (t) { stream.addTrack(t); });
     var mime = ['video/webm;codecs=vp8,opus', 'video/webm'].filter(function (m) { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); })[0];
     if (!mime) { clearInterval(drawT); clearInterval(wireT); throw new Error('Recording is not supported in this browser. Use Chrome or Edge.'); }
-    var mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 600000, audioBitsPerSecond: 64000 }), seq = 0, q = Promise.resolve(), failed = false;
+    var mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 350000, audioBitsPerSecond: 40000 }), seq = 0, q = Promise.resolve(), failed = false;
     function up(blob, i) {
       var tries = 0;
       function go() { return authFetchUpload(R.id, i, blob).catch(function (e) { if (++tries < 4) return new Promise(function (r) { setTimeout(r, 1500 * tries); }).then(go); failed = true; throw e; }); }
@@ -403,7 +403,7 @@
 
   function enterRoom(id, j) {
     var LK = window.LivekitClient, el = $('#vm-room'), tch = j.role === 'teacher';
-    var R = state.room = { id: id, tiles: {}, hands: {}, chat: [], unread: 0, panel: 'chat', sharing: false, recording: !!j.recording, role: j.role, leaving: false, notified: false };
+    var R = state.room = { canPub: !!j.canPublish, id: id, tiles: {}, hands: {}, chat: [], unread: 0, panel: 'chat', sharing: false, recording: !!j.recording, role: j.role, leaving: false, notified: false };
     var mobile = function () { return window.innerWidth < 640; };
     el.innerHTML =
       '<div class="vm-rhead"><div class="vm-rtitle"><b>' + esc(j.title) + '</b><small id="vm-count">Connecting…</small></div><span class="vm-rec' + (R.recording ? ' on' : '') + '"><i></i>REC</span>' +
@@ -413,8 +413,8 @@
       '<div class="vm-side" id="vm-side"><div class="vm-sidehead"><button class="seg on" data-p="chat">Chat</button><button class="seg" data-p="people">People</button><button class="vm-iconbtn" data-r="chat" aria-label="Close panel">' + ic('x') + '</button></div><div class="vm-pane" id="vm-pane"></div>' +
       '<div class="vm-send" id="vm-send"><input id="vm-ci" placeholder="Message everyone" maxlength="500" autocomplete="off" aria-label="Message"><button class="vm-iconbtn" data-r="send" aria-label="Send">' + ic('paper-plane-right') + '</button></div></div>' +
       '<div class="vm-connecting" id="vm-conn"><div><div class="vm-spin"></div>Joining the meeting…</div></div></div>' +
-      '<div class="vm-bar"><button class="vm-ctl" data-r="mic" aria-label="Microphone">' + ic('microphone') + '</button><button class="vm-ctl" data-r="cam" aria-label="Camera">' + ic('video-camera') + '</button>' +
-      (mobile() ? '' : '<button class="vm-ctl" data-r="screen" aria-label="Share screen">' + ic('monitor-arrow-up') + '</button>') +
+      '<div class="vm-bar"><button class="vm-ctl' + (R.canPub ? '' : ' vm-hide') + '" data-r="mic" aria-label="Microphone">' + ic('microphone') + '</button><button class="vm-ctl' + (R.canPub ? '' : ' vm-hide') + '" data-r="cam" aria-label="Camera">' + ic('video-camera') + '</button>' +
+      (mobile() ? '' : '<button class="vm-ctl' + (R.canPub ? '' : ' vm-hide') + '" data-r="screen" aria-label="Share screen">' + ic('monitor-arrow-up') + '</button>') +
       '<button class="vm-ctl" data-r="hand" aria-label="Raise hand">' + ic('hand') + '</button><button class="vm-ctl" data-r="chat" aria-label="Chat and people">' + ic('chat-circle-text') + '<span class="vm-n" style="display:none"></span></button>' +
       '<button class="vm-ctl leave" data-r="leave" aria-label="Leave meeting">' + ic('phone-disconnect') + '</button></div>';
     el.classList.add('open');
@@ -426,12 +426,13 @@
       t.innerHTML = '<div class="vm-av">' + esc((p.name || '?').charAt(0).toUpperCase()) + '</div><div class="vm-tag"><span></span></div><div class="vm-hand">' + ic('hand') + '</div>';
       $('#vm-stage').appendChild(t); R.tiles[p.identity] = t; layout(); return t;
     }
+    function wantTile(p) { return p.isLocal ? R.canPub : (isTeach(p) || p.trackPublications.size > 0); }
     function updTag(p) {
-      var t = R.tiles[p.identity] || tileFor(p), tag = t.querySelector('.vm-tag');
+      var t = R.tiles[p.identity]; if (!t) return; var tag = t.querySelector('.vm-tag');
       tag.innerHTML = (p.isMicrophoneEnabled ? '' : ic('microphone-slash')) + '<span></span>';
       tag.querySelector('span').textContent = (p.name || 'Guest') + (p.isLocal ? ' (You)' : '');
     }
-    function count() { var n = 1 + room.remoteParticipants.size, c = $('#vm-count'); if (c) c.textContent = n + (n === 1 ? ' person' : ' people') + ' in the meeting'; }
+    function count() { var n = 1 + room.remoteParticipants.size, c = $('#vm-count'); if (c) c.textContent = n + (n === 1 ? ' person' : ' people') + ' in the meeting' + (!tch && !R.canPub ? ' \u00b7 raise your hand to speak' : ''); }
     function attach(track, p, pub) {
       var screen = pub && pub.source === LK.Track.Source.ScreenShare, t = tileFor(p);
       if (track.kind === 'video') {
@@ -460,14 +461,19 @@
       s.style.gridTemplateColumns = 'repeat(' + cols + ',minmax(0,1fr))';
     }
     R.onResize = layout; window.addEventListener('resize', layout);
+    // Students show their profile photo (or character); the teacher keeps the letter.
+    function isTeach(p) { try { return JSON.parse(p.metadata || '{}').role === 'teacher'; } catch (e) { return false; } }
     function people() {
       if (R.panel !== 'people') return; var h = '';
       [room.localParticipant].concat(Array.from(room.remoteParticipants.values())).forEach(function (p) {
-        h += '<div class="vm-person"><div class="vm-av">' + esc((p.name || '?').charAt(0).toUpperCase()) + '</div><span class="nm">' + esc(p.name || 'Guest') + (p.isLocal ? ' (You)' : '') + '</span>' +
+        var tp = p.isLocal ? tch : isTeach(p);
+        h += '<div class="vm-person"><div class="vm-av"' + (tp ? '' : ' data-vtx-av="' + esc(p.identity) + '"') + '>' + esc((p.name || '?').charAt(0).toUpperCase()) + '</div><span class="nm">' + esc(p.name || 'Guest') + (p.isLocal ? ' (You)' : '') + '</span>' +
           (R.hands[p.identity] ? ic('hand') : '') + (p.isMicrophoneEnabled ? '' : ic('microphone-slash')) +
+          (tch && !p.isLocal && !isTeach(p) && (R.hands[p.identity] || (p.permissions && p.permissions.canPublish)) ? '<button class="vm-btn" data-allow="' + esc(p.identity) + '" data-on="' + ((p.permissions && p.permissions.canPublish) ? '0' : '1') + '">' + ((p.permissions && p.permissions.canPublish) ? 'Stop speaking' : 'Allow to speak') + '</button>' : '') +
           (tch && !p.isLocal ? '<button class="vm-btn" data-kick="' + esc(p.identity) + '">Remove</button>' : '') + '</div>';
       });
       $('#vm-pane').innerHTML = h;
+      if (window.VtxAvatar && VtxAvatar.scan) VtxAvatar.scan($('#vm-pane'));
     }
     function chatView() {
       if (R.panel !== 'chat') return; var p = $('#vm-pane');
@@ -481,7 +487,19 @@
       .on(LK.RoomEvent.TrackUnsubscribed, function (tr, pub, p) { detach(tr, p, pub); })
       .on(LK.RoomEvent.LocalTrackPublished, function (pub, p) { if (pub.track) attach(pub.track, p, pub); syncCtl(); })
       .on(LK.RoomEvent.LocalTrackUnpublished, function (pub, p) { if (pub.track) detach(pub.track, p, pub); if (pub.source === LK.Track.Source.ScreenShare) R.sharing = false; syncCtl(); })
-      .on(LK.RoomEvent.ParticipantConnected, function (p) { tileFor(p); updTag(p); count(); people(); })
+      .on(LK.RoomEvent.ParticipantConnected, function (p) { if (wantTile(p)) { tileFor(p); updTag(p); } count(); people(); })
+      .on(LK.RoomEvent.TrackUnpublished, function (pub, p) { if (!p.isLocal && !wantTile(p) && R.tiles[p.identity]) { R.tiles[p.identity].remove(); delete R.tiles[p.identity]; layout(); } people(); })
+      .on(LK.RoomEvent.ParticipantPermissionsChanged, function (prev, p) {
+        p = p || room.localParticipant;
+        if (p.isLocal) {
+          var can = !!(p.permissions && p.permissions.canPublish), was = R.canPub; R.canPub = can;
+          if (can && !was) { R.hands[p.identity] = false; send({ t: 'hand', on: false }); toast('The teacher allowed you to speak.'); p.setMicrophoneEnabled(true).catch(function () { toast('Allow microphone access to speak.'); }); }
+          if (!can && was) toast('You are back to listening mode.');
+          el.querySelectorAll('[data-r="mic"],[data-r="cam"],[data-r="screen"]').forEach(function (b) { b.classList.toggle('vm-hide', !can); });
+          syncCtl();
+        }
+        people();
+      })
       .on(LK.RoomEvent.ParticipantDisconnected, removeP)
       .on(LK.RoomEvent.TrackMuted, function (pub, p) { updTag(p); people(); })
       .on(LK.RoomEvent.TrackUnmuted, function (pub, p) { updTag(p); people(); })
@@ -503,10 +521,11 @@
       .on(LK.RoomEvent.Disconnected, function () { if (state.room === R) { if (!R.leaving) toast('The meeting ended or you were removed.'); leave(true); } });
 
     room.connect(j.url, j.token).then(function () {
-      tileFor(room.localParticipant); updTag(room.localParticipant); count();
-      room.remoteParticipants.forEach(function (p) { tileFor(p); updTag(p); p.trackPublications.forEach(function (pub) { if (pub.track) attach(pub.track, p, pub); }); });
+      if (R.canPub) { tileFor(room.localParticipant); updTag(room.localParticipant); } count();
+      room.remoteParticipants.forEach(function (p) { if (wantTile(p)) { tileFor(p); updTag(p); } p.trackPublications.forEach(function (pub) { if (pub.track) attach(pub.track, p, pub); }); });
       var c = $('#vm-conn'); if (c) c.classList.add('gone');
       var lp = room.localParticipant, blocked = false;
+      if (!R.canPub) return;
       return lp.setMicrophoneEnabled(true).catch(function () { blocked = true; }).then(function () { return lp.setCameraEnabled(true).catch(function () { blocked = true; }); }).then(function () {
         if (blocked) toast('Camera or microphone is blocked. Allow access in your browser to be seen and heard.');
       });
@@ -534,6 +553,8 @@
     }
 
     el.onclick = function (ev) {
+      var al = ev.target.closest('[data-allow]');
+      if (al) { al.disabled = true; api('allow', { id: id, identity: al.dataset.allow, on: al.dataset.on === '1' }).then(function () { R.hands[al.dataset.allow] = false; var t = R.tiles[al.dataset.allow]; if (t) t.querySelector('.vm-hand').classList.remove('on'); people(); }).catch(function (e) { al.disabled = false; toast(e.message); }); return; }
       var k = ev.target.closest('[data-kick]');
       if (k) { ask({ title: 'Remove this person?', text: 'They will be disconnected from the meeting.', ok: 'Remove', danger: true, onOk: function () { api('kick', { id: id, identity: k.dataset.kick }).catch(function (e) { toast(e.message); }); } }, el); return; }
       var pbtn = ev.target.closest('[data-p]');
@@ -545,7 +566,7 @@
         if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) return toast('Screen sharing is not supported on this device.');
         lp.setScreenShareEnabled(!R.sharing).then(function () { R.sharing = !R.sharing; syncCtl(); }).catch(function (e) { R.sharing = false; syncCtl(); if (!/denied|cancel|abort|NotAllowed/i.test(String(e && (e.name + e.message)))) toast('Screen sharing is not available.'); });
       }
-      else if (a === 'hand') { var on = !R.hands[lp.identity]; R.hands[lp.identity] = on; send({ t: 'hand', on: on }); R.tiles[lp.identity].querySelector('.vm-hand').classList.toggle('on', on); syncCtl(); }
+      else if (a === 'hand') { var on = !R.hands[lp.identity]; R.hands[lp.identity] = on; send({ t: 'hand', on: on }); var lt = R.tiles[lp.identity]; if (lt) lt.querySelector('.vm-hand').classList.toggle('on', on); syncCtl(); }
       else if (a === 'chat') { var sd = $('#vm-side'); sd.classList.toggle('open'); if (sd.classList.contains('open')) { R.unread = 0; badge(); if (R.panel === 'chat') { chatView(); var ci = $('#vm-ci'); if (ci && !mobile()) ci.focus(); } else people(); } layout(); }
       else if (a === 'send') { var inp = $('#vm-ci'), x = inp.value.trim(); if (!x) return; send({ t: 'chat', x: x }); R.chat.push({ from: 'You', text: x, me: true }); inp.value = ''; chatView(); }
       else if (a === 'leave') {

@@ -305,3 +305,7 @@ body.vm-open #themeToggle { display: none !important; }
 .vm-room .vm-dialog .vm-btn.pri:hover { background: var(--vm-accent); }
 .vm-room .vm-dialog .vm-btn.danger { background: var(--vm-danger); border-color: var(--vm-danger); color: #fff; }
 .vm-room .vm-dialog .vm-btn.ghost { background: transparent; border-color: transparent; color: var(--vm-t2); }
+
+.vm-hide { display: none !important; }
+.vm-person { flex-wrap: wrap; }
+.vm-person .nm { min-width: 90px; }
