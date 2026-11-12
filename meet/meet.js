@@ -329,10 +329,10 @@
   /* ── Teacher-side recording: composites the room onto a canvas + mixes all audio,
      records with MediaRecorder and uploads 4-minute chunks to the Worker (B2). ── */
   function authFetchUpload(id, seq, blob) {
-    var u = window.fbAuth.currentUser;
+    var u = window.fbAuth.currentUser, ctl = window.AbortController ? new AbortController() : null, timer = ctl ? setTimeout(function () { ctl.abort(); }, 120000) : null;
     return u.getIdToken().then(function (t) {
-      return fetch(WORKER_URL + '/meet/upload?id=' + encodeURIComponent(id) + '&seq=' + seq, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'video/webm' }, body: blob });
-    }).then(function (r) { if (!r.ok) throw new Error('upload ' + r.status); });
+      return fetch(WORKER_URL + '/meet/upload?id=' + encodeURIComponent(id) + '&seq=' + seq, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'video/webm' }, body: blob, signal: ctl ? ctl.signal : undefined });
+    }).then(function (r) { clearTimeout(timer); if (!r.ok) throw new Error('upload ' + r.status); }, function (e) { clearTimeout(timer); throw e; });
   }
   function startRecorder(R, room) {
     var SLICE = window.MEET_REC_SLICE_MS || 240000, MAXC = 40;
@@ -382,7 +382,7 @@
     mr.start(SLICE);
     R.rec = { stop: function () {
       clearInterval(drawT); clearInterval(wireT);
-      return new Promise(function (res) { if (mr.state === 'inactive') return res(); mr.onstop = function () { res(); }; try { mr.stop(); } catch (er) { res(); } })
+      return new Promise(function (res) { if (mr.state === 'inactive') return res(); var fb = setTimeout(res, 10000); mr.onstop = function () { clearTimeout(fb); res(); }; try { mr.stop(); } catch (er) { clearTimeout(fb); res(); } })
         .then(function () { return q; }).then(function () { try { actx.close(); } catch (er) { /* ignore */ } return { chunks: seq, failed: failed }; });
     } };
   }
@@ -408,7 +408,7 @@
     el.innerHTML =
       '<div class="vm-rhead"><div class="vm-rtitle"><b>' + esc(j.title) + '</b><small id="vm-count">Connecting…</small></div><span class="vm-rec' + (R.recording ? ' on' : '') + '"><i></i>REC</span>' +
       (tch ? '<button class="vm-btn" data-r="invite" aria-label="Invite students">' + ic('user-plus') + '<span>Invite</span></button><button class="vm-btn" data-r="rec" aria-label="Record">' + ic(R.recording ? 'stop-circle' : 'record') + '<span>' + (R.recording ? 'Stop' : 'Record') + '</span></button><button class="vm-btn" data-r="muteall" aria-label="Mute everyone">' + ic('microphone-slash') + '<span>Mute all</span></button>' : '') +
-      '<button class="vm-iconbtn" data-r="theme" aria-label="Switch light or dark mode" style="display:none"></button></div>' +
+      '</div>' +
       '<div class="vm-main"><div class="vm-stage" id="vm-stage"></div><div class="vm-joins" id="vm-joins" role="status" aria-live="polite"></div>' +
       '<div class="vm-side" id="vm-side"><div class="vm-sidehead"><button class="seg on" data-p="chat">Chat</button><button class="seg" data-p="people">People</button><button class="vm-iconbtn" data-r="chat" aria-label="Close panel">' + ic('x') + '</button></div><div class="vm-pane" id="vm-pane"></div>' +
       '<div class="vm-send" id="vm-send"><input id="vm-ci" placeholder="Message everyone" maxlength="500" autocomplete="off" aria-label="Message"><button class="vm-iconbtn" data-r="send" aria-label="Send">' + ic('paper-plane-right') + '</button></div></div>' +
