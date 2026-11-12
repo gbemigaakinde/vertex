@@ -835,6 +835,11 @@ function renderTeacherDashboard() {
       badgeId: 'badge-dm',
     },
     {
+      tab: 'live',
+      label: 'Live',
+      icon: `<i class="ph ph-video-camera" style="font-size:14px"></i>`,
+    },
+    {
       tab: 'push',
       label: 'Push',
       icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
@@ -1200,6 +1205,8 @@ function renderTeacherDashboard() {
 }
 
 function showTab(tab) {
+  // Live meetings open as their own full screen; the dashboard tab underneath stays as it was.
+  if (tab === 'live') { if (window.Meet) Meet.open(); return; }
      const ALL_TABS = ['approvals','students','results','schools','tasks','studyroom','games','questions','timetable','activity','groups','chat','dm','push','storage'];
 
   ALL_TABS.forEach(t => {

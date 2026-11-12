@@ -341,6 +341,13 @@
     return html;
   }
 
+  function _liveHtml() {
+    var live = !!(window.Meet && window.Meet.live);
+    return '<p class="vs-h">Live classes</p><div class="vs-card">' +
+      '<button type="button" class="vs-act" data-act="liveMeet"><span><i class="ph ph-video-camera" aria-hidden="true" style="margin-right:.5rem;vertical-align:-2px"></i>Live meetings' +
+      (live ? ' <b style="color:var(--danger);font-size:.75rem;margin-left:.35rem">Live now</b>' : '') + '</span><i class="ph ph-caret-right" aria-hidden="true"></i></button></div>';
+  }
+
   function _accountHtml() {
     var d = (window.AppState && AppState.studentData) || {};
     var uid = _uid() || '';
@@ -368,7 +375,7 @@
     var body = document.getElementById('vsBody');
     if (!body) return;
     var top = body.scrollTop;
-    body.innerHTML = _alertsHtml() + _deviceHtml() + _subjectsHtml() + _accountHtml();
+    body.innerHTML = _alertsHtml() + _deviceHtml() + _liveHtml() + _subjectsHtml() + _accountHtml();
     body.scrollTop = top;
   }
 
@@ -516,6 +523,11 @@
     if (act === 'sound')  { _lsSet(LS.sound,  get('sound')  ? 'off' : 'on');   applyLocal(); _render(); return; }
     if (act === 'motion') { _lsSet(LS.motion, get('reduceMotion') ? 'full' : 'reduce'); applyLocal(); _render(); return; }
     if (act === 'popups') { _lsSet(LS.popups, get('popups') ? 'off' : 'on'); _render(); return; }
+    if (act === 'liveMeet') {
+      if (window.VtxSettings) VtxSettings.close();
+      if (window.Meet) Meet.open();
+      return;
+    }
     if (act === 'signout') {
       if (el.getAttribute('data-loading') === 'true') return;
       el.setAttribute('data-loading', 'true');
