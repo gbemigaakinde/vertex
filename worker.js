@@ -1,5 +1,6 @@
 import { handleProctor } from './worker-proctor.js';
 import { handleFilesApi, handleFileDownload, UploadQuota, verifyIdToken } from './worker-files.js';
+import { handleMeet, handleMeetStream } from './meet/worker-meet.js';
 export { UploadQuota };
 
 export default {
@@ -8,6 +9,11 @@ export default {
     // Signed file links (token-authorised; keeps the storage host hidden)
     if (request.method === 'GET' && new URL(request.url).pathname.indexOf('/storage/dl/') === 0) {
       return handleFileDownload(request, new URL(request.url), env, { b2PresignGet: _b2PresignGet });
+    }
+
+    // ── Live Meetings replay stream (signed link; see meet/worker-meet.js) ──
+    if (request.method === 'GET' && new URL(request.url).pathname === '/meet/stream') {
+      return handleMeetStream(request, new URL(request.url), env, { getFirebaseToken: _getFirebaseToken, fsDecodeFields: _fsDecodeFields, b2PresignGet: _b2PresignGet });
     }
 
     // ── Profile photos (optional avatars): GET public, POST upload/delete authed ──
@@ -366,6 +372,11 @@ if (request.method === 'POST' && url.pathname === '/api/cancel-scheduled-push') 
       return handleProctor(request, url, env, {
         getFirebaseToken: _getFirebaseToken, b2PresignPut: _b2PresignPut, b2PresignGet: _b2PresignGet,
       }, verifyIdToken);
+    }
+
+    // ── Live Meetings (LiveKit; see meet/worker-meet.js) ──
+    if (request.method === 'POST' && (url.pathname === '/meet/op' || url.pathname === '/meet/upload')) {
+      return handleMeet(request, env, { getFirebaseToken: _getFirebaseToken, fsDecodeFields: _fsDecodeFields, b2PresignGet: _b2PresignGet, b2PresignPut: _b2PresignPut }, verifyIdToken);
     }
 
     // ── Storage + file organisation (authenticated; see worker-files.js) ──
