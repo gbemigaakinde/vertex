@@ -124,30 +124,83 @@ async function sign(env, id, exp) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode('vtx-meet:' + env.LIVEKIT_API_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   return b64u(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(id + '.' + exp)));
 }
-const chunkKey = (id, i) => 'meetings/' + id + '/rec/' + String(i).padStart(5, '0') + '.webm';
+const EXTS = { webm: 'video/webm', mp4: 'video/mp4' };
+const chunkKey = (id, i, ext) => 'meetings/' + id + '/rec/' + String(i).padStart(5, '0') + '.' + (EXTS[ext] ? ext : 'webm');
+const parseSizes = s => String(s || '').split(',').map(x => parseInt(x, 10) || 0);
 
-/* GET /meet/stream — plays all chunks back-to-back as one video */
+/* HTTP Range planning. iPhones/Safari will not play a video unless the server answers byte-range requests. */
+export function planRange(total, header) {
+  const full = { status: 200, start: 0, end: total - 1 };
+  const mm = /^bytes=(\d*)-(\d*)$/.exec(String(header || '').trim());
+  if (!mm || (mm[1] === '' && mm[2] === '')) return full;
+  let start, end;
+  if (mm[1] === '') { start = Math.max(0, total - parseInt(mm[2], 10)); end = total - 1; }
+  else { start = parseInt(mm[1], 10); end = mm[2] === '' ? total - 1 : Math.min(parseInt(mm[2], 10), total - 1); }
+  if (!(start < total) || start > end) return { status: 416 };
+  return { status: 206, start: start, end: end };
+}
+
+/* Streams bytes [start..end] of the virtual file made of all chunks back-to-back.
+   fetchChunk(i, rangeHeaderOrNull) must return a fetch Response for that chunk. */
+export function serveRange(sizes, ext, rangeHeader, fetchChunk) {
+  const total = sizes.reduce((a, b) => a + b, 0);
+  const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Content-Range, Content-Length, Accept-Ranges' };
+  const plan = planRange(total, rangeHeader);
+  if (plan.status === 416) return new Response('Range not satisfiable', { status: 416, headers: Object.assign({ 'Content-Range': 'bytes */' + total }, cors) });
+  const len = plan.end - plan.start + 1;
+  const headers = Object.assign({ 'Content-Type': EXTS[ext] || 'video/webm', 'Accept-Ranges': 'bytes', 'Content-Length': String(len), 'Cache-Control': 'private, max-age=3600' }, cors);
+  if (plan.status === 206) headers['Content-Range'] = 'bytes ' + plan.start + '-' + plan.end + '/' + total;
+  const ts = (typeof FixedLengthStream !== 'undefined') ? new FixedLengthStream(len) : new TransformStream();
+  (async () => {
+    const w = ts.writable.getWriter();
+    try {
+      let off = 0;
+      for (let i = 0; i < sizes.length && off <= plan.end; i++) {
+        const a = off, b = off + sizes[i] - 1; off += sizes[i];
+        if (!sizes[i] || b < plan.start) continue;
+        const s0 = Math.max(plan.start, a) - a, e0 = Math.min(plan.end, b) - a, whole = s0 === 0 && e0 === sizes[i] - 1;
+        const r = await fetchChunk(i, whole ? null : 'bytes=' + s0 + '-' + e0);
+        if (!r.ok || !r.body) throw new Error('chunk ' + i);
+        if (!whole && r.status === 200) { const buf = new Uint8Array(await r.arrayBuffer()); await w.write(buf.slice(s0, e0 + 1)); }
+        else { const rd = r.body.getReader(); for (;;) { const x = await rd.read(); if (x.done) break; await w.write(x.value); } }
+      }
+      await w.close();
+    } catch (err) { try { await w.abort(err); } catch (e2) { /* client went away */ } }
+  })();
+  return new Response(ts.readable, { status: plan.status, headers: headers });
+}
+
+/* Chunk sizes are saved on upload. Older recordings don't have them: ask storage once, then save. */
+async function chunkSizes(m, id, n, ext, env, h, db) {
+  const sizes = parseSizes(m.recSizes).slice(0, n); while (sizes.length < n) sizes.push(0);
+  let fixed = false;
+  for (let i = 0; i < n; i++) {
+    if (sizes[i]) continue;
+    try {
+      const r = await fetch(await h.b2PresignGet(chunkKey(id, i, ext), env), { headers: { Range: 'bytes=0-0' } });
+      const cr = r.headers.get('Content-Range'), t = cr ? parseInt(cr.split('/')[1], 10) : parseInt(r.headers.get('Content-Length'), 10);
+      try { await r.body.cancel(); } catch (e) { /* ignore */ }
+      if (r.ok && t > 0) { sizes[i] = t; fixed = true; }
+    } catch (e) { /* missing chunk: skipped */ }
+  }
+  if (fixed) { try { await db.patch('meetings/' + id, { recSizes: sizes.join(',') }); } catch (e) { /* ignore */ } }
+  return sizes;
+}
+
+/* GET /meet/stream — all chunks back-to-back as one video, with Range support (needed by iPhone) */
 export async function handleMeetStream(request, url, env, h) {
-  const bad = (m, s) => new Response(m, { status: s, headers: { 'Access-Control-Allow-Origin': '*' } });
+  const bad = (m, st) => new Response(m, { status: st, headers: { 'Access-Control-Allow-Origin': '*' } });
   const id = url.searchParams.get('id') || '', e = parseInt(url.searchParams.get('e'), 10) || 0, sg = url.searchParams.get('s') || '';
   if (!/^[A-Za-z0-9]{6,40}$/.test(id) || e < Date.now() || !env.LIVEKIT_API_SECRET) return bad('Link expired.', 403);
   if ((await sign(env, id, e)) !== sg) return bad('Invalid link.', 403);
-  const tok = await h.getFirebaseToken(env);
-  const m = await makeDb(tok, h.fsDecodeFields).get('meetings/' + id);
+  const tok = await h.getFirebaseToken(env), db = makeDb(tok, h.fsDecodeFields);
+  const m = await db.get('meetings/' + id);
   const n = m ? Math.min(m.recChunks || 0, MAX_CHUNKS) : 0;
   if (!n) return bad('No recording.', 404);
-  const ts = new TransformStream();
-  (async () => {
-    try {
-      for (let i = 0; i < n; i++) {
-        const r = await fetch(await h.b2PresignGet(chunkKey(id, i), env));
-        if (!r.ok || !r.body) break;
-        await r.body.pipeTo(ts.writable, { preventClose: true });
-      }
-    } catch (err) { /* client closed the connection */ }
-    try { await ts.writable.close(); } catch (err) { /* ignore */ }
-  })();
-  return new Response(ts.readable, { headers: { 'Content-Type': 'video/webm', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'private, max-age=3600' } });
+  const ext = EXTS[m.recExt] ? m.recExt : 'webm';
+  const sizes = await chunkSizes(m, id, n, ext, env, h, db);
+  if (!sizes.some(x => x > 0)) return bad('No recording.', 404);
+  return serveRange(sizes, ext, request.headers.get('Range'), async (i, range) => fetch(await h.b2PresignGet(chunkKey(id, i, ext), env), range ? { headers: { Range: range } } : undefined));
 }
 
 const cleanStr = (s, n) => String(s || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n);
@@ -170,11 +223,15 @@ export async function handleMeet(request, env, h, verifyIdToken) {
     if (!/^[A-Za-z0-9]{6,40}$/.test(uid) || !(seq >= 0 && seq < MAX_CHUNKS)) return out({ error: 'Invalid chunk.' }, 400);
     const mt = await db.get('meetings/' + uid);
     if (!mt || mt.status !== 'live') return out({ error: 'Meeting is not live.' }, 400);
+    const wantExt = url.searchParams.get('ext') === 'mp4' ? 'mp4' : 'webm';
+    if (mt.recExt && mt.recChunks > 0 && mt.recExt !== wantExt) return out({ error: 'Recording format cannot change mid-meeting.' }, 409);
+    const ext = wantExt;
     const buf = await request.arrayBuffer();
     if (!buf.byteLength || buf.byteLength > 40 * 1024 * 1024) return out({ error: 'Invalid size.' }, 413);
-    const put = await fetch(await h.b2PresignPut(chunkKey(uid, seq), 'video/webm', env), { method: 'PUT', headers: { 'Content-Type': 'video/webm' }, body: buf });
+    const put = await fetch(await h.b2PresignPut(chunkKey(uid, seq, ext), EXTS[ext], env), { method: 'PUT', headers: { 'Content-Type': EXTS[ext] }, body: buf });
     if (!put.ok) return out({ error: 'Storage error (' + put.status + ').' }, 502);
-    await db.patch('meetings/' + uid, { replayKey: 'meetings/' + uid + '/rec/', recChunks: Math.max(mt.recChunks || 0, seq + 1), recStatus: 'recording' });
+    const szs = parseSizes(mt.recSizes); while (szs.length <= seq) szs.push(0); szs[seq] = buf.byteLength;
+    await db.patch('meetings/' + uid, { replayKey: 'meetings/' + uid + '/rec/', recChunks: Math.max(mt.recChunks || 0, seq + 1), recStatus: 'recording', recExt: ext, recSizes: szs.join(',') });
     return out({ ok: true });
   }
   const act = String(b.action || '');
@@ -322,7 +379,7 @@ export async function handleMeet(request, env, h, verifyIdToken) {
     if (act === 'replay') {
       if (!m.replayKey || !(m.recChunks > 0)) return out({ error: 'No recording for this meeting.' }, 404);
       const exp = Date.now() + 6 * 3600 * 1000;
-      return out({ url: url.origin + '/meet/stream?id=' + encodeURIComponent(m._id) + '&e=' + exp + '&s=' + (await sign(env, m._id, exp)), title: m.title });
+      return out({ url: url.origin + '/meet/stream?id=' + encodeURIComponent(m._id) + '&e=' + exp + '&s=' + (await sign(env, m._id, exp)), title: m.title, mime: EXTS[m.recExt] || 'video/webm' });
     }
 
     return out({ error: 'Unknown action.' }, 400);

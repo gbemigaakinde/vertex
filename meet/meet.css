@@ -328,3 +328,9 @@ body.vm-open #themeToggle { display: none !important; }
 @keyframes vmjoin-in { from { opacity: 0; transform: translateY(-10px) scale(.96); } }
 @keyframes vmjoin-out { to { opacity: 0; transform: translateY(-6px) scale(.97); } }
 @media (max-width: 640px) { .vm-joins { top: 8px; left: 8px; max-width: calc(100% - 16px); min-width: 220px; } }
+
+.vm-replay-body { position: relative; }
+.vm-player-err { max-width: 340px; margin: auto; text-align: center; color: #d9d9df; display: grid; gap: 12px; justify-items: center; padding: 20px; }
+.vm-player-err[hidden] { display: none; }
+.vm-player-err > i.ph { font-size: 38px; color: #ff8179; }
+.vm-player-err p { margin: 0; font-size: 14px; line-height: 1.5; }

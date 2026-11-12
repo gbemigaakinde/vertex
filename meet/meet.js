@@ -317,21 +317,34 @@
   function playReplay(id) {
     var m = state.replays.filter(function (x) { return x.id === id; })[0] || {};
     api('replay', { id: id }).then(function (r) {
-      var ov = document.createElement('div'); ov.className = 'vm-room vm-replay open';
-      ov.innerHTML = '<div class="vm-rhead"><div class="vm-rtitle"><b>' + esc(r.title || m.title) + '</b><small>Replay</small></div><button class="vm-iconbtn" data-x aria-label="Close replay">' + ic('x') + '</button></div><div class="vm-replay-body"><video class="vm-player" controls playsinline autoplay src="' + esc(r.url) + '"></video></div>';
-      var v = ov.querySelector('video');
-      v.onerror = function () { toast('This recording could not be played.'); };
-      ov.querySelector('[data-x]').onclick = function () { v.pause(); ov.remove(); };
+      var mime = String(r.mime || 'video/webm').split(';')[0], ov = document.createElement('div'); ov.className = 'vm-room vm-replay open';
+      ov.innerHTML = '<div class="vm-rhead"><div class="vm-rtitle"><b></b><small>Replay</small></div><button class="vm-iconbtn" data-x aria-label="Close replay">' + ic('x') + '</button></div>' +
+        '<div class="vm-replay-body"><video class="vm-player" controls playsinline preload="metadata"></video>' +
+        '<div class="vm-player-err" hidden>' + ic('warning-circle') + '<p></p><button class="vm-btn" data-retry>' + ic('arrow-clockwise') + 'Try again</button></div></div>';
+      ov.querySelector('.vm-rtitle b').textContent = r.title || m.title || 'Replay';
+      var v = ov.querySelector('video'), box = ov.querySelector('.vm-player-err'), msg = box.querySelector('p'), retry = box.querySelector('[data-retry]');
+      var supported = !v.canPlayType || v.canPlayType(mime) !== '';
+      function fail(text, canRetry) { v.style.display = 'none'; box.hidden = false; msg.textContent = text; retry.style.display = canRetry ? '' : 'none'; }
+      function load(url) { box.hidden = true; v.style.display = ''; v.src = url; v.load(); }
+      if (!supported) fail('This recording is in a format this device cannot play (' + mime.replace('video/', '').toUpperCase() + '). Open it on a computer or an Android phone. New recordings are saved in a format that also plays on iPhone.', false);
+      else load(r.url);
+      v.onerror = function () {
+        var code = v.error && v.error.code;
+        if (code === 4 && !/mp4/.test(mime) && /iP(hone|ad|od)|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document) return fail('This device cannot play this recording format. Open it on a computer or an Android phone.', false);
+        fail(code === 2 ? 'The connection dropped while loading the recording. Check your internet and try again.' : 'The recording could not be played. Try again in a moment.', true);
+      };
+      retry.onclick = function () { retry.disabled = true; api('replay', { id: id }).then(function (n) { retry.disabled = false; load(n.url); }).catch(function (e) { retry.disabled = false; toast(e.message); }); };
+      ov.querySelector('[data-x]').onclick = function () { try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) { /* ignore */ } ov.remove(); };
       root.appendChild(ov);
     }).catch(function (e) { toast(e.message); });
   }
 
   /* ── Teacher-side recording: composites the room onto a canvas + mixes all audio,
      records with MediaRecorder and uploads 4-minute chunks to the Worker (B2). ── */
-  function authFetchUpload(id, seq, blob) {
+  function authFetchUpload(id, seq, blob, ext) {
     var u = window.fbAuth.currentUser, ctl = window.AbortController ? new AbortController() : null, timer = ctl ? setTimeout(function () { ctl.abort(); }, 120000) : null;
     return u.getIdToken().then(function (t) {
-      return fetch(WORKER_URL + '/meet/upload?id=' + encodeURIComponent(id) + '&seq=' + seq, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'video/webm' }, body: blob, signal: ctl ? ctl.signal : undefined });
+      return fetch(WORKER_URL + '/meet/upload?id=' + encodeURIComponent(id) + '&seq=' + seq + '&ext=' + (ext === 'mp4' ? 'mp4' : 'webm'), { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': ext === 'mp4' ? 'video/mp4' : 'video/webm' }, body: blob, signal: ctl ? ctl.signal : undefined });
     }).then(function (r) { clearTimeout(timer); if (!r.ok) throw new Error('upload ' + r.status); }, function (e) { clearTimeout(timer); throw e; });
   }
   function startRecorder(R, room) {
@@ -366,12 +379,17 @@
     wire(); draw();
     var drawT = setInterval(draw, 83), wireT = setInterval(wire, 3000);
     var stream = cv.captureStream(12); dest.stream.getAudioTracks().forEach(function (t) { stream.addTrack(t); });
-    var mime = ['video/webm;codecs=vp8,opus', 'video/webm'].filter(function (m) { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); })[0];
+    // MP4 plays on every phone (iPhone included); WebM is only the fallback for browsers that cannot record MP4.
+    var mimes = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'].filter(function (m) { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); });
+    var mime = mimes[0];
     if (!mime) { clearInterval(drawT); clearInterval(wireT); throw new Error('Recording is not supported in this browser. Use Chrome or Edge.'); }
-    var mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 350000, audioBitsPerSecond: 40000 }), seq = 0, q = Promise.resolve(), failed = false;
+    var mr, seq = 0, q = Promise.resolve(), failed = false;
+    for (var mi = 0; mi < mimes.length && !mr; mi++) { try { mr = new MediaRecorder(stream, { mimeType: mimes[mi], videoBitsPerSecond: 350000, audioBitsPerSecond: 40000 }); mime = mimes[mi]; } catch (er) { mr = null; } }
+    if (!mr) { clearInterval(drawT); clearInterval(wireT); throw new Error('Recording is not supported in this browser. Use Chrome or Edge.'); }
+    var recExt = /mp4/.test(mime) ? 'mp4' : 'webm'; R.recExt = recExt;
     function up(blob, i) {
       var tries = 0;
-      function go() { return authFetchUpload(R.id, i, blob).catch(function (e) { if (++tries < 4) return new Promise(function (r) { setTimeout(r, 1500 * tries); }).then(go); failed = true; throw e; }); }
+      function go() { return authFetchUpload(R.id, i, blob, recExt).catch(function (e) { if (++tries < 4) return new Promise(function (r) { setTimeout(r, 1500 * tries); }).then(go); failed = true; throw e; }); }
       return go();
     }
     mr.ondataavailable = function (e) {
