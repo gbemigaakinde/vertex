@@ -235,7 +235,7 @@ export async function handleMeet(request, env, h, verifyIdToken) {
     return out({ ok: true });
   }
   const act = String(b.action || '');
-  const TEACHER_ONLY = ['audience', 'create', 'update', 'cancel', 'start', 'end', 'rec-start', 'rec-stop', 'mute-all', 'kick', 'code', 'allow'];
+  const TEACHER_ONLY = ['audience', 'create', 'update', 'cancel', 'start', 'end', 'rec-start', 'rec-stop', 'mute-all', 'kick', 'code', 'allow', 'extend'];
   if (TEACHER_ONLY.indexOf(act) !== -1 && !isTeacher) return out({ error: 'Only the teacher can do that.' }, 403);
 
   try {
@@ -330,7 +330,8 @@ export async function handleMeet(request, env, h, verifyIdToken) {
       if (isTeacher) { grant.roomAdmin = true; grant.roomRecord = true; }
       const token = await lkToken(env, { sub: user.uid, name: name, metadata: JSON.stringify({ role: isTeacher ? 'teacher' : 'student', cls: cls }), video: grant }, 4 * 3600);
       return out({ token: token, url: env.LIVEKIT_URL, room: m.roomName, name: name, role: isTeacher ? 'teacher' : 'student', canPublish: !!isTeacher,
-        recording: m.recStatus === 'recording', title: m.title });
+        recording: m.recStatus === 'recording', title: m.title,
+        startedAtMs: (m.startedAt ? new Date(m.startedAt).getTime() : 0) || 0, durationMin: m.durationMin || 60, extraMin: m.extraMin || 0, serverNow: Date.now() });
     }
 
     if (act === 'rec-start') {
@@ -348,6 +349,14 @@ export async function handleMeet(request, env, h, verifyIdToken) {
       try { await lkApi(env, 'RoomService', 'DeleteRoom', { room: m.roomName }, { roomCreate: true }); } catch (e) { /* room may be empty */ }
       await db.patch('meetings/' + m._id, { status: 'ended', endedAt: new Date(), recStatus: m.recChunks > 0 ? 'ready' : 'none' });
       return out({ ok: true });
+    }
+
+    if (act === 'extend') {
+      if (m.status !== 'live') return out({ error: 'This meeting is not live.' }, 400);
+      const add = Math.max(5, Math.min(120, parseInt(b.minutes, 10) || 15));
+      const total = (m.extraMin || 0) + add;
+      await db.patch('meetings/' + m._id, { extraMin: total });
+      return out({ ok: true, extraMin: total });
     }
 
     if (act === 'mute-all') {

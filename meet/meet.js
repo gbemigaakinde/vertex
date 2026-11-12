@@ -398,7 +398,9 @@
       if (seq >= MAXC) { toast('Recording limit (160 min) reached.'); try { mr.stop(); } catch (er) { /* ignore */ } }
     };
     mr.start(SLICE);
-    R.rec = { stop: function () {
+    R.rec = { pause: function () { try { if (mr.state === 'recording') mr.pause(); } catch (er) { /* ignore */ } },
+      resume: function () { try { if (mr.state === 'paused') mr.resume(); } catch (er) { /* ignore */ } },
+      stop: function () {
       clearInterval(drawT); clearInterval(wireT);
       return new Promise(function (res) { if (mr.state === 'inactive') return res(); var fb = setTimeout(res, 10000); mr.onstop = function () { clearTimeout(fb); res(); }; try { mr.stop(); } catch (er) { clearTimeout(fb); res(); } })
         .then(function () { return q; }).then(function () { try { actx.close(); } catch (er) { /* ignore */ } return { chunks: seq, failed: failed }; });
@@ -421,7 +423,7 @@
 
   function enterRoom(id, j) {
     var LK = window.LivekitClient, el = $('#vm-room'), tch = j.role === 'teacher';
-    var R = state.room = { canPub: !!j.canPublish, id: id, tiles: {}, hands: {}, chat: [], unread: 0, panel: 'chat', sharing: false, recording: !!j.recording, role: j.role, leaving: false, notified: false };
+    var R = state.room = { canPub: !!j.canPublish, id: id, tiles: {}, hands: {}, chat: [], unread: 0, panel: 'chat', sharing: false, recording: !!j.recording, role: j.role, leaving: false, notified: false, paused: false, extra: +j.extraMin || 0 };
     var mobile = function () { return window.innerWidth < 640; };
     el.innerHTML =
       '<div class="vm-rhead"><div class="vm-rtitle"><b>' + esc(j.title) + '</b><small id="vm-count">Connecting…</small></div><span class="vm-rec' + (R.recording ? ' on' : '') + '"><i></i>REC</span>' +
@@ -535,7 +537,7 @@
       .on(LK.RoomEvent.TrackUnsubscribed, function (tr, pub, p) { detach(tr, p, pub); })
       .on(LK.RoomEvent.LocalTrackPublished, function (pub, p) { if (pub.track) attach(pub.track, p, pub); syncCtl(); })
       .on(LK.RoomEvent.LocalTrackUnpublished, function (pub, p) { if (pub.track) detach(pub.track, p, pub); if (pub.source === LK.Track.Source.ScreenShare) R.sharing = false; syncCtl(); })
-      .on(LK.RoomEvent.ParticipantConnected, function (p) { if (wantTile(p)) { tileFor(p); updTag(p); } count(); people(); announce(p); })
+      .on(LK.RoomEvent.ParticipantConnected, function (p) { if (wantTile(p)) { tileFor(p); updTag(p); } count(); people(); announce(p); if (tch && R.paused) setTimeout(function () { send({ t: 'pause', on: true }); }, 1200); })
       .on(LK.RoomEvent.TrackUnpublished, function (pub, p) { if (!p.isLocal && !wantTile(p) && R.tiles[p.identity]) { R.tiles[p.identity].remove(); delete R.tiles[p.identity]; layout(); } people(); })
       .on(LK.RoomEvent.ParticipantPermissionsChanged, function (prev, p) {
         p = p || room.localParticipant;
@@ -564,6 +566,8 @@
         if (!m || typeof m !== 'object') return;
         if (m.t === 'chat') { R.chat.push({ from: (p && p.name) || 'Guest', text: String(m.x).slice(0, 500) }); if (R.panel === 'chat' && panelOpen()) chatView(); else { R.unread++; badge(); } }
         if (m.t === 'hand' && p) { R.hands[p.identity] = !!m.on; var tl = R.tiles[p.identity]; if (tl) tl.querySelector('.vm-hand').classList.toggle('on', !!m.on); people(); if (m.on && tch) toast((p.name || 'A student') + ' raised a hand'); }
+        if (m.t === 'pause' && p && isTeach(p) && !tch) { holdOn(!!m.on, m.secs); }
+        if (m.t === 'ended' && p && isTeach(p) && !tch) { holdOn(true, 0, true); }
         if (m.t === 'rec') { R.recording = !!m.on; el.querySelector('.vm-rec').classList.toggle('on', R.recording); }
       })
       .on(LK.RoomEvent.Disconnected, function () { if (state.room === R) { if (!R.leaving) toast('The meeting ended or you were removed.'); leave(true); } });
@@ -594,13 +598,81 @@
     function leave(silent) {
       var r = state.room; if (!r) return; r.leaving = true;
       if (r.rec) { toast('Saving the recording…'); stopRecording(r).then(function () { leave(silent); }); return; }
-      (r.joinTimers || []).forEach(clearTimeout);
+      (r.joinTimers || []).forEach(clearTimeout); clearInterval(r.endTimer); clearInterval(r.cdTimer);
       state.room = null; window.removeEventListener('beforeunload', onUnload); window.removeEventListener('resize', layout);
       try { r.lk.disconnect(); } catch (e) { /* ignore */ }
       el.classList.remove('open'); el.innerHTML = '';
       if (!silent) toast('You left the meeting.');
       refresh(false);
     }
+
+
+    /* ── Time is up: teacher decides (20s) while everything is paused ── */
+    var CD_MS = 20000, EXTEND_MIN = 15, skew = j.serverNow ? (j.serverNow - Date.now()) : 0;
+    var startMs = +j.startedAtMs || Date.now();
+    function endMs() { return startMs + ((+j.durationMin || 60) + R.extra) * 60000; }
+    function remaining() { return endMs() - (Date.now() + skew); }
+    function holdOn(on, secs, ended) {
+      var host = $('.vm-main', el), h = el.querySelector('.vm-hold'), lp = room.localParticipant;
+      if (!on) {
+        if (h) h.remove(); el.classList.remove('holding');
+        if (R.held) { R.held = false; if (R.heldMic) lp.setMicrophoneEnabled(true).catch(function () {}); if (R.heldCam) lp.setCameraEnabled(true).catch(function () {}); R.heldMic = R.heldCam = false; syncCtl(); }
+        toast('The teacher is continuing the meeting.'); return;
+      }
+      if (!h) {
+        h = document.createElement('div'); h.className = 'vm-hold'; h.setAttribute('role', 'alertdialog'); h.setAttribute('aria-live', 'assertive');
+        host.appendChild(h);
+      }
+      el.classList.add('holding');
+      if (!R.held) { R.held = true; R.heldMic = lp.isMicrophoneEnabled; R.heldCam = lp.isCameraEnabled; if (R.heldMic) lp.setMicrophoneEnabled(false).catch(function () {}); if (R.heldCam) lp.setCameraEnabled(false).catch(function () {}); }
+      h.innerHTML = ended
+        ? '<div class="vm-holdcard"><div class="vm-holdic end">' + ic('flag-checkered') + '</div><h4>The meeting is ending</h4><p>Your teacher ended the class. You will be taken out in a moment.</p></div>'
+        : '<div class="vm-holdcard"><div class="vm-holdic">' + ic('hourglass-medium') + '</div><h4>Class time is up</h4><p>Your teacher is deciding whether to continue. The class is paused and will carry on or end in a few seconds. Please stay on this screen.</p><div class="vm-spin sm"></div></div>';
+    }
+    function teacherTimeUp() {
+      if (R.paused || R.leaving || state.room !== R) return;
+      R.paused = true; var lp = room.localParticipant;
+      R.heldMic = lp.isMicrophoneEnabled; R.heldCam = lp.isCameraEnabled;
+      if (R.heldMic) lp.setMicrophoneEnabled(false).catch(function () {});
+      if (R.heldCam) lp.setCameraEnabled(false).catch(function () {});
+      if (R.rec && R.rec.pause) R.rec.pause();
+      send({ t: 'pause', on: true, secs: CD_MS / 1000 }); syncCtl();
+      var m = document.createElement('div'); m.className = 'vm-modal vm-timeup';
+      m.innerHTML = '<div class="vm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="vm-tu-t"><div class="vm-cd" aria-hidden="true"><svg viewBox="0 0 64 64"><circle class="bg" cx="32" cy="32" r="28"></circle><circle class="fg" cx="32" cy="32" r="28"></circle></svg><b id="vm-tu-n">20</b></div>' +
+        '<h4 id="vm-tu-t">Scheduled time is up</h4><p id="vm-tu-p">The class is paused for everyone. Continue for ' + EXTEND_MIN + ' more minutes, or end now' + (R.rec ? ' and save the recording' : '') + '? If you do not respond, the meeting will be saved and ended automatically.</p>' +
+        '<div class="vm-actions"><button class="vm-btn danger" data-tu="end">End meeting</button><button class="vm-btn pri" data-tu="go">Continue ' + EXTEND_MIN + ' min</button></div></div>';
+      el.appendChild(m); var go = m.querySelector('[data-tu="go"]'); if (go) go.focus();
+      var t0 = Date.now(), n = m.querySelector('#vm-tu-n'), fg = m.querySelector('.fg'), C = 2 * Math.PI * 28, done = false;
+      fg.style.strokeDasharray = C; fg.style.strokeDashoffset = 0;
+      function close() { clearInterval(R.cdTimer); }
+      function finish(cont, auto) {
+        if (done) return; done = true; close();
+        if (cont) {
+          m.remove(); R.extra += EXTEND_MIN; R.paused = false;
+          api('extend', { id: id, minutes: EXTEND_MIN }).catch(function () { toast('Could not save the extension, but the class will continue.'); });
+          if (R.heldMic) lp.setMicrophoneEnabled(true).catch(function () {}); if (R.heldCam) lp.setCameraEnabled(true).catch(function () {});
+          R.heldMic = R.heldCam = false; if (R.rec && R.rec.resume) R.rec.resume();
+          send({ t: 'pause', on: false }); syncCtl(); toast('Meeting extended by ' + EXTEND_MIN + ' minutes.');
+          return;
+        }
+        m.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+        m.querySelector('h4').textContent = auto ? 'No response. Ending the meeting' : 'Ending the meeting';
+        m.querySelector('#vm-tu-p').textContent = R.rec ? 'Saving the recording. Please keep this tab open.' : 'Closing the meeting for everyone.';
+        m.querySelector('.vm-cd').classList.add('busy'); n.innerHTML = '<span class="vm-spin sm"></span>';
+        send({ t: 'ended' });
+        if (R.rec && R.rec.resume) R.rec.resume();
+        stopRecording(R).then(function () { return api('end', { id: id }); }).catch(function () {}).then(function () { m.remove(); if (auto) toast('Time ran out. The meeting was saved and ended.'); leave(true); });
+      }
+      m.addEventListener('click', function (e) { var b = e.target.closest('[data-tu]'); if (b) finish(b.dataset.tu === 'go', false); });
+      R.cdTimer = setInterval(function () {
+        var left = CD_MS - (Date.now() - t0); if (left < 0) left = 0;
+        n.textContent = Math.ceil(left / 1000); fg.style.strokeDashoffset = C * (1 - left / CD_MS);
+        m.classList.toggle('urgent', left <= 5000);
+        if (left <= 0) finish(false, true);
+      }, 200);
+    }
+    R.timeUp = teacherTimeUp;
+    if (tch) R.endTimer = setInterval(function () { if (R.t0 && !R.paused && !R.leaving && remaining() <= 0) teacherTimeUp(); }, 1000);
 
     el.onclick = function (ev) {
       var al = ev.target.closest('[data-allow]');
