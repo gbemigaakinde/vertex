@@ -10,7 +10,7 @@
   'use strict';
   var WORKER_URL = (window.MEET_WORKER_URL || 'https://vertex-worker.gbemigaakinde.workers.dev');
   var root, poll, loadSeq = 0;
-  var state = { tab: 'upcoming', meetings: [], replays: [], role: 'student', audience: null, form: null, room: null, loaded: false };
+  var state = { tab: 'upcoming', meetings: [], replays: [], role: 'student', audience: null, form: null, room: null, loaded: false, extra: {}, codeText: '' };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var $ = function (sel, el) { return (el || root).querySelector(sel); };
   var ic = function (n) { return '<i class="ph ph-' + n + '" aria-hidden="true"></i>'; };
@@ -80,6 +80,7 @@
     root.addEventListener('click', onClick);
     root.addEventListener('input', function () { if (state.form) readForm(); });
     root.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.target.id === 'vm-code') { e.preventDefault(); joinByCode(e.target.value, $('[data-a="joincode"]')); return; }
       if (e.key !== 'Escape') return;
       var dlg = root.querySelector('.vm-modal:last-child'); if (dlg && dlg.classList.contains('vm-modal')) { dlg.remove(); return; }
       if (!state.room) close();
@@ -95,7 +96,7 @@
   function open() {
     build(); root.classList.add('open'); document.body.classList.add('vm-open');
     refresh(true); clearInterval(poll);
-    poll = setInterval(function () { if (!state.room && !state.form && root.classList.contains('open')) refresh(false); }, 30000);
+    poll = setInterval(function () { if (!state.room && !state.form && root.classList.contains('open') && !(document.activeElement && document.activeElement.id === 'vm-code')) refresh(false); }, 30000);
   }
   function close() {
     if (!root) return;
@@ -108,16 +109,28 @@
     if (!root) return;
     var b = $('#vm-body'), seq = ++loadSeq;
     if (showSkeleton && !state.loaded) b.innerHTML = '<div class="vm-skel"></div><div class="vm-skel"></div><div class="vm-skel"></div>';
-    Promise.all([api('list'), api('replays')]).then(function (r) {
+    Promise.all([api('list'), api('replays').catch(function () { return { replays: [] }; })]).then(function (r) {
+      state.meetings = r[0].meetings || []; state.role = r[0].role; state.replays = r[1].replays || [];
+      var ids = Object.keys(state.extra);
+      return Promise.all(ids.map(function (id) {
+        return api('find-code', { code: state.extra[id].code }).then(function (x) { return x.meeting; }).catch(function () { return null; });
+      })).then(function (found) {
+        ids.forEach(function (id, i) {
+          var m = found[i];
+          if (!m) { delete state.extra[id]; return; }
+          if (state.meetings.some(function (x) { return x.id === m.id; })) { delete state.extra[id]; return; }
+          m._code = state.extra[id].code; state.meetings.push(m);
+        });
+      });
+    }).then(function () {
       if (seq !== loadSeq) return;
-      state.meetings = r[0].meetings || []; state.role = r[0].role; state.replays = r[1].replays || []; state.loaded = true;
-      setLive();
+      state.loaded = true; setLive();
       $('[data-a="new"]').style.display = isTeacher() ? '' : 'none';
       if (!state.form) render();
     }).catch(function (e) {
-      if (seq !== loadSeq) return;
-      if (state.loaded) return;
-      b.innerHTML = '<div class="vm-empty">' + ic('wifi-slash') + '<b>Could not load meetings</b><p>' + esc(e.message) + '</p><p style="margin-top:14px"><button class="vm-btn pri" data-a="retry">Try again</button></p></div>';
+      if (seq !== loadSeq || state.loaded) return;
+      var off = /offline|connection/i.test(e.message || '');
+      b.innerHTML = '<div class="vm-empty">' + ic(off ? 'wifi-slash' : 'warning-circle') + '<b>' + (off ? 'You are offline' : 'Could not load meetings') + '</b><p>' + esc(e.message) + '</p><p style="margin-top:14px"><button class="vm-btn pri" data-a="retry">Try again</button></p></div>';
     });
   }
   function setLive() {
@@ -129,11 +142,12 @@
 
   function render() {
     root.querySelectorAll('.vm-tab').forEach(function (t) { var on = t.dataset.tab === state.tab; t.classList.toggle('on', on); t.setAttribute('aria-selected', on); });
-    var b = $('#vm-body'), h = '';
+    var b = $('#vm-body'), h = '', ci = $('#vm-code'); if (ci) state.codeText = ci.value;
+    if (!isTeacher() && state.tab === 'upcoming' && !state.form) h += '<form class="vm-joincode" onsubmit="return false">' + ic('key') + '<input type="text" id="vm-code" placeholder="Have a meeting code? Enter it here" maxlength="14" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Meeting code" value="' + esc(state.codeText) + '"><button type="button" class="vm-btn pri" data-a="joincode">Join</button></form>';
     if (state.form) h += formHtml();
     if (state.tab === 'upcoming') {
       var list = state.meetings.filter(function (m) { return m.status !== 'ended'; }).sort(function (a, c) { return (a.status === 'live' ? -1 : 0) - (c.status === 'live' ? -1 : 0) || a.startsAt - c.startsAt; });
-      if (!list.length && !state.form) h += '<div class="vm-empty">' + ic('calendar-blank') + '<b>No meetings scheduled</b><p>' + (isTeacher() ? 'Create a meeting to teach live, share your screen and record the class.' : 'When your teacher schedules a live class, it will show up here.') + '</p></div>';
+      if (!list.length && !state.form) h += '<div class="vm-empty">' + ic('calendar-blank') + '<b>No meetings scheduled</b><p>' + (isTeacher() ? 'Create a meeting to teach live, share your screen and record the class.' : 'When your teacher schedules a live class for you, it shows up here. Got a code? Enter it above.') + '</p></div>';
       list.forEach(function (m) { h += meetingCard(m); });
     } else {
       if (!state.replays.length) h += '<div class="vm-empty">' + ic('film-slate') + '<b>No recordings yet</b><p>Replays appear here after a recorded meeting ends.</p></div>';
@@ -152,9 +166,11 @@
     var who = au.type === 'all' ? 'All students' : au.type === 'classes' ? (au.classes || []).join(', ') : au.type === 'students' ? (au.students || []).length + ' selected student' + ((au.students || []).length === 1 ? '' : 's') : '';
     if (t) {
       a += live ? '<button class="vm-btn pri" data-a="join" data-id="' + id + '">' + ic('sign-in') + 'Re-join</button>' : '<button class="vm-btn pri" data-a="start" data-id="' + id + '">' + ic('play') + 'Start</button>';
+      a += '<button class="vm-btn" data-a="share" data-id="' + id + '">' + ic('share-network') + 'Invite</button>';
       if (!live) a += '<button class="vm-btn" data-a="edit" data-id="' + id + '">' + ic('pencil-simple') + 'Edit</button>';
       a += '<button class="vm-btn ghost" data-a="cancel" data-id="' + id + '">' + (live ? 'End' : 'Cancel') + '</button>';
     } else a += live ? '<button class="vm-btn pri" data-a="join" data-id="' + id + '">' + ic('sign-in') + 'Join now</button>' : '<button class="vm-btn" data-a="join" data-id="' + id + '">Join</button>';
+    if (!t && m._code) a = a.replace(/data-a="join"/g, 'data-a="join" data-code="' + esc(m._code) + '"');
     return '<div class="vm-card' + (live ? ' is-live' : '') + '"><div class="vm-date"><b>' + d.getDate() + '</b><span>' + MONTHS[d.getMonth()] + '</span></div>' +
       '<div class="vm-info"><h3>' + esc(m.title) + '</h3><div class="vm-meta">' + (live ? '<span class="vm-badge live">Live</span>' : '') +
       '<span>' + ic('clock') + esc(when(m)) + ' &middot; ' + (+m.durationMin || 0) + ' min</span>' +
@@ -217,7 +233,7 @@
     showErr('');
     var p = { id: f.id, title: title, description: f.description.trim(), startsAt: f.startsAt, durationMin: f.durationMin, recordingEnabled: f.rec, audience: { type: f.type, classes: f.type === 'classes' ? f.classes : [], students: f.type === 'students' ? f.students : [] } };
     var btn = $('[data-a="save"]'); btn.disabled = true; btn.textContent = 'Saving…';
-    api(f.id ? 'update' : 'create', p).then(function () { state.form = null; toast(f.id ? 'Changes saved.' : 'Meeting scheduled.'); refresh(false); render(); })
+    api(f.id ? 'update' : 'create', p).then(function (r) { var isNew = !f.id; state.form = null; toast(isNew ? 'Meeting scheduled.' : 'Changes saved.'); refresh(false); render(); if (isNew && r && r.code) shareDialog({ id: r.id, code: r.code }); })
       .catch(function (e) { var b = $('[data-a="save"]'); if (b) { b.disabled = false; b.textContent = f.id ? 'Save changes' : 'Schedule meeting'; } showErr(e.message); });
   }
 
@@ -234,7 +250,7 @@
     var el = e.target.closest('[data-a]'); if (!el) return;
     var a = el.dataset.a, id = el.dataset.id;
     var m = state.meetings.filter(function (x) { return x.id === id; })[0];
-    if (['edit', 'cancel', 'start', 'join'].indexOf(a) > -1 && !m) { toast('That meeting is no longer available.'); return refresh(false); }
+    if (['edit', 'cancel', 'start', 'join', 'share'].indexOf(a) > -1 && !m) { toast('That meeting is no longer available.'); return refresh(false); }
     if (a === 'close') close();
     else if (a === 'retry') refresh(true);
     else if (a === 'theme') { if (window.VtxTheme) VtxTheme.toggle(); }
@@ -248,8 +264,53 @@
         onOk: function () { api(live ? 'end' : 'cancel', { id: id }).then(function () { refresh(false); }).catch(function (er) { toast(er.message); }); } });
     }
     else if (a === 'start') { el.disabled = true; api('start', { id: id }).then(function () { return joinRoom(id, el); }).catch(function (er) { el.disabled = false; toast(er.message); }); }
-    else if (a === 'join') { el.disabled = true; joinRoom(id, el); }
+    else if (a === 'join') { el.disabled = true; joinRoom(id, el, el.dataset.code); }
+    else if (a === 'share') shareDialog(m);
+    else if (a === 'joincode') joinByCode(($('#vm-code') || {}).value, el);
     else if (a === 'replay') playReplay(id);
+  }
+
+  /* ── Meeting code: join (students) and invite (teacher) ── */
+  var fmtCode = function (c) { c = String(c || ''); return c.length > 4 ? c.slice(0, 4) + '-' + c.slice(4) : c; };
+  function joinByCode(raw, btn) {
+    var code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length < 6) { toast('Enter the full meeting code your teacher gave you.'); return; }
+    if (state.room) { toast('You are already in a meeting.'); return; }
+    if (btn) btn.disabled = true;
+    api('find-code', { code: code }).then(function (r) {
+      if (btn) btn.disabled = false;
+      var m = r.meeting; m._code = code;
+      if (!state.meetings.some(function (x) { return x.id === m.id; })) { state.meetings.push(m); state.extra[m.id] = { code: code }; }
+      state.codeText = ''; var cbox = $('#vm-code'); if (cbox) cbox.value = ''; if (!state.form) render();
+      if (m.status === 'live') joinRoom(m.id, null, code);
+      else toast('Found "' + m.title + '". It starts ' + when(m) + '. Tap Join once the teacher begins.');
+    }).catch(function (e) { if (btn) btn.disabled = false; toast(e.message); });
+  }
+  function copyText(text, done) {
+    var ok = function () { toast(done); };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(ok, function () { legacy(); }); } else legacy();
+    function legacy() { var t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); ok(); } catch (e) { toast('Could not copy. Select the text and copy it manually.'); } t.remove(); }
+  }
+  function shareDialog(m, host) {
+    var go = function (code) {
+      var link = location.origin + '/?meet=' + code, h = host || root, d = document.createElement('div'); d.className = 'vm-modal';
+      d.innerHTML = '<div class="vm-dialog" role="dialog" aria-modal="true"><h4>Invite students</h4><p>Anyone with this code can join once you start the meeting. Students enter it under Live, or open the link.</p>' +
+        '<div class="vm-codebig" aria-label="Meeting code">' + esc(fmtCode(code)) + '</div><div class="vm-linkrow">' + esc(link) + '</div>' +
+        '<div class="vm-share-actions"><button class="vm-btn" data-c="code">' + ic('copy') + 'Copy code</button><button class="vm-btn" data-c="link">' + ic('link') + 'Copy link</button>' +
+        (navigator.share ? '<button class="vm-btn" data-c="share">' + ic('share-network') + 'Share</button>' : '') + '</div>' +
+        '<div class="vm-actions" style="margin-top:12px"><button class="vm-btn pri" data-c="done" style="width:100%">Done</button></div></div>';
+      d.addEventListener('click', function (e) {
+        if (e.target === d) return d.remove();
+        var b = e.target.closest('[data-c]'); if (!b) return; var c = b.dataset.c;
+        if (c === 'done') d.remove();
+        else if (c === 'code') copyText(code, 'Code copied.');
+        else if (c === 'link') copyText(link, 'Link copied.');
+        else if (c === 'share') navigator.share({ title: 'Join my live class', text: 'Join my live class on Vertex. Meeting code: ' + fmtCode(code), url: link }).catch(function () {});
+      });
+      h.appendChild(d);
+    };
+    if (m.code) return go(m.code);
+    api('code', { id: m.id }).then(function (r) { m.code = r.code; go(r.code); }).catch(function (e) { toast(e.message); });
   }
 
   /* ── Replay ── */
@@ -332,11 +393,11 @@
   }
 
   /* ── Room ── */
-  function joinRoom(id, btn) {
+  function joinRoom(id, btn, code) {
     var again = function () { if (btn) btn.disabled = false; };
     if (state.room) { again(); return; }
     if (!window.LivekitClient) { again(); toast('The meeting engine did not load. Refresh the page and try again.'); return; }
-    api('join', { id: id }).then(function (j) { again(); enterRoom(id, j); })
+    api('join', { id: id, code: code || undefined }).then(function (j) { again(); enterRoom(id, j); })
       .catch(function (e) { again(); toast(e.code === 'waiting' ? 'The teacher has not started yet. You can join once they do.' : e.message); if (e.status === 404 || e.status === 403) refresh(false); });
   }
 
@@ -346,7 +407,7 @@
     var mobile = function () { return window.innerWidth < 640; };
     el.innerHTML =
       '<div class="vm-rhead"><div class="vm-rtitle"><b>' + esc(j.title) + '</b><small id="vm-count">Connecting…</small></div><span class="vm-rec' + (R.recording ? ' on' : '') + '"><i></i>REC</span>' +
-      (tch ? '<button class="vm-btn" data-r="rec" aria-label="Record">' + ic(R.recording ? 'stop-circle' : 'record') + '<span>' + (R.recording ? 'Stop' : 'Record') + '</span></button><button class="vm-btn" data-r="muteall" aria-label="Mute everyone">' + ic('microphone-slash') + '<span>Mute all</span></button>' : '') +
+      (tch ? '<button class="vm-btn" data-r="invite" aria-label="Invite students">' + ic('user-plus') + '<span>Invite</span></button><button class="vm-btn" data-r="rec" aria-label="Record">' + ic(R.recording ? 'stop-circle' : 'record') + '<span>' + (R.recording ? 'Stop' : 'Record') + '</span></button><button class="vm-btn" data-r="muteall" aria-label="Mute everyone">' + ic('microphone-slash') + '<span>Mute all</span></button>' : '') +
       '<button class="vm-iconbtn" data-r="theme" aria-label="Switch light or dark mode" style="display:none"></button></div>' +
       '<div class="vm-main"><div class="vm-stage" id="vm-stage"></div>' +
       '<div class="vm-side" id="vm-side"><div class="vm-sidehead"><button class="seg on" data-p="chat">Chat</button><button class="seg" data-p="people">People</button><button class="vm-iconbtn" data-r="chat" aria-label="Close panel">' + ic('x') + '</button></div><div class="vm-pane" id="vm-pane"></div>' +
@@ -504,6 +565,7 @@
           api('rec-start', { id: id }).then(function () { R.recording = true; send({ t: 'rec', on: true }); done(); }).catch(function (e) { stopRecording(R); b.disabled = false; toast(e.message); });
         }
       }
+      else if (a === 'invite') { var mm = state.meetings.filter(function (x) { return x.id === id; })[0] || { id: id }; shareDialog(mm, el); }
       else if (a === 'muteall') api('mute-all', { id: id }).then(function (r) { toast('Muted ' + (r.muted || 0) + ' participant' + (r.muted === 1 ? '' : 's') + '.'); }).catch(function (e) { toast(e.message); });
     };
     el.onkeydown = function (ev) { if (ev.key === 'Enter' && ev.target.id === 'vm-ci') { ev.preventDefault(); var s = el.querySelector('[data-r="send"]'); if (s) s.click(); } };
@@ -511,15 +573,30 @@
   }
 
   /* ── Boot: nothing is added to the page until Meet.open() is called ── */
+  function captureLink() {
+    try {
+      var q = new URLSearchParams(location.search).get('meet');
+      if (!q) return;
+      sessionStorage.setItem('vtx-meet-code', q);
+      var u = new URL(location.href); u.searchParams.delete('meet');
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+    } catch (e) { /* ignore */ }
+  }
+  function openFromLink() {
+    var c = null; try { c = sessionStorage.getItem('vtx-meet-code'); sessionStorage.removeItem('vtx-meet-code'); } catch (e) { /* ignore */ }
+    if (!c) return;
+    setTimeout(function () { open(); joinByCode(c, null); }, 1500);
+  }
   function boot() {
     if (!window.fbAuth) return setTimeout(boot, 500);
     window.fbAuth.onAuthStateChanged(function (u) {
-      if (u) { checkLive(); return; }
-      state = { tab: 'upcoming', meetings: [], replays: [], role: 'student', audience: null, form: null, room: null, loaded: false };
+      if (u) { checkLive(); openFromLink(); return; }
+      state = { tab: 'upcoming', meetings: [], replays: [], role: 'student', audience: null, form: null, room: null, loaded: false, extra: {}, codeText: '' };
       if (root) { root.classList.remove('open'); root.remove(); root = null; document.body.classList.remove('vm-open'); }
       clearInterval(poll); window.Meet.live = false;
     });
   }
   window.Meet = { open: open, close: close, refresh: refresh, live: false };
+  captureLink();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

@@ -284,3 +284,24 @@ body.vm-open #themeToggle { display: none !important; }
 }
 @media (max-width: 360px) { .vm-bar { gap: 6px; } .vm-ctl { width: 42px; height: 42px; } .vm-ctl.leave { width: 56px; } }
 @media (prefers-reduced-motion: reduce) { .vm-root *, .vm-toast { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* ---------- Join with a code + invite dialog ---------- */
+.vm-joincode { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; margin-bottom: 16px; background: var(--vm-surface); border: 1px solid var(--vm-border); border-radius: var(--vm-radius); }
+.vm-joincode > i.ph { font-size: 20px; color: var(--vm-t3); flex: none; }
+.vm-joincode input {
+  flex: 1; min-width: 0; min-height: 40px; padding: 0 4px; border: 0 !important; outline: none !important; box-shadow: none !important;
+  background: transparent !important; color: var(--vm-t1) !important; -webkit-text-fill-color: var(--vm-t1);
+  font: 500 15px inherit; font-family: inherit; letter-spacing: .02em; text-transform: uppercase;
+}
+.vm-joincode input::placeholder { color: var(--vm-t3); -webkit-text-fill-color: var(--vm-t3); text-transform: none; letter-spacing: 0; opacity: 1; }
+.vm-joincode:focus-within { border-color: var(--vm-accent); box-shadow: 0 0 0 3px var(--vm-accent-sub); }
+.vm-codebig { margin: 0 0 10px; padding: 16px; text-align: center; border-radius: 14px; background: var(--vm-subtle); border: 1px solid var(--vm-border); font: 700 30px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; color: var(--vm-t1); user-select: all; }
+.vm-linkrow { margin-bottom: 14px; padding: 9px 12px; border-radius: 10px; background: var(--vm-subtle); color: var(--vm-t3); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; user-select: all; }
+.vm-share-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.vm-share-actions .vm-btn { flex: 1; }
+.vm-room .vm-dialog .vm-btn { background: var(--vm-surface); border-color: var(--vm-border); color: var(--vm-t1); }
+.vm-room .vm-dialog .vm-btn.pri { background: var(--vm-accent); border-color: var(--vm-accent); color: #fff; }
+.vm-room .vm-dialog .vm-btn:hover { background: var(--vm-subtle); }
+.vm-room .vm-dialog .vm-btn.pri:hover { background: var(--vm-accent); }
+.vm-room .vm-dialog .vm-btn.danger { background: var(--vm-danger); border-color: var(--vm-danger); color: #fff; }
+.vm-room .vm-dialog .vm-btn.ghost { background: transparent; border-color: transparent; color: var(--vm-t2); }

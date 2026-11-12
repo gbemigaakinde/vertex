@@ -7,8 +7,8 @@
    Recording is done in the teacher's browser and saved to B2, so it does NOT use
    LiveKit's recording quota.
    Teacher only : audience, create, update, cancel, start, end, rec-start,
-                  rec-stop, mute-all, kick
-   Everyone     : list, join, replay, replays
+                  rec-stop, mute-all, kick, code
+   Everyone     : list, join, replay, replays, find-code (join with a meeting code)
    Access is decided server-side from the verified uid:
      - teacher = env.TEACHER_UID
      - student sees a meeting only if it targets "all", their class, or their uid
@@ -104,11 +104,18 @@ function canAccess(m, uid, isTeacher, cls) {
   return false;
 }
 
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const normCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+function newCode() {
+  const a = new Uint8Array(8); crypto.getRandomValues(a);
+  return Array.from(a).map(n => CODE_CHARS[n % CODE_CHARS.length]).join('');
+}
+
 function pub(m, isTeacher) {
   const o = { id: m._id, title: m.title, description: m.description || '', startsAt: m.startsAt, durationMin: m.durationMin,
     status: m.status, audience: m.audience || {}, recordingEnabled: !!m.recordingEnabled,
     recording: m.recStatus || 'none', hasReplay: !!(m.replayKey && m.recChunks > 0), endedAt: m.endedAt || null };
-  if (!isTeacher) o.audience = { type: o.audience.type };
+  if (!isTeacher) o.audience = { type: o.audience.type }; else o.code = m.code || '';
   return o;
 }
 
@@ -171,7 +178,7 @@ export async function handleMeet(request, env, h, verifyIdToken) {
     return out({ ok: true });
   }
   const act = String(b.action || '');
-  const TEACHER_ONLY = ['audience', 'create', 'update', 'cancel', 'start', 'end', 'rec-start', 'rec-stop', 'mute-all', 'kick'];
+  const TEACHER_ONLY = ['audience', 'create', 'update', 'cancel', 'start', 'end', 'rec-start', 'rec-stop', 'mute-all', 'kick', 'code'];
   if (TEACHER_ONLY.indexOf(act) !== -1 && !isTeacher) return out({ error: 'Only the teacher can do that.' }, 403);
 
   try {
@@ -203,8 +210,9 @@ export async function handleMeet(request, env, h, verifyIdToken) {
         durationMin: Math.max(5, Math.min(480, parseInt(b.durationMin, 10) || 60)), audience: audience, recordingEnabled: b.recordingEnabled !== false };
       if (act === 'create') {
         const id = 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-        await db.create('meetings', id, Object.assign(data, { teacherUid: user.uid, status: 'scheduled', roomName: 'vtx-' + id, createdAt: new Date() }));
-        return out({ ok: true, id: id });
+        const code = newCode();
+        await db.create('meetings', id, Object.assign(data, { code: code, teacherUid: user.uid, status: 'scheduled', roomName: 'vtx-' + id, createdAt: new Date() }));
+        return out({ ok: true, id: id, code: code });
       }
       const m = await db.get('meetings/' + b.id); if (!m) return out({ error: 'Meeting not found.' }, 404);
       if (m.status === 'ended' || m.status === 'cancelled') return out({ error: 'This meeting is already over.' }, 400);
@@ -219,9 +227,34 @@ export async function handleMeet(request, env, h, verifyIdToken) {
       return out({ meetings: mine, role: isTeacher ? 'teacher' : 'student' });
     }
 
+    if (act === 'replays') {
+      const rows = await db.list('meetings', 500);
+      const list = rows.filter(x => x.replayKey && x.recChunks > 0 && (x.status === 'ended') && canAccess(x, user.uid, isTeacher, cls))
+        .sort((a, c) => (c.startsAt || 0) - (a.startsAt || 0)).map(x => pub(x, isTeacher));
+      return out({ replays: list });
+    }
+
+    if (act === 'find-code') {
+      const code = normCode(b.code);
+      if (code.length < 6) return out({ error: 'Enter the full meeting code.' }, 400);
+      const rows = await db.list('meetings', 500);
+      const hit = rows.filter(x => x.code === code && x.status !== 'cancelled')[0];
+      if (!hit) return out({ error: 'No meeting found with that code. Check it and try again.' }, 404);
+      if (hit.status === 'ended') return out({ error: 'That meeting has already ended.' }, 400);
+      return out({ meeting: pub(hit, false) });
+    }
+
+    if (!b.id) return out({ error: 'Missing meeting.' }, 400);
     const m = await db.get('meetings/' + cleanStr(b.id, 80));
     if (!m) return out({ error: 'Meeting not found.' }, 404);
-    if (!canAccess(m, user.uid, isTeacher, cls)) return out({ error: 'You are not invited to this meeting.' }, 403);
+    const viaCode = act === 'join' && !!m.code && normCode(b.code) === m.code;
+    if (!viaCode && !canAccess(m, user.uid, isTeacher, cls)) return out({ error: 'You are not invited to this meeting. Ask your teacher for the meeting code.' }, 403);
+
+    if (act === 'code') {
+      let c = m.code;
+      if (!c) { c = newCode(); await db.patch('meetings/' + m._id, { code: c }); }
+      return out({ code: c });
+    }
 
     if (act === 'cancel') { await db.patch('meetings/' + m._id, { status: 'cancelled' }); return out({ ok: true }); }
 
@@ -275,13 +308,6 @@ export async function handleMeet(request, env, h, verifyIdToken) {
       if (!id || id === user.uid) return out({ error: 'Invalid participant.' }, 400);
       await lkApi(env, 'RoomService', 'RemoveParticipant', { room: m.roomName, identity: id }, { roomAdmin: true, room: m.roomName });
       return out({ ok: true });
-    }
-
-    if (act === 'replays') {
-      const rows = await db.list('meetings', 500);
-      const list = rows.filter(x => x.replayKey && x.recChunks > 0 && (x.status === 'ended') && canAccess(x, user.uid, isTeacher, cls))
-        .sort((a, c) => (c.startsAt || 0) - (a.startsAt || 0)).map(x => pub(x, isTeacher));
-      return out({ replays: list });
     }
 
     if (act === 'replay') {
