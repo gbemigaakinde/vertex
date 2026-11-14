@@ -3953,7 +3953,7 @@ function _renderAiText(str) {
 
   // Bold and italic
   safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
-  safe = safe.replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+  safe = safe.replace(/(^|[^*])\*(?!\*)([^*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
 
   // Sub/superscript
   safe = safe.replace(/([A-Za-z0-9)])\\_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sub>$2</sub>');

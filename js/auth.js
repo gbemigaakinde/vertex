@@ -562,7 +562,7 @@
     'lookup':      'We could not check that registration number. Check your internet connection and try again.',
     'register':    'We could not create your account. Check your details and your internet connection, then try again.',
     'reset':       'We could not send the reset email. Check the address and your internet connection, then try again.',
-    'profile':     'Could not load your profile. Please check your internet connection and try again.'
+    'profile':     'Your profile could not be opened because the app hit a problem on this device. Please close the app and open it again. If it keeps happening, update your phone software or try another browser, and tell Master Timothy.'
   };
 
   // Turns any Firebase (Auth or Firestore) error into one plain-English sentence.
@@ -581,6 +581,15 @@
     // Browser-level network failures arrive without a Firebase code
     if (!code && /network|failed to fetch|load failed|timed? ?out/i.test(raw)) {
       return _ERR_MSG['auth/network-request-failed'];
+    }
+
+    if (ctx === 'profile' && !fallback) {
+      // Not a network or database error: it is a fault inside the app on this device.
+      // Add a short technical tag so the teacher can see what failed from a screenshot.
+      var tag = err && err.name && err.name !== 'Error' ? String(err.name) : '';
+      var det = raw ? raw.replace(/\s+/g, ' ').slice(0, 80) : '';
+      var detail = (tag || det) ? ' (' + [tag, det].filter(Boolean).join(': ') + ')' : '';
+      return _FALLBACK_MSG.profile + detail;
     }
 
     return fallback || _FALLBACK_MSG[ctx] || _FALLBACK_MSG['login-email'];

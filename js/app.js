@@ -241,7 +241,7 @@
       UI.toast(
         (window.Auth && typeof Auth.describeError === 'function')
           ? Auth.describeError(err, 'profile')
-          : 'Could not load your profile. Please check your internet connection and try again.',
+          : 'Your profile could not be opened. Please close the app and open it again, and tell Master Timothy if it keeps happening.',
         'error', 0
       );
       if (window.DM && typeof DM.cancelListeners === 'function') {
