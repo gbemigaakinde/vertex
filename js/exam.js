@@ -1652,13 +1652,13 @@ function _closeFullClock() {
   /* ─────────────────────────────────────────────────────── */
 
 /* ── Session / term picker (students) ──────────────────────── */
-function _buildPeriodPickerHtml(classKey) {
+function _buildPeriodPickerHtml(classKey, examKey) {
   const QL = window.QuestionLoader;
   if (!QL || !QL.periodsFor) return '';
   try {
     const cur     = QL.getSelectedPeriod();
     const live    = QL.getActivePeriod();
-    const periods = QL.periodsFor(classKey);
+    const periods = QL.periodsFor(classKey, examKey);
     const label   = cur.session + ' · Term ' + cur.term;
     const isLive  = cur.session === live.session && cur.term === live.term;
 
@@ -1705,11 +1705,11 @@ async function _onPeriodChange(which) {
     term    = tEl ? Number(tEl.value) : 0;
     if (which === 'session') {
       // the new session may not have the same terms: pick the first one it has
-      const avail = QL.periodsFor(classKey).filter(p => p.session === session).map(p => p.term);
+      const avail = QL.periodsFor(classKey, _activeExamClass(classKey)).filter(p => p.session === session).map(p => p.term);
       if (avail.length && avail.indexOf(term) < 0) term = avail[0];
     }
   }
-  if (!QL.selectPeriod(session, term, classKey)) {
+  if (!QL.selectPeriod(session, term, classKey, _activeExamClass(classKey))) {
     UI.toast('That session and term is not available.', 'warning');
   }
   await renderSubjectSelection();
@@ -1737,7 +1737,10 @@ async function renderSubjectSelection() {
   try {
     const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
     // Use the student's chosen session/term when the teacher allows it, otherwise the live one.
-    try { if (window.QuestionLoader) QuestionLoader.applyForClass(classKey); } catch (e) { console.warn('[exam] period apply failed:', e); }
+    // Task-day rules always apply to the student's own class, so drop any cross-class choice then.
+    if (_isTodayTaskDayCompleted() || _getRestrictedSubjectsForToday() || _isTaskRestricted()) _examClassOverride = null;
+    // Sessions come from the class whose exams the student is taking (own class or an opened class).
+    try { if (window.QuestionLoader) QuestionLoader.applyForClass(classKey, _activeExamClass(classKey)); } catch (e) { console.warn('[exam] period apply failed:', e); }
     const _qBank   = window.questions || {};
 
     if (!S().studentData || !S().userId) {
@@ -1753,7 +1756,7 @@ async function renderSubjectSelection() {
     if (_isTodayTaskDayCompleted() || _getRestrictedSubjectsForToday() || _isTaskRestricted()) _examClassOverride = null;
     const examKey   = _activeExamClass(classKey);
     const bankState = _getBankState(examKey);
-    const periodPickerHtml = _buildPeriodPickerHtml(classKey);
+    const periodPickerHtml = _buildPeriodPickerHtml(classKey, examKey);
     if (bankState.problem) {
       console.error('[exam] Question bank problem for classKey "' + classKey + '":', bankState.problem);
     }
@@ -2721,7 +2724,8 @@ async function renderSubjectSelection() {
 
     const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
     // Re-check the period right before starting (the teacher may have turned free choice off).
-    try { if (window.QuestionLoader) QuestionLoader.applyForClass(classKey); } catch (e) {}
+    if (_isTodayTaskDayCompleted() || _getRestrictedSubjectsForToday() || _isTaskRestricted()) _examClassOverride = null;
+    try { if (window.QuestionLoader) QuestionLoader.applyForClass(classKey, _activeExamClass(classKey)); } catch (e) {}
     const _qBank   = window.questions || {};
     const _qPeriod = window.QuestionLoader ? QuestionLoader.getSelectedPeriod() : null;
     if (_isTodayTaskDayCompleted() || _getRestrictedSubjectsForToday() || _isTaskRestricted()) _examClassOverride = null;

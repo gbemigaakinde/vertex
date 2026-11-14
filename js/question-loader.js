@@ -438,9 +438,18 @@
     return _free.all !== false;
   }
 
-  // Periods this class can pick: every session/term that has questions for it, plus the live one.
-  function periodsFor(classKey) {
-    var c = normClass(classKey), seen = {}, out = [];
+  // The class whose question bank is being read: the student's own class, or a class the
+  // teacher has opened to them. Anything else falls back to the student's own class.
+  function bankClass(viewerKey, examClass) {
+    var v = normClass(viewerKey), e = normClass(examClass);
+    if (e && e !== v && openClassesFor(v).indexOf(e) >= 0) return e;
+    return v;
+  }
+
+  // Periods the student can pick: every session/term that has questions for the class whose
+  // exams they are taking (their own, or an opened class), plus the live one.
+  function periodsFor(classKey, examClass) {
+    var c = bankClass(classKey, examClass), seen = {}, out = [];
     function add(session, term, count) {
       var k = periodKey(session, term); if (!k || seen[k]) return;
       seen[k] = 1; out.push({ session: normSession(session), term: normTerm(term), key: k, subjects: count });
@@ -468,12 +477,12 @@
   }
 
   // Student picks a period. Returns true when applied.
-  function selectPeriod(session, term, classKey) {
+  function selectPeriod(session, term, classKey, examClass) {
     var p = { session: normSession(session), term: normTerm(term) };
     if (!validPeriod(p)) return false;
     if (!samePeriod(p, activePeriod)) {
       if (!freeSelectAllowed(classKey)) return false;
-      var ok = periodsFor(classKey).some(function (x) { return x.key === periodKey(p.session, p.term); });
+      var ok = periodsFor(classKey, examClass).some(function (x) { return x.key === periodKey(p.session, p.term); });
       if (!ok) return false;
     }
     writeSaved(samePeriod(p, activePeriod) ? null : p);
@@ -484,16 +493,16 @@
   // Called before the student's exam screen is built and before an exam starts:
   // keeps the saved choice only if it is still allowed and still has questions,
   // otherwise the live period is used.
-  function applyForClass(classKey) {
+  function applyForClass(classKey, examClass) {
     var want = readSaved();
     var target = activePeriod;
-    if (_taskPeriod && (samePeriod(_taskPeriod, activePeriod) || classHasPeriod(classKey, _taskPeriod))) {
+    if (_taskPeriod && (samePeriod(_taskPeriod, activePeriod) || classHasPeriod(bankClass(classKey, examClass), _taskPeriod))) {
       var curT = getSelectedPeriod();
       if (!samePeriod(curT, _taskPeriod) || !window.questions || !Object.keys(window.questions).length) rebuild(_taskPeriod);
       return getSelectedPeriod();
     }
     if (want && !samePeriod(want, activePeriod) && freeSelectAllowed(classKey) &&
-        periodsFor(classKey).some(function (x) { return x.key === periodKey(want.session, want.term); })) {
+        periodsFor(classKey, examClass).some(function (x) { return x.key === periodKey(want.session, want.term); })) {
       target = want;
     } else if (want) {
       writeSaved(null);
