@@ -1213,7 +1213,7 @@ function renderTeacherDashboard() {
 function showTab(tab) {
   // Live meetings open as their own full screen; the dashboard tab underneath stays as it was.
   if (tab === 'live') { if (window.Meet) Meet.open(); return; }
-     const ALL_TABS = ['approvals','students','results','schools','tasks','studyroom','games','questions','timetable','activity','groups','chat','dm','push','storage'];
+     const ALL_TABS = ['approvals','students','results','schools','tasks','studyroom','games','questions','timetable','activity','groups','chat','dm','push','storage','skills'];
 
   ALL_TABS.forEach(t => {
     const el  = document.getElementById(`teacher-${t}`);

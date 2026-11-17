@@ -82,8 +82,30 @@
       '.sk-btn{width:auto !important;padding:.5rem 1rem;border-radius:8px;border:1px solid var(--primary,#2563eb);background:var(--primary,#2563eb);color:#fff;cursor:pointer;font:inherit;font-size:.8125rem;}' +
       '.sk-btn:disabled{opacity:.5;cursor:not-allowed;}' +
       '.sk-state{font-size:.75rem;}' +
-      '.sk-warn{color:#b45309;}';
+      '.sk-warn{color:#b45309;}' +
+      '.sk-skel{border-radius:8px;background:linear-gradient(90deg,var(--border,#e5e7eb) 25%,rgba(128,128,128,.12) 50%,var(--border,#e5e7eb) 75%);background-size:200% 100%;animation:sk-shimmer 1.2s infinite linear;}' +
+      '@keyframes sk-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}' +
+      '.sk-err{border-color:#dc2626;}' +
+      '.sk-err p{margin:0;font-size:.875rem;}' +
+      '@media (prefers-reduced-motion:reduce){.sk-skel{animation:none;}}';
     document.head.appendChild(st);
+  }
+
+  function skeleton() {
+    return '<div class="sk" aria-busy="true" aria-label="Loading AI skills">' +
+      '<div><div class="sk-skel" style="height:1.4rem;width:8rem;margin-bottom:.5rem"></div><div class="sk-skel" style="height:.8rem;width:90%"></div></div>' +
+      '<div class="sk-card"><div class="sk-skel" style="height:1.1rem;width:60%"></div>' +
+      '<div class="sk-skel" style="height:.8rem;width:95%"></div>' +
+      '<div class="sk-skel" style="height:1rem;width:30%"></div>' +
+      '<div class="sk-skel" style="height:1rem;width:40%"></div>' +
+      '<div style="display:flex;gap:.5rem;flex-wrap:wrap"><div class="sk-skel" style="height:1.9rem;width:4.5rem"></div><div class="sk-skel" style="height:1.9rem;width:4.5rem"></div><div class="sk-skel" style="height:1.9rem;width:4.5rem"></div><div class="sk-skel" style="height:1.9rem;width:4.5rem"></div></div>' +
+      '<div class="sk-skel" style="height:2.2rem;width:5.5rem"></div></div></div>';
+  }
+
+  function errorView(msg) {
+    return '<div class="sk"><div class="sk-card sk-err"><p class="sk-title">AI Skills could not load</p>' +
+      '<p class="sk-muted">' + esc(msg) + '</p>' +
+      '<div class="sk-foot"><button type="button" class="sk-btn" data-act="retry">Try again</button></div></div></div>';
   }
 
   function summary(c) {
@@ -136,6 +158,7 @@
   }
 
   async function onClick(e) {
+    if (e.target.closest && e.target.closest('[data-act="retry"]')) { load(); return; }
     var btn = e.target.closest && e.target.closest('[data-act="save"]');
     if (!btn || S.busy) return;
     var card = btn.closest('[data-skill]');
@@ -154,28 +177,34 @@
     S.busy = false; draw();
   }
 
-  async function render(containerId) {
-    var root = document.getElementById(containerId);
-    if (!root) return;
-    if (!isTeacher()) { root.innerHTML = '<p>Teacher login required.</p>'; return; }
-    styles();
-    if (S.root !== root) {
-      S.root = root;
-      root.addEventListener('change', onChange);
-      root.addEventListener('click', onClick);
-    }
-    if (!window.fbDb) { root.innerHTML = '<p>The database is not ready yet.</p>'; return; }
-    root.innerHTML = '<p class="sk-muted">Loading…</p>';
+  async function load() {
+    S.root.innerHTML = skeleton();
     try {
       var snap = await window.fbDb.collection(DOC.col).doc(DOC.id).get();
       var d = snap.exists ? snap.data() : null;
       S.cfg = (d && d.skills && typeof d.skills === 'object') ? d.skills : {};
       S.dirty = {};
+      draw();
     } catch (e) {
-      toast('Could not load skill settings: ' + (e && e.message ? e.message : e), 'error');
-      S.cfg = {};
+      var denied = e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+      S.root.innerHTML = errorView(denied
+        ? 'Firestore refused the request. Publish the rule that lets teachers read and write aiSkills/config, then try again.'
+        : 'Could not load skill settings: ' + (e && e.message ? e.message : e));
     }
-    draw();
+  }
+
+  async function render(containerId) {
+    var root = document.getElementById(containerId);
+    if (!root) return;
+    styles();
+    if (!isTeacher()) { root.innerHTML = errorView('Teacher login required.'); return; }
+    if (S.root !== root) {
+      S.root = root;
+      root.addEventListener('change', onChange);
+      root.addEventListener('click', onClick);
+    }
+    if (!window.fbDb) { root.innerHTML = errorView('The database is not ready yet.'); return; }
+    await load();
   }
 
   window.SkillsManager = { render: render };
