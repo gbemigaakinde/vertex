@@ -795,6 +795,11 @@ function renderTeacherDashboard() {
       icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
     },
     {
+      tab: 'skills',
+      label: 'AI Skills',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 5.6L20 10l-5.6 2.4L12 18l-2.4-5.6L4 10l5.6-2.4z"/><path d="M19 17l.8 1.7L21.5 19.5l-1.7.8L19 22l-.8-1.7-1.7-.8 1.7-.8z"/></svg>`,
+    },
+    {
       tab: 'timetable',
       label: 'Timetable',
       icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
@@ -1183,6 +1188,7 @@ function renderTeacherDashboard() {
         <div id="teacher-storage" class="teacher-tab hidden"></div>
         <div id="teacher-timetable" class="teacher-tab hidden"></div>
         <div id="teacher-questions" class="teacher-tab hidden"></div>
+        <div id="teacher-skills" class="teacher-tab hidden"></div>
         <div id="teacher-games" class="teacher-tab hidden">
           <div style="display:flex;gap:.375rem;margin-bottom:1rem;flex-wrap:wrap;">
             <button onclick="Teacher._showGamesSubTab('stats')" id="gamesSubTabStats" class="btn" style="font-size:var(--text-xs);">Game Stats</button>
@@ -1257,6 +1263,7 @@ function showTab(tab) {
     return;
   }
   if (tab === 'questions') { if (window.QuestionManager) QuestionManager.render('teacher-questions'); return; }
+  if (tab === 'skills')    { if (window.SkillsManager) SkillsManager.render('teacher-skills'); return; }
   if (tab === 'timetable') { _loadTimetableManager();                        return; }
   if (tab === 'activity')  { _loadActivityLog();                             return; }
   if (tab === 'push')      { TeacherPush.renderAlertsPanel('vtxTeacherAlertsPanel'); TeacherPush.renderPushPanel('vtxTeacherPushPanel'); return; }
