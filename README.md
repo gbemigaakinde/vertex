@@ -379,6 +379,16 @@ Mobile performance choices: touch inertia uses `requestAnimationFrame` with velo
 
 ---
 
+### AI Skills (Master Timothy AI)
+
+Skills give Master Timothy AI specialist knowledge. The first skill is **The Lekki Headmaster** (UTME novel): chapters, characters, themes, devices and exam help.
+
+- A skill is added to the tutor's prompt only when the student's latest message is about the skill's topic (strict keyword rules in `worker-skills.js`, with short follow-ups allowed right after an on-topic exchange) and the student's class is allowed.
+- Teachers choose the classes in **Teacher > AI Skills** (`js/skills-manager.js`). Settings are stored in `aiSkills/config` and read by the Worker, so a student cannot switch a skill on from the browser. Until a teacher saves a setting, the novel skill is on for SSS 3 only.
+- Firestore rules: the teacher must be able to read and write `aiSkills/config`. Students need no access.
+- New skills: add one entry to `SKILLS` in `worker-skills.js` and one to `SKILLS` in `js/skills-manager.js`.
+- Deploy: `npx wrangler deploy` (the Worker changed), then deploy the front end. No new secrets or bindings are needed.
+
 ## Deployment
 
 ### Front end (Vercel)

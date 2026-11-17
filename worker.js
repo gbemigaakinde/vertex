@@ -1,6 +1,7 @@
 import { handleProctor } from './worker-proctor.js';
 import { handleFilesApi, handleFileDownload, UploadQuota, verifyIdToken } from './worker-files.js';
 import { handleMeet, handleMeetStream } from './meet/worker-meet.js';
+import { buildSkillBlock } from './worker-skills.js';
 export { UploadQuota };
 
 export default {
@@ -72,6 +73,13 @@ if (request.method === 'POST' && url.pathname === '/ai') {
     try { messages = buildMessages(intent, body); }
     catch (e) { return jsonError('Could not build vision messages: ' + e.message, 400); }
     return callOpenRouterVision(messages, env);
+  }
+
+  // Skills: extra topic knowledge, added only for on-topic questions and only
+  // for classes the teacher enabled (see worker-skills.js). Never trust a client value.
+  delete body._skillBlock;
+  if (intent === 'tutor_chat' || intent === 'student_query') {
+    body._skillBlock = await buildSkillBlock(body, env, { getFirebaseToken: _getFirebaseToken, fsGetDoc: _fsGetDoc });
   }
 
   let messages;
@@ -933,7 +941,8 @@ function buildStudentQueryPrompt(body) {
 }
 
 function buildMessages(intent, body) {
-  const systemPrompt = buildSystemPrompt(body.subject, body.studentName, body.studentClass);
+  const systemPrompt = buildSystemPrompt(body.subject, body.studentName, body.studentClass) +
+    (typeof body._skillBlock === 'string' ? body._skillBlock : '');
 
   if (intent === 'explain_question') {
     return [
