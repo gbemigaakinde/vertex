@@ -1967,6 +1967,15 @@ async function renderSubjectSelection() {
         badge: false,
       },
       {
+        id: 'historyBtn',
+        onclick: "if(window.ActivityLog&&AppState.studentData){ActivityLog.track('exam_history_open',(AppState.studentData.name||'A student')+' opened Exam History');}ExamHistory.open()",
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7.5V12l3 2"/></svg>',
+        label: 'Exam History',
+        color: 'var(--info)',
+        badge: false,
+        hidden: true,
+      },
+      {
         id: 'threedBtn',
         onclick: "if(window.ActivityLog&&AppState.studentData){ActivityLog.track('threedclass_open',(AppState.studentData.name||'A student')+' opened 3D Class');}ThreeDClass.openForStudent()",
         icon: _icon('Flask', 22),
@@ -2024,7 +2033,7 @@ async function renderSubjectSelection() {
                cursor:pointer;transition:border-color var(--t-base) var(--ease),
                transform var(--t-base) var(--ease),box-shadow var(--t-base) var(--ease);
                font-family:var(--font);-webkit-tap-highlight-color:transparent;
-               overflow:visible;"
+               overflow:visible;${t.hidden ? 'display:none;' : ''}"
         onmouseenter="this.style.borderColor='${t.color}';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 14px rgba(0,0,0,.08)';"
         onmouseleave="this.style.borderColor='var(--border)';this.style.transform='';this.style.boxShadow='';"
       >
@@ -2461,6 +2470,9 @@ async function renderSubjectSelection() {
     if (window.Storage && typeof Storage.renderStudentStoragePanel === 'function') {
       Storage.renderStudentStoragePanel('vtxStudentStoragePanel');
     }
+
+    // ── Exam History tile (shown only if the teacher opened it for this student) ──
+    if (window.ExamHistory && typeof ExamHistory.revealTile === 'function') { try { ExamHistory.revealTile(); } catch (e) {} }
 
     // ── Ticker scroll ──
     (function () {
@@ -3492,6 +3504,10 @@ async function renderSubjectSelection() {
             exp:    q.exp  != null ? String(q.exp)  : '',
             passageId: q.passageId || null,
             passage: (_passageOf(exam, subj, q) || {}).text || null,
+            // Diagrams are kept so Exam History can show the exam exactly as it was taken.
+            svg:    q.svg    != null ? q.svg    : null,
+            expSvg: q.expSvg != null ? q.expSvg : null,
+            optSvg: Array.isArray(q.optSvg) ? q.optSvg : null,
             chosen: chosenRaw !== undefined && chosenRaw !== null ? Number(chosenRaw) : null,
           };
         });
@@ -3553,6 +3569,7 @@ async function renderSubjectSelection() {
         tx.set(resultRef, {
           ...result,
           questionSnapshots,
+          snapshotVersion: 2,
           sessionDate,
           questionSession: exam.questionSession || null,
           questionTerm:    exam.questionTerm || null,
@@ -6867,6 +6884,9 @@ window.Exam = {
   submitExam,
   renderResults,
   _shareWhatsApp,
+  _safeQ,
+  _passageHtml,
+  _renderKatex,
   _copyResult,
   _escHtml,
   _escAttr,
