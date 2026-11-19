@@ -22,7 +22,8 @@
 
   var CFG = { col: 'appSettings', id: 'examHistory' };
   var cfgCache = { at: 0, data: null };
-  var S = { list: null, loading: false, err: '', openId: null, subj: '', filter: 'all' };
+  var S = { list: null, loading: false, err: '', openId: null, subj: '', filter: 'all', open: {}, moreMonths: 0, obs: null };
+  var RECENT_MONTHS = 6, OLDER_STEP = 12;
   var A = { root: null, cfg: null, students: [], q: '', busy: false };
 
   /* ───────── helpers ───────── */
@@ -100,7 +101,8 @@
     if (!b) return;
     var ok = await canAccess(false);
     var again = document.getElementById('historyBtn');
-    if (again && ok) again.style.removeProperty('display');
+    // Restore the tile's own layout (display:flex). removeProperty would also wipe the base display.
+    if (again && ok) again.style.setProperty('display', 'flex');
   }
 
   /* ───────── styles ───────── */
@@ -155,7 +157,7 @@
       '.xh-seg{display:inline-flex;background:var(--bg-subtle);border-radius:99px;padding:.1875rem;margin-bottom:1rem;max-width:100%;overflow-x:auto;}',
       '.xh-seg button{border:0;background:transparent;font:inherit;font-size:.75rem;font-weight:600;padding:.375rem .875rem;border-radius:99px;color:var(--text-3);cursor:pointer;width:auto;white-space:nowrap;}',
       '.xh-seg button.is-on{background:var(--bg-base);color:var(--text-1);box-shadow:0 1px 4px rgba(0,0,0,.12);}',
-      '.xh-q{background:var(--bg-base);border:1px solid var(--border);border-left-width:4px;border-radius:var(--r-xl);padding:1rem;margin-bottom:.875rem;min-width:0;scroll-margin-top:1rem;}',
+      '.xh-q{background:var(--bg-base);border:1px solid var(--border);border-left-width:4px;border-radius:var(--r-xl);padding:1rem;margin-bottom:.875rem;min-width:0;}',
       '.xh-q.ok{border-left-color:var(--success);} .xh-q.bad{border-left-color:var(--danger);} .xh-q.skip{border-left-color:var(--text-4);}',
       '.xh-qhead{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.625rem;}',
       '.xh-qn{font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);}',
@@ -172,6 +174,28 @@
       '.xh-exp{margin-top:.75rem;padding:.75rem .875rem;background:var(--bg-subtle);border-radius:var(--r-lg);font-size:.8125rem;line-height:1.65;color:var(--text-2);overflow-wrap:anywhere;white-space:pre-line;}',
       '.xh-exp b{display:block;font-size:.6875rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:.25rem;}',
       '.xh-note{font-size:.75rem;color:var(--text-3);background:var(--bg-subtle);border-radius:var(--r-lg);padding:.625rem .875rem;margin:.5rem 0 1rem;line-height:1.5;}',
+      '.xh-acc{display:flex;align-items:center;gap:.75rem;width:100%;text-align:left;background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r-lg);padding:.75rem .875rem;margin:.625rem 0;font:inherit;color:inherit;cursor:pointer;}',
+      '.xh-acc:hover{border-color:var(--accent);}',
+      '.xh-acc b{font-size:.875rem;} .xh-acc small{display:block;font-size:.75rem;color:var(--text-3);margin-top:.125rem;}',
+      '.xh-acc .xh-chev{margin-left:auto;transition:transform .2s;} .xh-acc[aria-expanded=true] .xh-chev{transform:rotate(90deg);}',
+      '.xh-older{font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-4);margin:1.75rem 0 .25rem;}',
+      '.xh-more{display:block;width:100%;margin-top:.5rem;padding:.75rem;border-radius:var(--r-lg);border:1px dashed var(--border);background:transparent;color:var(--text-2);font:inherit;font-size:.8125rem;font-weight:600;cursor:pointer;}',
+      '.xh-more:hover{border-color:var(--accent);color:var(--accent);}',
+      '.xh-navwrap{margin:0 -1rem 1rem;}',
+      '.xh-sticky{padding:.5rem 1rem;background:color-mix(in srgb,var(--bg-base) 90%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}',
+      '.xh-sticky.is-stuck{position:fixed;top:env(safe-area-inset-top,0px);z-index:30;box-shadow:0 6px 18px rgba(0,0,0,.12);}',
+      '.xh-sbar{display:flex;align-items:center;gap:.5rem;}',
+      '.xh-prog{flex:none;font-size:.75rem;font-weight:700;color:var(--text-2);min-width:3.25rem;font-variant-numeric:tabular-nums;}',
+      '.xh-strip{flex:1;min-width:0;display:flex;gap:.375rem;overflow-x:auto;scrollbar-width:none;padding:.125rem 0;scroll-behavior:smooth;}',
+      '.xh-strip::-webkit-scrollbar{display:none;}',
+      '.xh-strip .xh-dot{flex:none;}',
+      '.xh-dot.cur{box-shadow:0 0 0 2px var(--bg-base),0 0 0 4px var(--accent);}',
+      '.xh-expand{flex:none;width:2rem;height:2rem;border-radius:.5rem;border:1px solid var(--border);background:var(--bg-base);color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;font-size:.875rem;}',
+      '.xh-expand[aria-expanded=true]{background:var(--text-1);color:var(--bg-base);border-color:var(--text-1);}',
+      '.xh-grid{display:none;flex-wrap:wrap;gap:.375rem;max-height:42vh;overflow-y:auto;padding:.625rem 0 .25rem;}',
+      '.xh-sticky.is-open .xh-grid{display:flex;} .xh-sticky.is-open .xh-strip{display:none;}',
+      '.xh-q{scroll-margin-top:4.75rem;}',
+      '@media (min-width:640px){.xh-navwrap{margin:0 0 1rem;}.xh-sticky{border:1px solid var(--border);border-radius:var(--r-lg);}.xh-sticky.is-stuck{top:calc(env(safe-area-inset-top,0px) + .5rem);}}',
       '.xh-q img,.xh-q svg{max-width:100%;}',
       '@media (min-width:640px){.xh{padding:1.5rem 1.5rem 5rem;}.xh-chips{margin:0;padding-left:0;padding-right:0;}}',
       '@media (prefers-reduced-motion:reduce){.xh-skel{animation:none;}.xh-card{transition:none;}}',
@@ -221,7 +245,19 @@
     var s = Array.isArray(r.subjects) ? r.subjects : [];
     return s.length ? s.join(', ') : 'Exam';
   }
+  function cardHtml(r) {
+    var p = Number(r.percentage) || 0, col = gradeColor(r.grade), has = !!r.questionSnapshots;
+    return '<button type="button" class="xh-card" data-open="' + esc(r._id) + '">' +
+      '<span class="xh-ringwrap">' + ring(p, col, 56, 5) + '<span style="color:' + col + '">' + p + '%</span></span>' +
+      '<span class="xh-cbody"><span class="xh-ctitle" style="display:block">' + esc(resultTitle(r)) + '</span>' +
+      '<span class="xh-cmeta"><span>' + esc(fmtDate(r._ms)) + (r._ms ? ' · ' + esc(fmtTime(r._ms)) : '') + '</span>' +
+      '<span class="xh-grade" style="color:' + col + '">Grade ' + esc(r.grade || '-') + '</span>' +
+      (r.crossClass && r.examClassLabel ? '<span class="xh-tag">' + esc(r.examClassLabel) + ' exam</span>' : '') +
+      (has ? '' : '<span class="xh-tag">Summary only</span>') + '</span></span>' +
+      '<span class="xh-chev"><i class="ph ph-caret-right"></i></span></button>';
+  }
   function renderList() {
+    cleanupNav();
     var rs = S.list || [];
     var html = '<div class="xh">' + topBar('My exam history', rs.length ? rs.length + (rs.length === 1 ? ' exam' : ' exams') + ' taken' : '', 'ExamHistory.close()');
     if (!rs.length) {
@@ -233,26 +269,44 @@
     html += '<div class="xh-stats"><div class="xh-stat"><b>' + rs.length + '</b><span>Exams</span></div>' +
       '<div class="xh-stat"><b>' + Math.round(sum / rs.length) + '%</b><span>Average</span></div>' +
       '<div class="xh-stat"><b>' + best + '%</b><span>Best</span></div></div>';
-    var lastMonth = null;
+    // Group by month, newest first. Undated results go in one "Earlier" group at the end.
+    var groups = [], idx = {};
     rs.forEach(function (r) {
       var m = monthLabel(r._ms);
-      if (m !== lastMonth) { html += '<p class="xh-month">' + esc(m) + '</p>'; lastMonth = m; }
-      var p = Number(r.percentage) || 0, col = gradeColor(r.grade);
-      var has = !!r.questionSnapshots;
-      html += '<button type="button" class="xh-card" data-open="' + esc(r._id) + '">' +
-        '<span class="xh-ringwrap">' + ring(p, col, 56, 5) + '<span style="color:' + col + '">' + p + '%</span></span>' +
-        '<span class="xh-cbody"><span class="xh-ctitle" style="display:block">' + esc(resultTitle(r)) + '</span>' +
-        '<span class="xh-cmeta"><span>' + esc(fmtDate(r._ms)) + (r._ms ? ' · ' + esc(fmtTime(r._ms)) : '') + '</span>' +
-        '<span class="xh-grade" style="color:' + col + '">Grade ' + esc(r.grade || '-') + '</span>' +
-        (r.crossClass && r.examClassLabel ? '<span class="xh-tag">' + esc(r.examClassLabel) + ' exam</span>' : '') +
-        (has ? '' : '<span class="xh-tag">Summary only</span>') + '</span></span>' +
-        '<span class="xh-chev"><i class="ph ph-caret-right"></i></span></button>';
+      if (idx[m] === undefined) { idx[m] = groups.length; groups.push({ label: m, items: [] }); }
+      groups[idx[m]].items.push(r);
     });
+    var recent = groups.slice(0, RECENT_MONTHS), older = groups.slice(RECENT_MONTHS);
+    recent.forEach(function (g) { html += '<p class="xh-month">' + esc(g.label) + '</p>' + g.items.map(cardHtml).join(''); });
+    if (older.length) {
+      var count = older.reduce(function (n, g) { return n + g.items.length; }, 0);
+      html += '<p class="xh-older">Older exams · ' + count + '</p>';
+      var visible = older.slice(0, OLDER_STEP + S.moreMonths);
+      visible.forEach(function (g, gi) {
+        var open = !!S.open[g.label];
+        var avg = Math.round(g.items.reduce(function (a, r) { return a + (Number(r.percentage) || 0); }, 0) / g.items.length);
+        html += '<button type="button" class="xh-acc" data-acc="' + esc(g.label) + '" aria-expanded="' + open + '">' +
+          '<span><b>' + esc(g.label) + '</b><small>' + g.items.length + (g.items.length === 1 ? ' exam' : ' exams') + ' · average ' + avg + '%</small></span>' +
+          '<span class="xh-chev"><i class="ph ph-caret-right"></i></span></button>';
+        if (open) html += g.items.map(cardHtml).join('');
+      });
+      if (older.length > visible.length) {
+        html += '<button type="button" class="xh-more" data-more="1">Show ' + Math.min(OLDER_STEP, older.length - visible.length) + ' more months</button>';
+      }
+    }
     html += '</div>';
     mount(html);
     document.querySelectorAll('.xh-card').forEach(function (b) {
       b.addEventListener('click', function () { openResult(b.getAttribute('data-open')); });
     });
+    document.querySelectorAll('.xh-acc').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-acc'), y = window.pageYOffset;
+        S.open[k] = !S.open[k]; renderList(); window.scrollTo(0, y);
+      });
+    });
+    var more = document.querySelector('.xh-more');
+    if (more) more.addEventListener('click', function () { var y = window.pageYOffset; S.moreMonths += OLDER_STEP; renderList(); window.scrollTo(0, y); });
   }
 
   function mount(html) {
@@ -262,6 +316,10 @@
   }
 
   /* ───────── detail view ───────── */
+  function cleanupNav() {
+    if (S.navCleanup) { S.navCleanup(); S.navCleanup = null; }
+    if (S.obs) { S.obs.disconnect(); S.obs = null; }
+  }
   function statusOf(q) {
     if (q.chosen === null || q.chosen === undefined) return 'skip';
     return Number(q.chosen) === Number(q.ans) ? 'ok' : 'bad';
@@ -324,9 +382,15 @@
     }).join('') + '</div>';
 
     var qs = r.questionSnapshots[S.subj] || [];
-    html += '<div class="xh-nav" aria-label="Jump to question">' + qs.map(function (q, i) {
+    // Sticky navigator: always on screen while reading. A one-row strip follows the question
+    // being read; the expand button opens the full grid.
+    var dots = qs.map(function (q, i) {
       return '<button type="button" class="xh-dot ' + statusOf(q) + '" data-jump="' + i + '" aria-label="Question ' + (i + 1) + '">' + (i + 1) + '</button>';
-    }).join('') + '</div>';
+    }).join('');
+    html += '<div class="xh-navwrap" id="xhNavWrap"><div class="xh-sticky" id="xhSticky"><div class="xh-sbar"><span class="xh-prog" id="xhProg" aria-live="polite">1 / ' + qs.length + '</span>' +
+      '<div class="xh-strip" id="xhStrip" aria-label="Jump to question">' + dots + '</div>' +
+      '<button type="button" class="xh-expand" id="xhExpand" aria-expanded="false" aria-label="Show all questions"><i class="ph ph-squares-four"></i></button></div>' +
+      '<div class="xh-grid" id="xhGrid" aria-label="All questions">' + dots + '</div></div></div>';
 
     var counts = { all: qs.length, bad: 0, skip: 0 };
     qs.forEach(function (q) { var s = statusOf(q); if (s === 'bad') counts.bad++; if (s === 'skip') counts.skip++; });
@@ -353,14 +417,76 @@
     document.querySelectorAll('.xh-seg button').forEach(function (b) {
       b.addEventListener('click', function () { S.filter = b.getAttribute('data-filter'); renderDetail(); });
     });
+    cleanupNav();
+    var wrap = document.getElementById('xhNavWrap');
+    var sticky = document.getElementById('xhSticky'), strip = document.getElementById('xhStrip'),
+        prog = document.getElementById('xhProg'), expand = document.getElementById('xhExpand');
+    function setOpen(o) {
+      if (!sticky) return;
+      sticky.classList.toggle('is-open', o);
+      expand.setAttribute('aria-expanded', String(o));
+      expand.innerHTML = o ? '<i class="ph ph-x"></i>' : '<i class="ph ph-squares-four"></i>';
+    }
+    // The app's own CSS makes html/body/#app scroll containers, which stops position:sticky from working,
+    // so the bar pins itself (position:fixed) once its slot scrolls out of view.
+    var ticking = false;
+    function pin() {
+      ticking = false;
+      if (!wrap || !sticky || !document.body.contains(wrap)) return;
+      var safe = 0, mobile = window.innerWidth < 640;
+      var off = mobile ? 0 : 8;
+      var r = wrap.getBoundingClientRect();
+      var stuck = r.top <= off + safe;
+      if (stuck) {
+        if (!sticky.classList.contains('is-stuck')) wrap.style.height = sticky.offsetHeight + 'px';
+        sticky.classList.add('is-stuck');
+        sticky.style.left = r.left + 'px';
+        sticky.style.width = r.width + 'px';
+      } else {
+        sticky.classList.remove('is-stuck');
+        sticky.style.left = ''; sticky.style.width = ''; wrap.style.height = '';
+      }
+    }
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(pin); } }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    S.navCleanup = function () { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); };
+    pin();
+    if (expand) expand.addEventListener('click', function () { setOpen(!sticky.classList.contains('is-open')); });
     document.querySelectorAll('.xh-dot').forEach(function (b) {
       b.addEventListener('click', function () {
         var i = b.getAttribute('data-jump');
+        setOpen(false);
         if (S.filter !== 'all') { S.filter = 'all'; renderDetail(); }
         var el = document.getElementById('xhq-' + i);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
+    // Follow the question being read: highlight its dot and keep it visible in the strip.
+    if (S.obs) { S.obs.disconnect(); S.obs = null; }
+    var cards = document.querySelectorAll('.xh-q');
+    var barH = sticky ? sticky.offsetHeight : 56;
+    cards.forEach(function (c) { c.style.scrollMarginTop = (barH + (window.innerWidth < 640 ? 12 : 20)) + 'px'; });
+    if (cards.length && 'IntersectionObserver' in window && strip) {
+      var seen = {};
+      S.obs = new IntersectionObserver(function (ents) {
+        ents.forEach(function (en) { seen[en.target.id] = en.isIntersecting; });
+        var cur = null;
+        for (var k = 0; k < cards.length; k++) { if (seen[cards[k].id]) { cur = cards[k]; break; } }
+        if (!cur) return;
+        var n = cur.id.replace('xhq-', '');
+        strip.querySelectorAll('.xh-dot').forEach(function (d) {
+          var on = d.getAttribute('data-jump') === n;
+          d.classList.toggle('cur', on);
+          if (on) {
+            var left = d.offsetLeft - strip.clientWidth / 2 + d.offsetWidth / 2;
+            strip.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+          }
+        });
+        if (prog) prog.textContent = (Number(n) + 1) + ' / ' + qs.length;
+      }, { rootMargin: '-' + (barH + 48) + 'px 0px -50% 0px', threshold: 0 });
+      cards.forEach(function (c) { S.obs.observe(c); });
+    }
     math();
   }
 
@@ -390,9 +516,10 @@
     await load(true);
   }
   function openResult(id) { S.openId = id; S.subj = ''; S.filter = 'all'; renderDetail(); }
-  function backToList() { S.openId = null; renderList(); }
+  function backToList() { cleanupNav(); S.openId = null; renderList(); }
   function retry() { load(true); }
   function close() {
+    cleanupNav();
     S.openId = null;
     if (window.Exam && Exam.renderSubjectSelection) Exam.renderSubjectSelection();
   }
