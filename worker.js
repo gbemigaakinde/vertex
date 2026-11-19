@@ -1663,6 +1663,11 @@ async function _submitExpiredExam(token, uid) {
         opts:   Array.isArray(q.opts) ? q.opts.map(o => o != null ? String(o) : '') : [],
         ans:    q.ans != null ? Number(q.ans) : 0,
         exp:    q.exp != null ? String(q.exp) : '',
+        passageId: q.passageId || null,
+        passage:   q.passage != null ? String(q.passage) : null,
+        svg:    q.svg    != null ? q.svg    : null,
+        expSvg: q.expSvg != null ? q.expSvg : null,
+        optSvg: Array.isArray(q.optSvg) ? q.optSvg : null,
         chosen: chosenRaw !== undefined && chosenRaw !== null ? Number(chosenRaw) : null,
       };
     });
@@ -1682,6 +1687,7 @@ async function _submitExpiredExam(token, uid) {
         name: _FS_DB_PATH + '/results/' + resultId,
         fields: _fsEncodeFields(Object.assign({}, result, {
           questionSnapshots,
+          snapshotVersion: 2,
           sessionDate,
           questionSession: exam.questionSession || null,
           questionTerm:    exam.questionTerm    || null,

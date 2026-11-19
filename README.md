@@ -379,6 +379,14 @@ Mobile performance choices: touch inertia uses `requestAnimationFrame` with velo
 
 ---
 
+### Exam History
+
+Students can review every exam they took, exactly as saved at submission (answers, correct answers, explanations, passages, diagrams, maths).
+
+- Off for everyone by default. Teacher > **Exam History** turns it on for everyone, selected classes, or individual students. Settings live in `appSettings/examHistory`.
+- Results now store diagrams (`svg`, `expSvg`, `optSvg`) and `snapshotVersion: 2`, in both the browser submit and the Worker auto-submit. Older results show a note that some diagrams may be missing.
+- Needs the `appSettings` Firestore rule (read: signed in, write: admin). To stop students reading results by other routes, tighten the `results` read rule as described in the release notes.
+
 ### AI Skills (Master Timothy AI)
 
 Skills give Master Timothy AI specialist knowledge. The first skill is **The Lekki Headmaster** (UTME novel): chapters, characters, themes, devices and exam help.
