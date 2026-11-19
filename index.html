@@ -1001,7 +1001,9 @@
     (function () {
       'use strict';
       if (!('serviceWorker' in navigator)) return;
-      var _swUpdateReady = false;
+      var _reg = null;
+      var _swUpdateReady = false;   // the student has been offered an update
+      var _prompted = false;        // the prompt is queued or on screen
       var _reloading = false;
 
       // Never reload more than once in a row, so a problem can't turn into a reload loop.
@@ -1015,53 +1017,90 @@
         window.location.reload();
       }
 
-      // Is the student in the middle of an exam? Then an update must wait.
+      // Is the student in the middle of an exam? Then the prompt waits until it is over.
       function _busy() {
         var st = window.AppState && window.AppState.exam && window.AppState.exam.step;
         return st === 'exam';
+      }
+
+      // The update that is ready right now: the waiting worker, or the one that just finished installing.
+      function _pending(fallback) {
+        return (_reg && _reg.waiting) || fallback || null;
+      }
+
+      function _apply(fallback) {
+        var w = _pending(fallback);
+        if (w) { w.postMessage({ type: 'SKIP_WAITING' }); return; }
+        // The offered worker was replaced or is gone: look again, then reload to the newest version.
+        if (_reg) _reg.update().catch(function () {}).then(function () {
+          var again = _pending(null);
+          if (again) again.postMessage({ type: 'SKIP_WAITING' }); else _safeReload();
+        });
+      }
+
+      // One prompt, shown as soon as the student is not in an exam. It stays until they tap Update.
+      function _onUpdateReady(worker) {
+        _swUpdateReady = true;
+        if (_prompted) return;
+        _prompted = true;
+        var tries = 0;
+        (function _show() {
+          if (_busy()) { setTimeout(_show, 2000); return; }
+          if (window.UI && typeof window.UI.showUpdateToast === 'function' && document.getElementById('toastContainer')) {
+            window.UI.showUpdateToast(function () { _apply(worker); });
+            return;
+          }
+          if (++tries < 60) { setTimeout(_show, 500); return; }
+          // The page's own UI never came up (very unusual): fall back to a plain banner so the prompt is never lost.
+          var bar = document.createElement('div');
+          bar.setAttribute('role', 'alert');
+          bar.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;background:#111;color:#fff;font:600 14px system-ui,sans-serif;';
+          bar.innerHTML = '<span>A new version is available.</span><button type="button" style="border:0;border-radius:8px;padding:8px 14px;font:inherit;background:#3b5bdb;color:#fff;cursor:pointer;">Update</button>';
+          bar.querySelector('button').addEventListener('click', function () { bar.remove(); _apply(worker); });
+          document.body.appendChild(bar);
+        }());
+      }
+
+      // Watch one worker until it has finished installing. Only counts as an update when an older version is running.
+      function _track(worker) {
+        if (!worker) return;
+        function check() {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) _onUpdateReady(worker);
+        }
+        worker.addEventListener('statechange', check);
+        check();
       }
 
       function _registerSW() {
         navigator.serviceWorker
           .register('/sw.js', { scope: '/', updateViaCache: 'none' })
           .then(function (reg) {
+            _reg = reg;
             console.log('[SW] Registered. Scope:', reg.scope);
 
-            // A new version already downloaded while the app was closed: switch to it now,
-            // before the student starts using the old one.
-            if (reg.waiting) _onUpdateReady(reg.waiting, true);
+            // The browser checks for a new version while the page loads, so by now the new worker may
+            // already be waiting or still installing. The 'updatefound' event has usually fired by then,
+            // so look at both states directly instead of relying on the event alone.
+            if (navigator.serviceWorker.controller) {
+              if (reg.waiting) _onUpdateReady(reg.waiting);
+              else if (reg.installing) _track(reg.installing);
+            }
+            reg.addEventListener('updatefound', function () { _track(reg.installing); });
 
-            reg.addEventListener('updatefound', function () {
-              var nw = reg.installing;
-              if (!nw) return;
-              nw.addEventListener('statechange', function () {
-                if (nw.state === 'installed' && navigator.serviceWorker.controller) _onUpdateReady(nw, false);
-              });
-            });
-
-            // Look for a new version whenever the app comes back to the front.
+            // Look for a new version when the app comes back to the front, when the network returns,
+            // and every 20 minutes while it stays open.
+            function look() { reg.update().catch(function () {}); }
             document.addEventListener('visibilitychange', function () {
-              if (document.visibilityState === 'visible') reg.update().catch(function () {});
+              if (document.visibilityState === 'visible') look();
             });
+            window.addEventListener('online', look);
+            setInterval(function () { if (document.visibilityState === 'visible') look(); }, 20 * 60 * 1000);
           })
           .catch(function (err) { console.error('[SW] Registration failed:', err); });
 
         navigator.serviceWorker.addEventListener('controllerchange', function () {
           if (_swUpdateReady) _safeReload();
         });
-      }
-
-      function _onUpdateReady(worker, silentOk) {
-        _swUpdateReady = true;
-        // Early in the session and not in an exam: just update. No tapping needed.
-        if (silentOk && !_busy()) { worker.postMessage({ type: 'SKIP_WAITING' }); return; }
-        function _show(tries) {
-          if (window.UI && typeof window.UI.showUpdateToast === 'function') {
-            window.UI.showUpdateToast(function () { if (worker) worker.postMessage({ type: 'SKIP_WAITING' }); });
-          } else if (tries < 40) { setTimeout(function () { _show(tries + 1); }, 500); }
-          else if (!_busy()) { worker.postMessage({ type: 'SKIP_WAITING' }); }
-        }
-        _show(0);
       }
 
       if (document.readyState === 'complete') { setTimeout(_registerSW, 0); }
